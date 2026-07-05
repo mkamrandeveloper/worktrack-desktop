@@ -82,7 +82,7 @@ export function AssignTaskModal({ member, onClose, onSuccess }: Props) {
             </div>
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1.5">Deadline (optional)</label>
-              <input id="inp-task-deadline" type="date" value={deadline} onChange={e => setDeadline(e.target.value)}
+              <input id="inp-task-deadline" type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)}
                 className="w-full bg-input border border-border rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition" />
             </div>
           </div>

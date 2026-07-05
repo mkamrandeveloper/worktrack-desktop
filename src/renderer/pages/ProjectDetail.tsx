@@ -30,8 +30,15 @@ function priorityPill(priority: string) {
   return { cls: 'bg-muted text-muted-foreground border-border', icon: null };
 }
 
-const fmtDate = (d?: string) =>
-  d ? new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+const fmtDate = (d?: string) => {
+  if (!d) return '—';
+  const date = new Date(d);
+  // datetime-local values carry a "T" (e.g. 2026-07-10T14:30); older
+  // date-only deadlines don't — only show a time when one was actually set.
+  return d.includes('T')
+    ? date.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+    : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+};
 
 const isDone = (s: string) => s === 'DONE' || s === 'completed';
 
@@ -457,7 +464,7 @@ function AddTaskModal({ projectId, members, onClose, onCreated }: {
             </div>
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1.5">Deadline</label>
-              <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="w-full bg-input border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+              <input type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="w-full bg-input border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
             </div>
           </div>
         </div>
