@@ -13,11 +13,31 @@ interface OrgSettings {
   screenshotInterval: number;
 }
 
+const PRIORITY_PILL: Record<string, string> = {
+  URGENT: 'bg-destructive/10 text-destructive border-destructive/20',
+  HIGH: 'bg-orange-100 text-orange-700 border-orange-200',
+  MEDIUM: 'bg-secondary/10 text-secondary border-secondary/20',
+  LOW: 'bg-muted text-muted-foreground border-border',
+};
+
+function fmtDeadline(d: string): string {
+  const date = new Date(d);
+  return d.includes('T')
+    ? date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 export function ManagerDashboard() {
   const navigate = useNavigate();
   const { user, organization } = useAuthStore();
-  const { tasks: allTasks, selectedTaskId, fetchTasks } = useTaskStore();
+  const { tasks: allTasks, selectedTaskId, fetchTasks, selectTask } = useTaskStore();
   const timer = useTimer();
+
+  useEffect(() => {
+    if (timer.taskId && timer.taskId !== selectedTaskId) {
+      selectTask(timer.taskId);
+    }
+  }, [timer.taskId]);
 
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -35,6 +55,13 @@ export function ManagerDashboard() {
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
 
   const selectedTask = allTasks.find((t) => t.id === selectedTaskId) ?? null;
+
+  const handleStartTask = async (taskId: string) => {
+    selectTask(taskId);
+    await timer.startTimer(taskId);
+  };
+
+  const myOpenTasks = allTasks.filter((t) => t.status !== 'DONE' && t.status !== 'completed');
 
   // ── Live Pulse (real-time) ──────────────────────────────────────────────────
   const [activeProjectsCount, setActiveProjectsCount] = useState(0);
@@ -424,6 +451,54 @@ export function ManagerDashboard() {
           ))}
         </div>
       </div>
+
+      {/* My Tasks — only shown if this owner/manager has tasks assigned to themselves */}
+      {myOpenTasks.length > 0 && (
+        <div className="glass-panel rounded-xl p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-semibold text-foreground">My Tasks</h3>
+            <span className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">{myOpenTasks.length} open</span>
+          </div>
+          <div className="space-y-2">
+            {myOpenTasks.map((t) => {
+              const tracking = timerActive && timer.taskId === t.id;
+              const p = PRIORITY_PILL[t.priority] ?? PRIORITY_PILL.MEDIUM;
+              return (
+                <div key={t.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-card/40 border border-border hover:bg-card/70 transition-colors">
+                  <div className="min-w-0">
+                    <h4 className="text-sm font-medium text-foreground truncate">{t.title}</h4>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap mt-1">
+                      {t.projectName && <span>{t.projectName}</span>}
+                      {t.deadline && (
+                        <span className="flex items-center gap-1">
+                          <MaterialIcon name="calendar_today" size={12} /> {fmtDeadline(t.deadline)}
+                        </span>
+                      )}
+                      <span className={clsx('px-2 py-0.5 rounded-full border font-mono text-[10px] uppercase', p)}>
+                        {t.priority.toString().toLowerCase()}
+                      </span>
+                    </div>
+                  </div>
+                  {tracking ? (
+                    <span className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-primary text-xs font-medium shrink-0">
+                      <MaterialIcon name="play_arrow" size={16} /> Tracking
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => handleStartTask(t.id)}
+                      disabled={timerActive}
+                      title={timerActive ? 'Stop the current timer first' : 'Start working'}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-secondary border border-secondary/30 hover:bg-secondary/10 transition-colors text-xs font-medium disabled:opacity-40 shrink-0"
+                    >
+                      <MaterialIcon name="play_arrow" size={16} /> Start
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Live Now */}
       <h3 className="text-xl font-display font-bold text-foreground flex items-center gap-2">

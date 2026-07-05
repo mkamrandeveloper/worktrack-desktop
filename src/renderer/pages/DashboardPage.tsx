@@ -24,11 +24,37 @@ function formatHoursMinutes(hours: number): string {
   return `${h}h ${m}m`;
 }
 
+const PRIORITY_PILL: Record<string, string> = {
+  URGENT: 'bg-destructive/10 text-destructive border-destructive/20',
+  HIGH: 'bg-orange-100 text-orange-700 border-orange-200',
+  MEDIUM: 'bg-secondary/10 text-secondary border-secondary/20',
+  LOW: 'bg-muted text-muted-foreground border-border',
+};
+
+function fmtDeadline(d: string): string {
+  const date = new Date(d);
+  // datetime-local values carry a "T" (e.g. 2026-07-10T14:30); older
+  // date-only deadlines don't — only show a time when one was actually set.
+  return d.includes('T')
+    ? date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 export function DashboardPage() {
   const navigate = useNavigate();
   const { user, organization } = useAuthStore();
-  const { tasks, selectedTaskId, fetchTasks } = useTaskStore();
+  const { tasks, selectedTaskId, fetchTasks, selectTask } = useTaskStore();
   const timer = useTimer();
+
+  // Keep the ring widget pointed at whatever task actually has a running
+  // timer (e.g. a session already in progress from before a restart, or one
+  // just started from the My Tasks list below) rather than only tracking
+  // what was picked in this render.
+  useEffect(() => {
+    if (timer.taskId && timer.taskId !== selectedTaskId) {
+      selectTask(timer.taskId);
+    }
+  }, [timer.taskId]);
 
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
   const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
@@ -75,7 +101,14 @@ export function DashboardPage() {
     });
   }, []);
 
-  const handleStartTask = async (taskId: string) => timer.startTimer(taskId);
+  const handleStartTask = async (taskId: string) => {
+    selectTask(taskId);
+    await timer.startTimer(taskId);
+  };
+
+  const myOpenTasks = tasks
+    .filter((t) => t.status !== 'DONE' && t.status !== 'completed')
+    .sort((a, b) => (a.deadline && b.deadline ? a.deadline.localeCompare(b.deadline) : a.deadline ? -1 : b.deadline ? 1 : 0));
 
   // Circular progress ring — real elapsed time against the task's estimate (default 8h).
   const ringTarget = hoursToSeconds(selectedTask?.estimatedHours || 8);
@@ -332,6 +365,59 @@ export function DashboardPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* My Tasks — every task assigned to me, with a direct Start action */}
+      <div className="glass-panel rounded-xl p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="font-semibold text-foreground">My Tasks</h3>
+          <span className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">{myOpenTasks.length} open</span>
+        </div>
+        {myOpenTasks.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">No tasks assigned to you right now.</p>
+        ) : (
+          <div className="space-y-2">
+            {myOpenTasks.map((t) => {
+              const tracking = timerActive && timer.taskId === t.id;
+              const p = PRIORITY_PILL[t.priority] ?? PRIORITY_PILL.MEDIUM;
+              return (
+                <div
+                  key={t.id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-card/40 border border-border hover:bg-card/70 transition-colors"
+                >
+                  <div className="min-w-0">
+                    <h4 className="text-sm font-medium text-foreground truncate">{t.title}</h4>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap mt-1">
+                      {t.projectName && <span>{t.projectName}</span>}
+                      {t.deadline && (
+                        <span className="flex items-center gap-1">
+                          <MaterialIcon name="calendar_today" size={12} /> {fmtDeadline(t.deadline)}
+                        </span>
+                      )}
+                      <span className={clsx('px-2 py-0.5 rounded-full border font-mono text-[10px] uppercase', p)}>
+                        {t.priority.toString().toLowerCase()}
+                      </span>
+                    </div>
+                  </div>
+                  {tracking ? (
+                    <span className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-primary text-xs font-medium shrink-0">
+                      <MaterialIcon name="play_arrow" size={16} /> Tracking
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => handleStartTask(t.id)}
+                      disabled={timerActive}
+                      title={timerActive ? 'Stop the current timer first' : 'Start working'}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-secondary border border-secondary/30 hover:bg-secondary/10 transition-colors text-xs font-medium disabled:opacity-40 shrink-0"
+                    >
+                      <MaterialIcon name="play_arrow" size={16} /> Start
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Recent Activity + Active Projects */}
