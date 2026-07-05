@@ -30,6 +30,7 @@ export class TokenManager {
     this.store = new Store<TokenStore>({
       name: 'auth-tokens',
       encryptionKey,
+      clearInvalidConfig: true,
       defaults: { tokens: null },
     });
   }

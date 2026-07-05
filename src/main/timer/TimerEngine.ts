@@ -29,6 +29,7 @@ export class TimerEngine extends EventEmitter {
     this.store = new Store<{ timerState: TimerState }>({
       name: 'timer-state',
       encryptionKey,
+      clearInvalidConfig: true,
       defaults: {
         timerState: TimerEngine.createInitialState(),
       },

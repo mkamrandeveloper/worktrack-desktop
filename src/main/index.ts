@@ -51,6 +51,9 @@ let isQuitting = false;
 const settingsStore = new Store<{ settings: UserSettings }>({
   name: 'user-settings',
   encryptionKey: ENCRYPTION_KEY,
+  // If the file can't be decrypted/parsed (e.g. a stale file written under a
+  // different key), reset to defaults instead of throwing on launch.
+  clearInvalidConfig: true,
   defaults: { settings: DEFAULT_SETTINGS },
 });
 

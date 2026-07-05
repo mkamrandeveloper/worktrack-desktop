@@ -27,6 +27,7 @@ export class ScreenshotQueue {
     this.store = new Store<QueueStore>({
       name: 'screenshot-queue',
       encryptionKey,
+      clearInvalidConfig: true,
       defaults: { items: [] },
     });
 

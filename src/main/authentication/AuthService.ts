@@ -43,6 +43,7 @@ export class AuthService {
     this.cache = new Store<AuthCache>({
       name: 'auth-cache',
       encryptionKey,
+      clearInvalidConfig: true,
       defaults: { user: null, organization: null },
     });
 

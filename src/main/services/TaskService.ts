@@ -22,6 +22,7 @@ export class TaskService {
     this.store = new Store<TaskStore>({
       name: 'task-cache',
       encryptionKey,
+      clearInvalidConfig: true,
       defaults: { tasks: [], lastFetched: null },
     });
   }

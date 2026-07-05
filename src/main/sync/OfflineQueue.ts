@@ -28,6 +28,7 @@ export class OfflineQueue {
     this.store = new Store<OfflineQueueStore>({
       name: 'offline-queue',
       encryptionKey,
+      clearInvalidConfig: true,
       defaults: { requests: [] },
     });
 
