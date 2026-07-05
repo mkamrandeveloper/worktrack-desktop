@@ -34,13 +34,18 @@ const log = createLogger('App');
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const API_BASE_URL = process.env.API_BASE_URL ?? 'http://localhost:3000';
-const WS_URL = process.env.WS_URL ?? API_BASE_URL;
-const ENCRYPTION_KEY = process.env.STORAGE_ENCRYPTION_KEY ?? 'worktrack-default-key-change-me!';
 // app.isPackaged is the authoritative signal — a distributed .dmg/.exe install
 // never has NODE_ENV set, so relying on NODE_ENV alone would make every
 // packaged build try to load the Vite dev server instead of the bundled files.
 const IS_DEV = !app.isPackaged;
+// .env is gitignored and never ships inside the packaged app (by design — it
+// holds local dev values), so a real install always falls through to this
+// default. It must point at the real deployed backend, not localhost, or
+// every API call (including login/signup) silently fails for every user.
+const DEFAULT_PROD_API_URL = 'https://worktrack123-worktrack-backend.hf.space';
+const API_BASE_URL = process.env.API_BASE_URL ?? (IS_DEV ? 'http://localhost:3000' : DEFAULT_PROD_API_URL);
+const WS_URL = process.env.WS_URL ?? API_BASE_URL;
+const ENCRYPTION_KEY = process.env.STORAGE_ENCRYPTION_KEY ?? 'worktrack-default-key-change-me!';
 
 // ── Service Instances ─────────────────────────────────────────────────────────
 
