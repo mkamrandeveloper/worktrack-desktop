@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WorkTrack - Attendance</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                            "tertiary-container": "#727577",
+                            "tertiary-fixed": "#e0e3e5",
+                            "on-tertiary-container": "#fbfdff",
+                            "secondary": "#4b41e1",
+                            "on-secondary-fixed": "#0f0069",
+                            "surface-bright": "#faf8ff",
+                            "surface-variant": "#dae2fd",
+                            "on-tertiary-fixed-variant": "#444749",
+                            "error-container": "#ffdad6",
+                            "primary-container": "#008378",
+                            "secondary-fixed-dim": "#c3c0ff",
+                            "surface-container-lowest": "#ffffff",
+                            "on-primary-fixed-variant": "#005049",
+                            "inverse-primary": "#6bd8cb",
+                            "outline": "#6d7a77",
+                            "on-tertiary-fixed": "#191c1e",
+                            "secondary-container": "#645efb",
+                            "surface-container": "#eaedff",
+                            "on-secondary-fixed-variant": "#3323cc",
+                            "tertiary": "#595c5e",
+                            "on-error": "#ffffff",
+                            "inverse-on-surface": "#eef0ff",
+                            "on-primary": "#ffffff",
+                            "surface": "#faf8ff",
+                            "on-secondary-container": "#fffbff",
+                            "on-surface": "#131b2e",
+                            "surface-container-low": "#f2f3ff",
+                            "surface-tint": "#006a61",
+                            "on-primary-fixed": "#00201d",
+                            "surface-container-highest": "#dae2fd",
+                            "primary-fixed": "#89f5e7",
+                            "error": "#ba1a1a",
+                            "background": "#faf8ff",
+                            "inverse-surface": "#283044",
+                            "on-tertiary": "#ffffff",
+                            "outline-variant": "#bcc9c6",
+                            "primary-fixed-dim": "#6bd8cb",
+                            "on-surface-variant": "#3d4947",
+                            "on-primary-container": "#f4fffc",
+                            "secondary-fixed": "#e2dfff",
+                            "primary": "#00685f",
+                            "surface-dim": "#d2d9f4",
+                            "tertiary-fixed-dim": "#c4c7c9",
+                            "surface-container-high": "#e2e7ff",
+                            "on-secondary": "#ffffff",
+                            "on-error-container": "#93000a",
+                            "on-background": "#131b2e"
+                    },
+                    "borderRadius": {
+                            "DEFAULT": "0.25rem",
+                            "lg": "0.5rem",
+                            "xl": "0.75rem",
+                            "full": "9999px"
+                    },
+                    "spacing": {
+                            "stack-md": "24px",
+                            "stack-lg": "48px",
+                            "base": "8px",
+                            "container-padding": "24px",
+                            "gutter": "16px",
+                            "stack-sm": "12px"
+                    },
+                    "fontFamily": {
+                            "headline-lg": ["Plus Jakarta Sans"],
+                            "body-sm": ["Inter"],
+                            "body-md": ["Inter"],
+                            "headline-xl": ["Plus Jakarta Sans"],
+                            "label-caps": ["JetBrains Mono"],
+                            "headline-lg-mobile": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                            "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                            "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                            "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                            "headline-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                            "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                            "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background-color: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.04);
+        }
+        .bg-mesh {
+            background: radial-gradient(at 0% 0%, rgba(255,255,255,1) 0px, transparent 50%),
+                        radial-gradient(at 100% 0%, rgba(242,243,255,1) 0px, transparent 50%),
+                        radial-gradient(at 100% 100%, rgba(234,237,255,1) 0px, transparent 50%),
+                        radial-gradient(at 0% 100%, rgba(255,255,255,1) 0px, transparent 50%);
+            background-color: #faf8ff;
+        }
+    </style>
+</head>
+<body class="bg-mesh min-h-screen text-on-background font-body-md text-body-md overflow-x-hidden selection:bg-primary/20">
+<!-- Top Navigation (Mobile/Tablet) -->
+<nav class="md:hidden flex justify-between items-center px-container-padding w-full sticky top-0 z-40 bg-white/70 backdrop-blur-2xl border-b border-white/40 shadow-sm h-16">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">watch_later</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-primary font-bold">WorkTrack</span>
+</div>
+<div class="flex items-center gap-4 text-primary">
+<button class="hover:bg-white/50 rounded-full transition-all p-2 focus:ring-2 focus:ring-secondary/50">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="hover:bg-white/50 rounded-full transition-all p-2 focus:ring-2 focus:ring-secondary/50">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+</nav>
+<div class="flex h-screen overflow-hidden">
+<!-- Side Navigation (Desktop) -->
+<aside class="hidden md:flex flex-col h-full p-gutter w-64 bg-white/70 backdrop-blur-3xl border-r border-white/40 shadow-[30px_0_30px_rgba(19,27,46,0.04)] z-30 shrink-0">
+<div class="mb-8 px-4 flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">view_cozy</span>
+</div>
+<div>
+<h1 class="font-headline-lg text-headline-lg font-bold text-primary">WorkTrack</h1>
+<p class="font-label-caps text-label-caps text-tertiary-container uppercase tracking-wider">Premium Productivity</p>
+</div>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-white/40 transition-all rounded-xl scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-white/40 transition-all rounded-xl scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined">work_outline</span>
+<span class="font-body-md text-body-md">Projects</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-white/40 transition-all rounded-xl scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined">schedule</span>
+<span class="font-body-md text-body-md">Timesheets</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-white/90 text-secondary font-bold rounded-xl shadow-sm scale-98 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">bar_chart</span>
+<span class="font-body-md text-body-md">Reports</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-white/40 transition-all rounded-xl scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-body-md text-body-md">Team</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-white/40 transition-all rounded-xl scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+</nav>
+<div class="mt-auto pt-6 border-t border-white/40 px-4">
+<div class="flex items-center gap-3">
+<img alt="User avatar" class="w-10 h-10 rounded-full object-cover shadow-sm border border-white/50" data-alt="A highly detailed close-up professional headshot of a young woman with warm lighting, wearing a smart casual blazer, set against a bright, airy, light-mode modern office background with soft bokeh. The image perfectly embodies a clean, sophisticated corporate aesthetic with high clarity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCKhc9VDHarjF5C68PAlqRHRI7yVzVs1ybd5be_c6xnz_x1Tc7Vw5yCDxrFdaGWkSylg9giZrLCml1uUcCrteMgpuk96AkoZ42Mj5RWBdhp1evxDwwycPnSfEs-FK9X5jU04OAbqhiF10BeOqwjVe8861oBvVSM8S66u_6iGH8feCkC7K957Pb62oonzf8EOAlB9Sa7ayUujb7RlOdSVhF2wkBxx_LQRLAEX8I74iiW4ajc9emMb-rhtg"/>
+<div>
+<p class="font-body-md text-body-md font-medium text-on-surface">Alex Mercer</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Admin</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 h-full overflow-y-auto overflow-x-hidden p-gutter md:p-container-padding">
+<!-- Header Section -->
+<header class="flex flex-col md:flex-row md:items-center justify-between mb-stack-md gap-4">
+<div>
+<h2 class="font-headline-xl text-headline-xl text-on-surface mb-1">Attendance</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Monitor daily logs and team availability.</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="glass-panel flex items-center gap-2 px-4 py-2 rounded-xl text-secondary font-medium hover:bg-white/90 transition-all focus:ring-2 focus:ring-secondary/50 focus:outline-none">
+<span class="material-symbols-outlined text-[20px]">file_download</span>
+                        Export
+                    </button>
+<button class="bg-primary text-white flex items-center gap-2 px-5 py-2 rounded-xl font-medium hover:bg-primary-container transition-all shadow-sm focus:ring-2 focus:ring-primary/50 focus:outline-none">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                        Log Time
+                    </button>
+</div>
+</header>
+<!-- Metrics Overview Bento -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter mb-stack-md">
+<div class="glass-panel rounded-2xl p-6 flex flex-col justify-between hover:bg-white/80 transition-colors duration-300">
+<div class="flex items-start justify-between mb-4">
+<div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">groups</span>
+</div>
+<span class="font-label-caps text-label-caps text-primary bg-primary/10 px-2 py-1 rounded-full uppercase">Today</span>
+</div>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-1">Present</p>
+<p class="font-headline-lg text-headline-lg text-on-surface">142<span class="text-body-md text-on-surface-variant ml-1 font-normal">/150</span></p>
+</div>
+</div>
+<div class="glass-panel rounded-2xl p-6 flex flex-col justify-between hover:bg-white/80 transition-colors duration-300">
+<div class="flex items-start justify-between mb-4">
+<div class="w-12 h-12 rounded-full bg-[#f59e0b]/10 flex items-center justify-center text-[#d97706]">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">timer</span>
+</div>
+<span class="font-label-caps text-label-caps text-[#d97706] bg-[#f59e0b]/10 px-2 py-1 rounded-full uppercase">Alerts</span>
+</div>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-1">Late Arrivals</p>
+<p class="font-headline-lg text-headline-lg text-on-surface">5</p>
+</div>
+</div>
+<div class="glass-panel rounded-2xl p-6 flex flex-col justify-between hover:bg-white/80 transition-colors duration-300">
+<div class="flex items-start justify-between mb-4">
+<div class="w-12 h-12 rounded-full bg-error/10 flex items-center justify-center text-error">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">event_busy</span>
+</div>
+<span class="font-label-caps text-label-caps text-error bg-error/10 px-2 py-1 rounded-full uppercase">Leave</span>
+</div>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-1">Absent</p>
+<p class="font-headline-lg text-headline-lg text-on-surface">3</p>
+</div>
+</div>
+<div class="glass-panel rounded-2xl p-6 flex flex-col justify-between bg-gradient-to-br from-secondary/5 to-transparent border-secondary/20 hover:bg-white/80 transition-colors duration-300">
+<div class="flex items-start justify-between mb-4">
+<div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">trending_up</span>
+</div>
+</div>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-1">Weekly Average</p>
+<p class="font-headline-lg text-headline-lg text-secondary">96%</p>
+</div>
+</div>
+</div>
+<!-- Main Data Section -->
+<div class="glass-panel rounded-2xl flex flex-col mb-stack-lg overflow-hidden">
+<!-- Controls -->
+<div class="p-6 border-b border-white/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="flex items-center gap-2">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="pl-10 pr-4 py-2 w-full sm:w-64 bg-white/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-secondary/50 focus:border-secondary focus:outline-none transition-all font-body-sm text-body-sm placeholder:text-slate-400" placeholder="Search employees..." type="text"/>
+</div>
+<button class="p-2 bg-white/50 border border-slate-200 rounded-xl text-on-surface-variant hover:text-primary hover:border-primary/50 transition-all focus:outline-none">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</div>
+<div class="flex bg-white/50 rounded-xl p-1 border border-slate-200">
+<button class="px-4 py-1.5 rounded-lg bg-white shadow-sm text-primary font-medium text-body-sm transition-all">List</button>
+<button class="px-4 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface font-medium text-body-sm transition-all">Calendar</button>
+</div>
+</div>
+<!-- Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-slate-200/50 bg-white/30">
+<th class="p-4 font-label-caps text-label-caps text-on-surface-variant font-semibold">Employee</th>
+<th class="p-4 font-label-caps text-label-caps text-on-surface-variant font-semibold">Status</th>
+<th class="p-4 font-label-caps text-label-caps text-on-surface-variant font-semibold">Clock In</th>
+<th class="p-4 font-label-caps text-label-caps text-on-surface-variant font-semibold">Clock Out</th>
+<th class="p-4 font-label-caps text-label-caps text-on-surface-variant font-semibold">Total Hours</th>
+<th class="p-4 font-label-caps text-label-caps text-on-surface-variant font-semibold text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-200/30">
+<!-- Row 1 -->
+<tr class="hover:bg-white/40 transition-colors group">
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-200 to-blue-200 text-secondary font-bold flex items-center justify-center text-xs">JD</div>
+<div>
+<p class="font-body-md text-body-md font-medium text-on-surface">John Doe</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Engineering</p>
+</div>
+</div>
+</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-primary/10 text-primary font-body-sm text-body-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                                        Present
+                                    </span>
+</td>
+<td class="p-4 font-body-sm text-body-sm text-on-surface">08:55 AM</td>
+<td class="p-4 font-body-sm text-body-sm text-on-surface-variant">--:--</td>
+<td class="p-4 font-body-sm text-body-sm text-on-surface">4h 30m</td>
+<td class="p-4 text-right">
+<button class="text-on-surface-variant hover:text-secondary opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-white/40 transition-colors group">
+<td class="p-4">
+<div class="flex items-center gap-3">
+<img alt="Avatar" class="w-8 h-8 rounded-full object-cover" data-alt="A highly detailed close-up professional headshot of a young man with warm lighting, wearing a smart casual shirt, set against a bright, airy, light-mode modern office background with soft bokeh. The image perfectly embodies a clean, sophisticated corporate aesthetic with high clarity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBB_CTOgwcQv8NNRY9jpHCszIkB5sVQGTYmX0MjG0sCitEUbaZeAnJjD9ONJrhjYzP6hb5EeB52XrFOOkrI7oE7sAlYXs90UVP1oAO06dY-vHvLG7WG-41s7enPhU8z8-vUD5bE2v233uvzE6v5RMCyQuuGxnSsl4ZLtmNYrjXcjvXfdumc8lC0j6b5uomOpTlPIhyNxkdyEKkAhLEzE3tpS6uPKBAUh89QQUJt86yukIDfbxZ0LceWXg"/>
+<div>
+<p class="font-body-md text-body-md font-medium text-on-surface">Sarah Smith</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Design</p>
+</div>
+</div>
+</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#f59e0b]/10 text-[#d97706] font-body-sm text-body-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-[#d97706]"></span>
+                                        Late
+                                    </span>
+</td>
+<td class="p-4 font-body-sm text-body-sm text-on-surface">09:15 AM <span class="text-error text-xs ml-1">(+15m)</span></td>
+<td class="p-4 font-body-sm text-body-sm text-on-surface-variant">--:--</td>
+<td class="p-4 font-body-sm text-body-sm text-on-surface">4h 10m</td>
+<td class="p-4 text-right">
+<button class="text-on-surface-variant hover:text-secondary opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-white/40 transition-colors group bg-red-50/20">
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-slate-200 text-tertiary font-bold flex items-center justify-center text-xs">MJ</div>
+<div>
+<p class="font-body-md text-body-md font-medium text-on-surface">Mike Johnson</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Marketing</p>
+</div>
+</div>
+</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-error/10 text-error font-body-sm text-body-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+                                        Absent
+                                    </span>
+</td>
+<td class="p-4 font-body-sm text-body-sm text-on-surface-variant">--:--</td>
+<td class="p-4 font-body-sm text-body-sm text-on-surface-variant">--:--</td>
+<td class="p-4 font-body-sm text-body-sm text-on-surface-variant">0h 0m</td>
+<td class="p-4 text-right">
+<button class="text-on-surface-variant hover:text-secondary opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-white/40 transition-colors group">
+<td class="p-4">
+<div class="flex items-center gap-3">
+<img alt="Avatar" class="w-8 h-8 rounded-full object-cover" data-alt="A highly detailed close-up professional headshot of an older man with warm lighting, wearing glasses and a suit, set against a bright, airy, light-mode modern office background with soft bokeh. The image perfectly embodies a clean, sophisticated corporate aesthetic with high clarity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzwvVU1X5jYPDq5q_O3DbP5UIKc918A83Z9l85kuuf9cNar3fDN6ez5u-VkuvjK1lS_Gj3H0WyAt3ThmEx1WV0aqF9Xg3cNljrd4Wgp27aSr2VIFG-GLEd3FKAiky50uA6BBiDRigVYGURxVBNpG8eMduJu_TbNh3pm7pKp1X3z-N2BcYy77JOAg-pPmfVsvEhXa_930vZLHufzWa30O4IZWI_vKg0-_TU0J_JmGgTToCZKB0fIIEqYA"/>
+<div>
+<p class="font-body-md text-body-md font-medium text-on-surface">David Chen</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Sales</p>
+</div>
+</div>
+</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-200/50 text-slate-600 font-body-sm text-body-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                                        On Leave
+                                    </span>
+</td>
+<td class="p-4 font-body-sm text-body-sm text-on-surface-variant italic">PTO</td>
+<td class="p-4 font-body-sm text-body-sm text-on-surface-variant italic">PTO</td>
+<td class="p-4 font-body-sm text-body-sm text-on-surface-variant">8h 0m</td>
+<td class="p-4 text-right">
+<button class="text-on-surface-variant hover:text-secondary opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="p-4 border-t border-white/40 flex items-center justify-between text-body-sm text-on-surface-variant">
+<p>Showing 1 to 4 of 150 entries</p>
+<div class="flex items-center gap-1">
+<button class="p-1 rounded-md hover:bg-white/50 text-slate-400" disabled="">
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<button class="w-8 h-8 rounded-md bg-secondary text-white font-medium flex items-center justify-center">1</button>
+<button class="w-8 h-8 rounded-md hover:bg-white/50 text-on-surface font-medium flex items-center justify-center transition-colors">2</button>
+<button class="w-8 h-8 rounded-md hover:bg-white/50 text-on-surface font-medium flex items-center justify-center transition-colors">3</button>
+<span class="px-1">...</span>
+<button class="p-1 rounded-md hover:bg-white/50 text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

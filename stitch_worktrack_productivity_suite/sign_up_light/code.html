@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WorkTrack - Sign Up</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700&amp;family=Inter:wght@400&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#727577",
+                        "tertiary-fixed": "#e0e3e5",
+                        "on-tertiary-container": "#fbfdff",
+                        "secondary": "#4b41e1",
+                        "on-secondary-fixed": "#0f0069",
+                        "surface-bright": "#faf8ff",
+                        "surface-variant": "#dae2fd",
+                        "on-tertiary-fixed-variant": "#444749",
+                        "error-container": "#ffdad6",
+                        "primary-container": "#008378",
+                        "secondary-fixed-dim": "#c3c0ff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed-variant": "#005049",
+                        "inverse-primary": "#6bd8cb",
+                        "outline": "#6d7a77",
+                        "on-tertiary-fixed": "#191c1e",
+                        "secondary-container": "#645efb",
+                        "surface-container": "#eaedff",
+                        "on-secondary-fixed-variant": "#3323cc",
+                        "tertiary": "#595c5e",
+                        "on-error": "#ffffff",
+                        "inverse-on-surface": "#eef0ff",
+                        "on-primary": "#ffffff",
+                        "surface": "#faf8ff",
+                        "on-secondary-container": "#fffbff",
+                        "on-surface": "#131b2e",
+                        "surface-container-low": "#f2f3ff",
+                        "surface-tint": "#006a61",
+                        "on-primary-fixed": "#00201d",
+                        "surface-container-highest": "#dae2fd",
+                        "primary-fixed": "#89f5e7",
+                        "error": "#ba1a1a",
+                        "background": "#faf8ff",
+                        "inverse-surface": "#283044",
+                        "on-tertiary": "#ffffff",
+                        "outline-variant": "#bcc9c6",
+                        "primary-fixed-dim": "#6bd8cb",
+                        "on-surface-variant": "#3d4947",
+                        "on-primary-container": "#f4fffc",
+                        "secondary-fixed": "#e2dfff",
+                        "primary": "#00685f",
+                        "surface-dim": "#d2d9f4",
+                        "tertiary-fixed-dim": "#c4c7c9",
+                        "surface-container-high": "#e2e7ff",
+                        "on-secondary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "on-background": "#131b2e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-md": "24px",
+                        "stack-lg": "48px",
+                        "base": "8px",
+                        "container-padding": "24px",
+                        "gutter": "16px",
+                        "stack-sm": "12px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "body-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-xl": ["Plus Jakarta Sans"],
+                        "label-caps": ["JetBrains Mono"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-xl": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background-color: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 10px 40px -10px rgba(15, 23, 42, 0.04);
+        }
+        .mesh-bg {
+            background: radial-gradient(at 0% 0%, rgba(255, 255, 255, 1) 0px, transparent 50%),
+                        radial-gradient(at 100% 0%, rgba(234, 237, 255, 0.5) 0px, transparent 50%),
+                        radial-gradient(at 100% 100%, rgba(255, 255, 255, 1) 0px, transparent 50%),
+                        radial-gradient(at 0% 100%, rgba(218, 226, 253, 0.4) 0px, transparent 50%);
+            background-color: #faf8ff;
+        }
+        .glass-input {
+            background-color: rgba(255, 255, 255, 0.5);
+            border: 1px solid #e2e8f0; /* tailwind slate-200 */
+        }
+        .glass-input:focus {
+            border-color: #4b41e1; /* secondary */
+            box-shadow: 0 0 0 4px rgba(75, 65, 225, 0.1);
+            outline: none;
+        }
+    </style>
+</head>
+<body class="mesh-bg min-h-screen flex items-center justify-center p-gutter text-on-surface antialiased selection:bg-primary/20 selection:text-primary">
+<!-- Transactional Screen - No Nav Bars -->
+<main class="w-full max-w-md relative z-10">
+<!-- Logo Header -->
+<div class="text-center mb-stack-md">
+<h1 class="font-headline-lg text-headline-lg hidden md:block text-primary">WorkTrack</h1>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile md:hidden text-primary">WorkTrack</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2">Premium Productivity</p>
+</div>
+<!-- Glass Sign Up Form -->
+<div class="glass-panel rounded-xl p-stack-md md:p-stack-lg transition-all duration-300 hover:bg-white/90">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-center mb-stack-md text-on-surface">Create Organization</h2>
+<form action="#" class="space-y-stack-sm" method="POST">
+<!-- Company Name -->
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-2" for="company">Company Name</label>
+<div class="relative rounded-lg shadow-sm">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-tertiary-container" data-icon="domain" data-weight="fill" style="font-variation-settings: 'FILL' 1;">domain</span>
+</div>
+<input class="glass-input block w-full pl-10 sm:text-sm rounded-lg py-3 px-4 font-body-md text-body-md text-on-surface placeholder-tertiary-container transition-all" id="company" name="company" placeholder="Acme Corp" type="text"/>
+</div>
+</div>
+<!-- Full Name -->
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-2" for="name">Your Name</label>
+<div class="relative rounded-lg shadow-sm">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-tertiary-container" data-icon="person" data-weight="fill" style="font-variation-settings: 'FILL' 1;">person</span>
+</div>
+<input class="glass-input block w-full pl-10 sm:text-sm rounded-lg py-3 px-4 font-body-md text-body-md text-on-surface placeholder-tertiary-container transition-all" id="name" name="name" placeholder="Jane Doe" type="text"/>
+</div>
+</div>
+<!-- Email -->
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-2" for="email">Work Email</label>
+<div class="relative rounded-lg shadow-sm">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-tertiary-container" data-icon="mail" data-weight="fill" style="font-variation-settings: 'FILL' 1;">mail</span>
+</div>
+<input class="glass-input block w-full pl-10 sm:text-sm rounded-lg py-3 px-4 font-body-md text-body-md text-on-surface placeholder-tertiary-container transition-all" id="email" name="email" placeholder="jane@acmecorp.com" type="email"/>
+</div>
+</div>
+<!-- Password -->
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-2" for="password">Password</label>
+<div class="relative rounded-lg shadow-sm">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-tertiary-container" data-icon="lock" data-weight="fill" style="font-variation-settings: 'FILL' 1;">lock</span>
+</div>
+<input class="glass-input block w-full pl-10 sm:text-sm rounded-lg py-3 px-4 font-body-md text-body-md text-on-surface placeholder-tertiary-container transition-all" id="password" name="password" placeholder="••••••••" type="password"/>
+</div>
+</div>
+<!-- Submit Button -->
+<div class="pt-4">
+<button class="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm font-label-caps text-label-caps text-on-primary bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors" type="submit">
+                        Create Account
+                    </button>
+</div>
+</form>
+<!-- Footer Links -->
+<div class="mt-stack-sm text-center">
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                    Already have an account? 
+                    <a class="font-medium text-secondary hover:text-secondary-container transition-colors" href="#">Sign in instead</a>
+</p>
+</div>
+</div>
+</main>
+<!-- Background decorative blur elements -->
+<div class="fixed top-[-10%] left-[-10%] w-96 h-96 bg-primary/10 rounded-full blur-[100px] pointer-events-none"></div>
+<div class="fixed bottom-[-10%] right-[-10%] w-96 h-96 bg-secondary/10 rounded-full blur-[100px] pointer-events-none"></div>
+</body></html>

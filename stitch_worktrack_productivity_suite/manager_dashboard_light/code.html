@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WorkTrack - Manager Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-container": "#727577",
+                      "tertiary-fixed": "#e0e3e5",
+                      "on-tertiary-container": "#fbfdff",
+                      "secondary": "#4b41e1",
+                      "on-secondary-fixed": "#0f0069",
+                      "surface-bright": "#faf8ff",
+                      "surface-variant": "#dae2fd",
+                      "on-tertiary-fixed-variant": "#444749",
+                      "error-container": "#ffdad6",
+                      "primary-container": "#008378",
+                      "secondary-fixed-dim": "#c3c0ff",
+                      "surface-container-lowest": "#ffffff",
+                      "on-primary-fixed-variant": "#005049",
+                      "inverse-primary": "#6bd8cb",
+                      "outline": "#6d7a77",
+                      "on-tertiary-fixed": "#191c1e",
+                      "secondary-container": "#645efb",
+                      "surface-container": "#eaedff",
+                      "on-secondary-fixed-variant": "#3323cc",
+                      "tertiary": "#595c5e",
+                      "on-error": "#ffffff",
+                      "inverse-on-surface": "#eef0ff",
+                      "on-primary": "#ffffff",
+                      "surface": "#faf8ff",
+                      "on-secondary-container": "#fffbff",
+                      "on-surface": "#131b2e",
+                      "surface-container-low": "#f2f3ff",
+                      "surface-tint": "#006a61",
+                      "on-primary-fixed": "#00201d",
+                      "surface-container-highest": "#dae2fd",
+                      "primary-fixed": "#89f5e7",
+                      "error": "#ba1a1a",
+                      "background": "#faf8ff",
+                      "inverse-surface": "#283044",
+                      "on-tertiary": "#ffffff",
+                      "outline-variant": "#bcc9c6",
+                      "primary-fixed-dim": "#6bd8cb",
+                      "on-surface-variant": "#3d4947",
+                      "on-primary-container": "#f4fffc",
+                      "secondary-fixed": "#e2dfff",
+                      "primary": "#00685f",
+                      "surface-dim": "#d2d9f4",
+                      "tertiary-fixed-dim": "#c4c7c9",
+                      "surface-container-high": "#e2e7ff",
+                      "on-secondary": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "on-background": "#131b2e"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "stack-md": "24px",
+                      "stack-lg": "48px",
+                      "base": "8px",
+                      "container-padding": "24px",
+                      "gutter": "16px",
+                      "stack-sm": "12px"
+              },
+              "fontFamily": {
+                      "headline-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-xl": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "label-caps": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-lg-mobile": [
+                              "Plus Jakarta Sans"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-xl": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+            },
+          }
+        }
+      </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 30px rgba(19, 27, 46, 0.04);
+        }
+        .mesh-bg {
+            background: radial-gradient(at 0% 0%, rgba(250, 248, 255, 1) 0, transparent 50%), 
+                        radial-gradient(at 100% 0%, rgba(218, 226, 253, 0.4) 0, transparent 50%), 
+                        radial-gradient(at 100% 100%, rgba(238, 240, 255, 0.6) 0, transparent 50%), 
+                        radial-gradient(at 0% 100%, rgba(250, 248, 255, 1) 0, transparent 50%);
+            background-color: #faf8ff;
+        }
+      </style>
+</head>
+<body class="h-full mesh-bg text-on-surface font-body-md overflow-hidden selection:bg-surface-variant selection:text-on-surface">
+<div class="flex h-full w-full">
+<!-- Side Nav (Desktop) -->
+<nav class="hidden md:flex flex-col h-screen w-64 border-r border-white/40 bg-white/70 backdrop-blur-3xl p-gutter backdrop-blur-2xl shadow-[30px_0_30px_rgba(19,27,46,0.04)] z-50">
+<div class="flex items-center gap-3 mb-stack-lg">
+<div class="w-8 h-8 rounded-lg bg-primary text-on-primary flex items-center justify-center font-bold">W</div>
+<div>
+<h1 class="text-headline-lg font-headline-lg font-bold text-primary dark:text-primary-fixed leading-none text-xl">WorkTrack</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant/70 text-[10px]">Premium Productivity</p>
+</div>
+</div>
+<div class="flex flex-col gap-2 flex-grow">
+<a class="flex items-center gap-3 px-4 py-3 bg-white/90 text-secondary font-bold rounded-xl shadow-sm scale-98 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-white/90 transition-all duration-300 rounded-xl" href="#">
+<span class="material-symbols-outlined">work_outline</span>
+<span class="font-body-md text-body-md">Projects</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-white/90 transition-all duration-300 rounded-xl" href="#">
+<span class="material-symbols-outlined">schedule</span>
+<span class="font-body-md text-body-md">Timesheets</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-white/90 transition-all duration-300 rounded-xl" href="#">
+<span class="material-symbols-outlined">bar_chart</span>
+<span class="font-body-md text-body-md">Reports</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-white/90 transition-all duration-300 rounded-xl" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-body-md text-body-md">Team</span>
+</a>
+</div>
+<div class="mt-auto">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-white/90 transition-all duration-300 rounded-xl" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-grow flex flex-col h-full overflow-hidden relative">
+<!-- Top App Bar (Mobile & Contextual Desktop) -->
+<header class="flex justify-between items-center px-container-padding w-full sticky top-0 z-40 h-16 border-b border-white/40 bg-white/70 backdrop-blur-2xl shadow-sm md:hidden">
+<h1 class="text-headline-lg-mobile font-headline-lg-mobile font-semibold text-primary">WorkTrack</h1>
+<div class="flex gap-4 items-center">
+<button class="text-on-surface-variant hover:bg-white/50 rounded-full transition-all p-2 focus:ring-2 focus:ring-secondary/50">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:bg-white/50 rounded-full transition-all p-2 focus:ring-2 focus:ring-secondary/50">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<img class="w-8 h-8 rounded-full object-cover shadow-sm border border-white/50" data-alt="A small circular avatar of a professional in a bright modern office setting, light mode aesthetic, soft focus background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuADxUi3vVay64xUNBd4rpP9WGYmRfLJcvPEPuH8_BdyymCbvm2E8fVD1oCLW7DIWpQRbkFZe0dDtBejh27Tu_kjcE_3j7fe6Pj3NW0OeLeR5eldVN1eOE08I6n-3F0zVkXZKteBs4Pry_rwLmIob1JWd0zbCLk0s21qJY-fo6_yOBJtELtFa4VUXc09mXm0dtk5hmQNcxLcPerHeMoE9g6rbPcvxZVUE9mvd9IKR1bQ3haw_jKYgeFPaw"/>
+</div>
+</header>
+<!-- Scrollable Canvas -->
+<main class="flex-grow overflow-y-auto p-gutter md:p-container-padding scroll-smooth">
+<div class="max-w-7xl mx-auto space-y-stack-md">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h2 class="font-headline-xl text-headline-xl text-on-surface">Organization Overview</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Real-time insights across all active projects and teams.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 bg-white/40 border border-secondary text-secondary font-body-sm text-body-sm rounded-lg hover:bg-white/70 transition-all shadow-sm backdrop-blur-sm">
+                                Export Report
+                            </button>
+<button class="px-4 py-2 bg-primary text-white font-body-sm text-body-sm rounded-lg hover:bg-primary/90 transition-all shadow-md">
+                                New Initiative
+                            </button>
+</div>
+</div>
+<!-- Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter md:gap-container-padding auto-rows-min">
+<!-- Productivity Chart (Wide Card) -->
+<div class="glass-panel rounded-2xl p-6 md:col-span-8 flex flex-col hover:bg-white/90 transition-colors duration-300">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline-lg text-headline-lg text-xl text-on-surface">Team Productivity Trends</h3>
+<select class="bg-white/50 border border-surface-variant rounded-lg font-body-sm text-body-sm text-on-surface-variant px-3 py-1 focus:ring-2 focus:ring-secondary/50 focus:border-secondary outline-none">
+<option>This Week</option>
+<option>Last Week</option>
+<option>This Month</option>
+</select>
+</div>
+<div class="flex-grow min-h-[240px] bg-white/30 rounded-xl border border-white/40 flex items-end p-4 gap-2 relative group overflow-hidden">
+<!-- Mock Chart Bars -->
+<div class="w-1/6 bg-secondary-container/60 rounded-t-sm h-[40%] hover:bg-secondary transition-colors relative"><div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-label-caps text-[10px] text-on-surface bg-white px-2 py-1 rounded shadow-sm">40%</div></div>
+<div class="w-1/6 bg-secondary-container/60 rounded-t-sm h-[65%] hover:bg-secondary transition-colors relative"><div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-label-caps text-[10px] text-on-surface bg-white px-2 py-1 rounded shadow-sm">65%</div></div>
+<div class="w-1/6 bg-secondary-container/60 rounded-t-sm h-[50%] hover:bg-secondary transition-colors relative"><div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-label-caps text-[10px] text-on-surface bg-white px-2 py-1 rounded shadow-sm">50%</div></div>
+<div class="w-1/6 bg-secondary-container/60 rounded-t-sm h-[85%] hover:bg-secondary transition-colors relative"><div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-label-caps text-[10px] text-on-surface bg-white px-2 py-1 rounded shadow-sm">85%</div></div>
+<div class="w-1/6 bg-secondary-container/60 rounded-t-sm h-[70%] hover:bg-secondary transition-colors relative"><div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-label-caps text-[10px] text-on-surface bg-white px-2 py-1 rounded shadow-sm">70%</div></div>
+<div class="w-1/6 bg-primary/80 rounded-t-sm h-[92%] hover:bg-primary transition-colors relative"><div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-label-caps text-[10px] text-on-surface bg-white px-2 py-1 rounded shadow-sm">92%</div></div>
+<!-- Decorative grid lines -->
+<div class="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 border-b border-surface-variant/30">
+<div class="border-b border-surface-variant/30 w-full"></div>
+<div class="border-b border-surface-variant/30 w-full"></div>
+<div class="border-b border-surface-variant/30 w-full"></div>
+</div>
+</div>
+</div>
+<!-- Quick Stats (Stack) -->
+<div class="md:col-span-4 flex flex-col gap-gutter md:gap-container-padding">
+<!-- Health Score -->
+<div class="glass-panel rounded-2xl p-6 flex flex-col justify-center items-center hover:bg-white/90 transition-colors duration-300 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-inverse-primary/20 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+<h4 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider mb-2">Overall Project Health</h4>
+<div class="text-5xl font-headline-xl text-primary font-bold">92<span class="text-xl text-primary/70">%</span></div>
+<div class="flex items-center gap-1 mt-2 text-primary font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+<span>+4% from last month</span>
+</div>
+</div>
+<!-- Active Timers Alert -->
+<div class="glass-panel rounded-2xl p-6 hover:bg-white/90 transition-colors duration-300">
+<h4 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider mb-4">Live Activity</h4>
+<div class="flex items-center justify-between border-b border-surface-variant/30 pb-3 mb-3">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+<span class="font-body-md text-body-md font-medium text-on-surface">Active Timers</span>
+</div>
+<span class="font-headline-lg text-xl font-bold text-on-surface">42</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-outline-variant"></div>
+<span class="font-body-md text-body-md text-on-surface-variant">Idle/Break</span>
+</div>
+<span class="font-headline-lg text-xl font-medium text-on-surface-variant">18</span>
+</div>
+</div>
+</div>
+<!-- Active Employees List (Span full width on bottom) -->
+<div class="glass-panel rounded-2xl p-6 md:col-span-12 hover:bg-white/90 transition-colors duration-300">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline-lg text-headline-lg text-xl text-on-surface">Currently Active</h3>
+<button class="text-secondary font-body-sm text-body-sm hover:underline">View All Team</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-surface-variant/50">
+<th class="pb-3 font-label-caps text-label-caps text-on-surface-variant font-medium">Employee</th>
+<th class="pb-3 font-label-caps text-label-caps text-on-surface-variant font-medium">Current Task</th>
+<th class="pb-3 font-label-caps text-label-caps text-on-surface-variant font-medium">Project</th>
+<th class="pb-3 font-label-caps text-label-caps text-on-surface-variant font-medium text-right">Duration</th>
+</tr>
+</thead>
+<tbody class="font-body-sm text-body-sm">
+<tr class="border-b border-surface-variant/30 hover:bg-white/40 transition-colors group">
+<td class="py-4">
+<div class="flex items-center gap-3">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="Close up portrait of a young professional woman smiling slightly, light bright modern office background, soft lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHBMzhhhSWlh4Gxiyg3LLs_haIyAKsC69ylfCJqJ_BiVdpwk00s2QnbcucFFi9n53kr8YppA_PSFJMqmtJW6LjoHw2ONLGq32EUzeLChL-m6VWTqSHaSBrX5fjj6u39IsyvQBOUTAgxk7VnWQrlL2LHvBVU0Z_KZkBJbmXBCipC79i07knqN2Dkp6_j2hj8VS4wQRfdVNLqQk848TEGSty1-5905TcHKzlPHw7GBamA4mFBPWYYbObvw"/>
+<span class="font-medium text-on-surface">Sarah Jenkins</span>
+</div>
+</td>
+<td class="py-4 text-on-surface">Design System Architecture</td>
+<td class="py-4">
+<span class="bg-primary/10 text-primary px-3 py-1 rounded-xl font-medium">Lumina Redesign</span>
+</td>
+<td class="py-4 text-right font-mono text-on-surface font-medium flex items-center justify-end gap-2">
+<div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                                                02:45:12
+                                            </td>
+</tr>
+<tr class="border-b border-surface-variant/30 hover:bg-white/40 transition-colors group">
+<td class="py-4">
+<div class="flex items-center gap-3">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="Portrait of a young male developer concentrating, wearing glasses, bright modern workspace, light mode style photo." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpL27ZPaIwy9F22TLPKfBqz4BkShlr4UMHlo4ttShIp67Jb_OXkCJGnyZp5KvsPPoja2vRQep45XF7CAQ0d8X4dRPFMPL5OVNiU5E6o_W5Z6txU3IxNQVeLFns8UoSQGFqr-5wySSmkkdycjWRW1FjcfrN8a1mcuTuMNyGFCM2Xsv6cgtz6uX-lh5sP1x4-4YBc67WSU9riLYs8f76I8FnuoVLSDnlxTGvMWyZ6vDdvu-d99ehDSdtiQ"/>
+<span class="font-medium text-on-surface">Marcus Chen</span>
+</div>
+</td>
+<td class="py-4 text-on-surface">API Gateway Integration</td>
+<td class="py-4">
+<span class="bg-secondary/10 text-secondary px-3 py-1 rounded-xl font-medium">Backend v2.0</span>
+</td>
+<td class="py-4 text-right font-mono text-on-surface font-medium flex items-center justify-end gap-2">
+<div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                                                01:12:05
+                                            </td>
+</tr>
+<tr class="hover:bg-white/40 transition-colors group">
+<td class="py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center font-bold">AJ</div>
+<span class="font-medium text-on-surface">Amanda Jones</span>
+</div>
+</td>
+<td class="py-4 text-on-surface">Q3 Financial Reporting</td>
+<td class="py-4">
+<span class="bg-surface-variant text-on-surface-variant px-3 py-1 rounded-xl font-medium">Operations</span>
+</td>
+<td class="py-4 text-right font-mono text-on-surface font-medium flex items-center justify-end gap-2">
+<div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                                                04:30:22
+                                            </td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+</body></html>

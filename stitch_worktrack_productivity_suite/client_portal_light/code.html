@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Client Portal - WorkTrack</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "tertiary-fixed": "#e0e3e5",
+                        "on-tertiary-container": "#fbfdff",
+                        "tertiary-container": "#727577",
+                        "on-secondary-fixed": "#0f0069",
+                        "secondary": "#4b41e1",
+                        "surface-variant": "#dae2fd",
+                        "on-tertiary-fixed-variant": "#444749",
+                        "error-container": "#ffdad6",
+                        "surface-bright": "#faf8ff",
+                        "primary-container": "#008378",
+                        "secondary-fixed-dim": "#c3c0ff",
+                        "on-primary-fixed-variant": "#005049",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed": "#191c1e",
+                        "outline": "#6d7a77",
+                        "inverse-primary": "#6bd8cb",
+                        "secondary-container": "#645efb",
+                        "on-secondary-fixed-variant": "#3323cc",
+                        "surface-container": "#eaedff",
+                        "tertiary": "#595c5e",
+                        "on-error": "#ffffff",
+                        "inverse-on-surface": "#eef0ff",
+                        "surface": "#faf8ff",
+                        "on-primary": "#ffffff",
+                        "on-secondary-container": "#fffbff",
+                        "surface-container-low": "#f2f3ff",
+                        "on-surface": "#131b2e",
+                        "surface-tint": "#006a61",
+                        "on-primary-fixed": "#00201d",
+                        "surface-container-highest": "#dae2fd",
+                        "inverse-surface": "#283044",
+                        "error": "#ba1a1a",
+                        "primary-fixed": "#89f5e7",
+                        "background": "#faf8ff",
+                        "on-tertiary": "#ffffff",
+                        "outline-variant": "#bcc9c6",
+                        "on-surface-variant": "#3d4947",
+                        "primary-fixed-dim": "#6bd8cb",
+                        "primary": "#00685f",
+                        "secondary-fixed": "#e2dfff",
+                        "on-primary-container": "#f4fffc",
+                        "tertiary-fixed-dim": "#c4c7c9",
+                        "surface-dim": "#d2d9f4",
+                        "on-secondary": "#ffffff",
+                        "surface-container-high": "#e2e7ff",
+                        "on-error-container": "#93000a",
+                        "on-background": "#131b2e"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "gutter": "16px",
+                        "stack-sm": "12px",
+                        "base": "8px",
+                        "container-padding": "24px",
+                        "stack-lg": "48px",
+                        "stack-md": "24px"
+                    },
+                    fontFamily: {
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "body-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-caps": ["JetBrains Mono"],
+                        "headline-xl": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"]
+                    },
+                    fontSize: {
+                        "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "600" }],
+                        "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+                        "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "label-caps": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "500" }],
+                        "headline-xl": ["48px", { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "headline-lg-mobile": ["28px", { lineHeight: "36px", fontWeight: "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+        }
+        .mesh-bg {
+            background-color: #faf8ff;
+            background-image: 
+                radial-gradient(at 40% 20%, hsla(175,70%,90%,1) 0px, transparent 50%),
+                radial-gradient(at 80% 0%, hsla(242,70%,90%,1) 0px, transparent 50%),
+                radial-gradient(at 0% 50%, hsla(175,70%,90%,1) 0px, transparent 50%);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="mesh-bg min-h-screen text-on-surface font-body-md antialiased overflow-x-hidden flex flex-col md:flex-row">
+<!-- SideNavBar (Desktop) / BottomNavBar (Mobile will be hidden per instructions, only top nav) -->
+<nav class="hidden md:flex flex-col h-screen w-64 border-r border-white/40 bg-white/70 backdrop-blur-3xl shadow-[30px_0_30px_rgba(19,27,46,0.04)] p-gutter shrink-0 sticky top-0 z-50">
+<div class="mb-stack-lg">
+<h1 class="text-headline-lg font-headline-lg font-bold text-primary">WorkTrack</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Premium Productivity</p>
+</div>
+<ul class="flex flex-col gap-2 flex-grow">
+<!-- Active Tab: Projects -->
+<li>
+<a class="flex items-center gap-3 p-3 bg-white/90 text-secondary font-bold rounded-xl shadow-sm scale-98 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">work_outline</span>
+<span>Projects</span>
+</a>
+</li>
+</ul>
+<div class="mt-auto">
+<div class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/90 transition-all duration-300">
+<img alt="WorkTrack Logo" class="w-10 h-10 rounded-full object-cover border border-white" data-alt="A small, professional portrait photo of a user avatar smiling warmly. The photo is well-lit with soft natural light, set against a clean, light-mode suitable white background. The image style is modern, crisp, and high-resolution, suitable for a premium software interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7q5LfWCvVPkKotYwWW_qkg2m_Stt-kUdgzTQasbtql7J2AvvNz_a-9Vad-zE5XfwJUJtQE1Hv-twZY9BkeyLtS26PKld6pwxV4eVI3_9jlpdMChTRcpVFDnOtW-D1dJiD8YRkptudRNjFWjmFAppgr9LNl2wrEnZlNjwWmbEVwVnkFeKIfaPbzuebeUrS-H9BEs6u0oWpiWkut8ilykEQ43X1AJ-j4A5Lr4QbkAWD2Drsg4Jr5pvGUA"/>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm font-semibold">Client View</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">Acme Corp</span>
+</div>
+</div>
+</div>
+</nav>
+<!-- TopNavBar (Mobile) -->
+<header class="md:hidden flex justify-between items-center px-container-padding w-full sticky top-0 z-40 h-16 border-b border-white/40 bg-white/70 backdrop-blur-2xl shadow-sm">
+<h1 class="text-headline-lg-mobile font-headline-lg-mobile font-semibold text-primary">WorkTrack</h1>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-on-surface hover:bg-white/50 rounded-full transition-all p-2 focus:ring-2 focus:ring-secondary/50">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-grow p-container-padding md:p-stack-lg overflow-y-auto">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-stack-lg gap-stack-md">
+<div>
+<h2 class="text-headline-xl font-headline-xl text-on-surface mb-2">Project Overview</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Acme Corp Website Redesign</p>
+</div>
+<div class="flex gap-4">
+<button class="bg-white/40 border border-secondary text-secondary font-body-sm text-body-sm px-6 py-2 rounded-lg backdrop-blur-md hover:bg-white/60 transition-all">
+                    Download Report
+                </button>
+</div>
+</div>
+<!-- Metrics Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-container-padding mb-stack-lg">
+<!-- Total Hours Billed -->
+<div class="glass-panel rounded-xl p-container-padding flex flex-col justify-between">
+<div class="flex items-center gap-2 mb-4 text-on-surface-variant">
+<span class="material-symbols-outlined">schedule</span>
+<h3 class="font-label-caps text-label-caps">TOTAL HOURS BILLED</h3>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-headline-xl font-headline-xl text-primary">142.5</span>
+<span class="font-body-md text-body-md text-on-surface-variant">hrs</span>
+</div>
+<div class="mt-4 pt-4 border-t border-slate-200/50">
+<p class="font-body-sm text-body-sm text-on-surface-variant">Billing cycle: Oct 1 - Oct 31</p>
+</div>
+</div>
+<!-- Budget Status -->
+<div class="glass-panel rounded-xl p-container-padding flex flex-col justify-between">
+<div class="flex items-center gap-2 mb-4 text-on-surface-variant">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<h3 class="font-label-caps text-label-caps">BUDGET UTILIZATION</h3>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-headline-xl font-headline-xl text-secondary">71%</span>
+</div>
+<div class="w-full bg-slate-100 rounded-full h-2 mt-2 mb-4 overflow-hidden">
+<div class="bg-secondary h-2 rounded-full" style="width: 71%"></div>
+</div>
+<div class="pt-4 border-t border-slate-200/50">
+<p class="font-body-sm text-body-sm text-on-surface-variant">28.5 hours remaining</p>
+</div>
+</div>
+<!-- Recent Activity -->
+<div class="glass-panel rounded-xl p-container-padding flex flex-col justify-between">
+<div class="flex items-center gap-2 mb-4 text-on-surface-variant">
+<span class="material-symbols-outlined">update</span>
+<h3 class="font-label-caps text-label-caps">LATEST UPDATE</h3>
+</div>
+<div>
+<p class="font-body-md text-body-md text-on-surface mb-2 font-medium">Homepage Wireframes Finalized</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Completed by Design Team</p>
+</div>
+<div class="mt-4 pt-4 border-t border-slate-200/50 flex justify-between items-center">
+<p class="font-body-sm text-body-sm text-on-surface-variant">Today, 2:30 PM</p>
+<span class="bg-primary/10 text-primary font-label-caps text-label-caps px-2 py-1 rounded-full">Completed</span>
+</div>
+</div>
+</div>
+<!-- Work Proof Gallery -->
+<div class="glass-panel rounded-xl p-container-padding mb-stack-lg">
+<div class="flex justify-between items-center mb-stack-md border-b border-slate-200/50 pb-4">
+<h3 class="text-headline-lg font-headline-lg text-on-surface">Work Proof Gallery</h3>
+<div class="flex gap-2">
+<span class="bg-secondary/10 text-secondary font-label-caps text-label-caps px-3 py-1 rounded-full">Recent Screenshots</span>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter">
+<!-- Gallery Item 1 -->
+<div class="group relative rounded-lg overflow-hidden border border-slate-200 hover:border-secondary/50 transition-all cursor-pointer">
+<div class="aspect-video w-full bg-slate-100 relative">
+<img alt="Work Proof 1" class="w-full h-full object-cover" data-alt="A high-resolution screenshot of a modern, clean web application interface showing wireframe designs. The image is bright and airy, fitting a light-mode aesthetic with soft shadows and precise technical details. The style is professional and crisp, suitable for a work proof gallery." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAyBgAOLW28qJ7_LLznEXelzeu6TN3387wpcAki-bMA9IKoWil46ooicHL2oUC7J7YdMOBL2gyVucl1HUvsDik4tN8XDDeX-t0z6nsqnZiocHK0z92koCjubX8scBfk0o-2jot9_ouIQdEzImD8FsGpANn_7RJ_N9qaYGZ2g6U3JRQjBY_VcV_Wavi7HYZBMq3LEYvTQCHNPD-cEsEaUI1Yut1Ju_2GIZNhQgNM9cg3TBFRdkwaoVHBFQ"/>
+<div class="absolute inset-0 bg-secondary/0 group-hover:bg-secondary/10 transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md">zoom_in</span>
+</div>
+</div>
+<div class="p-3 bg-white/50 backdrop-blur-sm border-t border-slate-100">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-1">Oct 24, 10:15 AM</p>
+<p class="font-body-sm text-body-sm text-on-surface truncate">Figma UI Design - Wireframes</p>
+</div>
+</div>
+<!-- Gallery Item 2 -->
+<div class="group relative rounded-lg overflow-hidden border border-slate-200 hover:border-secondary/50 transition-all cursor-pointer">
+<div class="aspect-video w-full bg-slate-100 relative">
+<img alt="Work Proof 2" class="w-full h-full object-cover" data-alt="A clear screenshot of a code editor window displaying clean HTML and CSS code. The theme is light mode, with bright syntax highlighting against an off-white background. The image looks professional, sharp, and represents active web development work in progress." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCBQE2rx9mgSlBWorJ4yI8dElczHo2iQU3w0RmGKeUkjtD1_YdRCph08bXjNyPhBaf_kYtxpwITNI6p15gvBhe2xY1YbMWjS8WwXVCtf92EJlIs840ZOpNG57fJhYSnUdJxJekalc6QTzYcNG-QZsBKJRX1aIXD1Tpwrm1Vt6dhgKYxUzV1YcZCpsAB1VH_EMxFArEVUBfWdxfpw6ObIGaoGvR-wMmwi8wjijh6qlF2A8jKA5yoV_dmxA"/>
+<div class="absolute inset-0 bg-secondary/0 group-hover:bg-secondary/10 transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md">zoom_in</span>
+</div>
+</div>
+<div class="p-3 bg-white/50 backdrop-blur-sm border-t border-slate-100">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-1">Oct 24, 11:30 AM</p>
+<p class="font-body-sm text-body-sm text-on-surface truncate">VS Code - Homepage Implementation</p>
+</div>
+</div>
+<!-- Gallery Item 3 -->
+<div class="group relative rounded-lg overflow-hidden border border-slate-200 hover:border-secondary/50 transition-all cursor-pointer">
+<div class="aspect-video w-full bg-slate-100 relative">
+<img alt="Work Proof 3" class="w-full h-full object-cover" data-alt="A bright, detailed screenshot showing a database management tool interface. The style is modern, light-mode, and highly legible with soft white backgrounds and clear typographic hierarchy. The image conveys technical data structuring work in a professional setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9KJ6kp3Rjle7tNkoen8hAfFdYFvbS8SOb9WAge9h65dFAI-v7eSfYrJdj1esU9drWt63np4Itu7PGD32IyQdzqNSmGZ8DuTHQAxFFfbn5rtAh4MaD0ZwFwuCGzjMpTuKlzZhcMY3urcwOJ0nYQFT4o63Uih3oOOoqjlDglNQrUyPjHZDPWPbo1ixtWBl8uAda8XkmkQAn4x_wtvEuMPcPB-PSNMK1SHKu7QQC2VnACKWTwzZQ3oV-cQ"/>
+<div class="absolute inset-0 bg-secondary/0 group-hover:bg-secondary/10 transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md">zoom_in</span>
+</div>
+</div>
+<div class="p-3 bg-white/50 backdrop-blur-sm border-t border-slate-100">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-1">Oct 24, 02:45 PM</p>
+<p class="font-body-sm text-body-sm text-on-surface truncate">Database Schema Review</p>
+</div>
+</div>
+<!-- Gallery Item 4 -->
+<div class="group relative rounded-lg overflow-hidden border border-slate-200 hover:border-secondary/50 transition-all cursor-pointer">
+<div class="aspect-video w-full bg-slate-100 relative flex items-center justify-center bg-slate-50">
+<div class="text-center p-4">
+<span class="material-symbols-outlined text-tertiary-container text-4xl mb-2">collections</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">View all 124 screenshots</p>
+</div>
+</div>
+<div class="p-3 bg-white/50 backdrop-blur-sm border-t border-slate-100 text-center">
+<button class="text-secondary font-body-sm text-body-sm hover:underline">Open Gallery</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

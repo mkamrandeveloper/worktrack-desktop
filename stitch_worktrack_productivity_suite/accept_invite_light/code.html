@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Accept Invite - WorkTrack</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#727577",
+                        "tertiary-fixed": "#e0e3e5",
+                        "on-tertiary-container": "#fbfdff",
+                        "secondary": "#4b41e1",
+                        "on-secondary-fixed": "#0f0069",
+                        "surface-bright": "#faf8ff",
+                        "surface-variant": "#dae2fd",
+                        "on-tertiary-fixed-variant": "#444749",
+                        "error-container": "#ffdad6",
+                        "primary-container": "#008378",
+                        "secondary-fixed-dim": "#c3c0ff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed-variant": "#005049",
+                        "inverse-primary": "#6bd8cb",
+                        "outline": "#6d7a77",
+                        "on-tertiary-fixed": "#191c1e",
+                        "secondary-container": "#645efb",
+                        "surface-container": "#eaedff",
+                        "on-secondary-fixed-variant": "#3323cc",
+                        "tertiary": "#595c5e",
+                        "on-error": "#ffffff",
+                        "inverse-on-surface": "#eef0ff",
+                        "on-primary": "#ffffff",
+                        "surface": "#faf8ff",
+                        "on-secondary-container": "#fffbff",
+                        "on-surface": "#131b2e",
+                        "surface-container-low": "#f2f3ff",
+                        "surface-tint": "#006a61",
+                        "on-primary-fixed": "#00201d",
+                        "surface-container-highest": "#dae2fd",
+                        "primary-fixed": "#89f5e7",
+                        "error": "#ba1a1a",
+                        "background": "#faf8ff",
+                        "inverse-surface": "#283044",
+                        "on-tertiary": "#ffffff",
+                        "outline-variant": "#bcc9c6",
+                        "primary-fixed-dim": "#6bd8cb",
+                        "on-surface-variant": "#3d4947",
+                        "on-primary-container": "#f4fffc",
+                        "secondary-fixed": "#e2dfff",
+                        "primary": "#00685f",
+                        "surface-dim": "#d2d9f4",
+                        "tertiary-fixed-dim": "#c4c7c9",
+                        "surface-container-high": "#e2e7ff",
+                        "on-secondary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "on-background": "#131b2e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-md": "24px",
+                        "stack-lg": "48px",
+                        "base": "8px",
+                        "container-padding": "24px",
+                        "gutter": "16px",
+                        "stack-sm": "12px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "body-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-xl": ["Plus Jakarta Sans"],
+                        "label-caps": ["JetBrains Mono"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-xl": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        };
+    </script>
+<style>
+        /* Ambient Background Mesh Gradient */
+        .mesh-bg {
+            background-color: #ffffff;
+            background-image: 
+                radial-gradient(at 80% 0%, hsla(189,100%,56%,0.08) 0px, transparent 50%),
+                radial-gradient(at 0% 50%, hsla(245,100%,75%,0.08) 0px, transparent 50%),
+                radial-gradient(at 80% 100%, hsla(220,100%,65%,0.08) 0px, transparent 50%),
+                radial-gradient(at 0% 0%, hsla(190,100%,70%,0.08) 0px, transparent 50%);
+        }
+        
+        /* Ambient Soft Shadow */
+        .glass-shadow {
+            box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.04), 0 0 20px rgba(15, 23, 42, 0.02);
+        }
+    </style>
+</head>
+<body class="mesh-bg min-h-screen flex items-center justify-center p-gutter md:p-container-padding text-on-surface font-body-md bg-background selection:bg-primary-container selection:text-on-primary-container">
+<!-- Suppressed TopNavBar & SideNavBar because this is a transactional onboarding screen -->
+<main class="w-full max-w-lg mx-auto relative z-10">
+<!-- Brand / Logo Area -->
+<div class="text-center mb-stack-md md:mb-stack-lg">
+<div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/70 backdrop-blur-xl border border-white/50 glass-shadow mb-stack-sm text-primary">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">work</span>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary">WorkTrack</h1>
+</div>
+<!-- Glassmorphism Card -->
+<div class="bg-white/70 backdrop-blur-[24px] border border-white/50 rounded-2xl glass-shadow p-container-padding md:p-10 relative overflow-hidden transition-all duration-300 hover:bg-white/80">
+<!-- Decorative subtle top light -->
+<div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80"></div>
+<!-- Content Header -->
+<div class="mb-stack-md text-center">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-2">You've been invited</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Join <strong class="text-on-surface font-semibold">Acme Corp</strong> on WorkTrack to collaborate and manage projects effortlessly.</p>
+</div>
+<!-- Form -->
+<form action="#" class="space-y-stack-md" method="POST">
+<!-- Email Field (Read-only / Pre-filled) -->
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-2" for="email">Email Address</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-tertiary-container">mail</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-3 bg-surface-container-low/50 border border-outline-variant rounded-lg text-on-surface-variant font-body-md text-body-md focus:ring-0 focus:border-outline-variant cursor-not-allowed transition-colors" id="email" name="email" readonly="" type="email" value="alex.smith@example.com"/>
+</div>
+<p class="mt-2 font-body-sm text-body-sm text-tertiary">This is the email address your invitation was sent to.</p>
+</div>
+<!-- Set New Password Field -->
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-2" for="password">Set New Password</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-tertiary-container">lock</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-3 bg-white/50 border border-outline-variant rounded-lg text-on-surface font-body-md text-body-md focus:ring-2 focus:ring-secondary/50 focus:border-secondary transition-all shadow-sm" id="password" name="password" placeholder="••••••••" required="" type="password"/>
+</div>
+</div>
+<!-- Primary Action -->
+<div class="pt-2">
+<button class="w-full flex items-center justify-center px-4 py-3 bg-[#0D9488] text-white font-body-md text-body-md font-medium rounded-lg hover:bg-opacity-90 transition-all duration-200 active:scale-95 shadow-sm" type="submit">
+                        Join Team
+                        <span class="material-symbols-outlined ml-2 text-sm">arrow_forward</span>
+</button>
+</div>
+<!-- Secondary links / Disclaimer -->
+<div class="text-center mt-stack-sm">
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                        By joining, you agree to our <a class="text-primary hover:underline transition-all" href="#">Terms of Service</a> and <a class="text-primary hover:underline transition-all" href="#">Privacy Policy</a>.
+                    </p>
+</div>
+</form>
+</div>
+</main>
+<!-- Optional: Subtle contextual image off to the side to enhance the spacious feel on larger screens, strictly adhering to the airy light mode style -->
+<div class="hidden lg:block absolute bottom-10 right-10 w-64 h-64 rounded-full bg-white/20 blur-3xl -z-10 mix-blend-multiply"></div>
+<div class="hidden lg:block absolute top-10 left-10 w-48 h-48 rounded-full bg-[#89f5e7]/10 blur-3xl -z-10 mix-blend-multiply"></div>
+</body></html>
