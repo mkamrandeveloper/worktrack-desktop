@@ -14,7 +14,9 @@ export class SecurityManager {
    * origins are needed in script-src or connect-src.
    */
   static applyCSP(): void {
-    const isDev = process.env.NODE_ENV !== 'production';
+    // app.isPackaged is the authoritative signal — a packaged install never has
+    // NODE_ENV set, which would otherwise skip CSP hardening for real users.
+    const isDev = !app.isPackaged;
 
     // In dev mode, skip CSP entirely.
     // Vite's React Refresh injects inline <script type="module"> preambles that

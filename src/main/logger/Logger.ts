@@ -36,7 +36,11 @@ const transports: winston.transport[] = [
   }),
 ];
 
-if (process.env.NODE_ENV !== 'production') {
+// app.isPackaged is the authoritative signal — a packaged install never has
+// NODE_ENV set, which would otherwise leave verbose console logging enabled.
+const isDev = !app.isPackaged;
+
+if (isDev) {
   transports.push(
     new winston.transports.Console({
       format: winston.format.combine(
@@ -48,7 +52,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 const rootLogger = winston.createLogger({
-  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+  level: isDev ? 'debug' : 'info',
   transports,
   exitOnError: false,
 });

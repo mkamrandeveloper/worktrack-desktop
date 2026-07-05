@@ -1,5 +1,5 @@
 import { autoUpdater, UpdateInfo } from 'electron-updater';
-import { BrowserWindow, dialog } from 'electron';
+import { app, BrowserWindow, dialog } from 'electron';
 import { NotificationService } from '../notifications/NotificationService';
 import { createLogger } from '../logger/Logger';
 import { IPC } from '../../shared/constants/ipcChannels';
@@ -59,7 +59,9 @@ export class UpdaterService {
   }
 
   checkForUpdates(): void {
-    if (process.env.NODE_ENV !== 'production') {
+    // app.isPackaged is the authoritative signal — a packaged install never has
+    // NODE_ENV set, which would otherwise skip update checks for real users.
+    if (!app.isPackaged) {
       log.debug('Skipping update check in development mode');
       return;
     }
