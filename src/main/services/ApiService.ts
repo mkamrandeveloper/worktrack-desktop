@@ -8,6 +8,18 @@ import { createLogger } from '../logger/Logger';
 
 const log = createLogger('ApiService');
 
+// A 401 from these pre-authentication endpoints means "wrong credentials",
+// not "your session expired" — retrying them via refreshHandler() is not
+// just pointless (there's no session to refresh yet), it actively masks the
+// real error behind a confusing "Token refresh returned null" message.
+const NO_REFRESH_RETRY_URLS = [
+  '/api/auth/login',
+  '/api/auth/refresh',
+  '/api/auth/signup/create-org',
+  '/api/auth/signup/join-org',
+  '/api/clients/accept',
+];
+
 export type TokenProvider = () => string | null;
 export type RefreshHandler = () => Promise<string | null>;
 
@@ -73,8 +85,11 @@ export class ApiService {
       },
       async (error) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+        const isPreAuthEndpoint = NO_REFRESH_RETRY_URLS.some((url) =>
+          originalRequest.url?.includes(url)
+        );
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        if (error.response?.status === 401 && !originalRequest._retry && !isPreAuthEndpoint) {
           if (this.isRefreshing) {
             // Queue requests while refresh is in progress
             return new Promise<AxiosResponse>((resolve, reject) => {

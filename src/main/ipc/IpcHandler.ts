@@ -81,8 +81,21 @@ export class IpcHandler {
     return { success: true, data };
   }
 
-  private _err(message: string): IpcResponse {
-    return { success: false, error: message };
+  private _err(err: unknown): IpcResponse {
+    return { success: false, error: this._extractMessage(err) };
+  }
+
+  /**
+   * Axios errors' own .message is a generic "Request failed with status code
+   * 409" — the backend's actual reason (e.g. "Organization name already
+   * taken") lives in the JSON error body every route responds with. Prefer
+   * that so the renderer shows something the user can act on.
+   */
+  private _extractMessage(err: unknown): string {
+    const backendMessage = (err as { response?: { data?: { error?: string } } })?.response?.data
+      ?.error;
+    if (backendMessage) return backendMessage;
+    return err instanceof Error ? err.message : String(err);
   }
 
   private _validateSender(event: IpcMainInvokeEvent): void {
@@ -102,7 +115,7 @@ export class IpcHandler {
         return this._ok(result);
       } catch (err) {
         log.error('Login failed', { error: (err as Error).message });
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -112,7 +125,7 @@ export class IpcHandler {
         const result = await this.services.auth.signupCreateOrg(payload);
         return this._ok(result);
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -122,7 +135,7 @@ export class IpcHandler {
         await this.services.auth.signupJoinOrg(payload);
         return this._ok();
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -132,7 +145,7 @@ export class IpcHandler {
         const orgs = await this.services.auth.listOrgs();
         return this._ok(orgs);
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -142,7 +155,7 @@ export class IpcHandler {
         await this.services.auth.logout();
         return this._ok();
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -151,7 +164,7 @@ export class IpcHandler {
         this._validateSender(event);
         return this._ok(this.services.auth.getState());
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -162,7 +175,7 @@ export class IpcHandler {
         return this._ok(result);
       } catch (err) {
         log.error('Client invite accept failed', { error: (err as Error).message });
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
   }
@@ -177,7 +190,7 @@ export class IpcHandler {
         return this._ok(this.services.timer.getState());
       } catch (err) {
         log.error('Timer start failed', { error: (err as Error).message });
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -187,7 +200,7 @@ export class IpcHandler {
         this.services.onPauseTimer();
         return this._ok(this.services.timer.getState());
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -197,7 +210,7 @@ export class IpcHandler {
         this.services.onResumeTimer();
         return this._ok(this.services.timer.getState());
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -207,7 +220,7 @@ export class IpcHandler {
         await this.services.onBreakStart();
         return this._ok(this.services.timer.getState());
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -217,7 +230,7 @@ export class IpcHandler {
         await this.services.onBreakEnd();
         return this._ok(this.services.timer.getState());
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -227,7 +240,7 @@ export class IpcHandler {
         await this.services.onStopTimer();
         return this._ok(this.services.timer.getState());
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -236,7 +249,7 @@ export class IpcHandler {
         this._validateSender(event);
         return this._ok(this.services.timer.getState());
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
   }
@@ -250,7 +263,7 @@ export class IpcHandler {
         const tasks = await this.services.tasks.fetchTasks();
         return this._ok(tasks);
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -259,7 +272,7 @@ export class IpcHandler {
         this._validateSender(event);
         return this._ok(this.services.tasks.getCachedTasks());
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
   }
@@ -275,7 +288,7 @@ export class IpcHandler {
           items: this.services.screenshotQueue.getAll(),
         });
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -285,7 +298,7 @@ export class IpcHandler {
         const result = await this.services.screenshotQueue.flush();
         return this._ok(result);
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -294,7 +307,7 @@ export class IpcHandler {
         await this.services.screenshots.takeTestScreenshot();
         return this._ok();
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
   }
@@ -307,7 +320,7 @@ export class IpcHandler {
         this._validateSender(event);
         return this._ok(this.services.activity.getSnapshot());
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
   }
@@ -320,7 +333,7 @@ export class IpcHandler {
         this._validateSender(event);
         return this._ok(this.services.settingsStore.get('settings'));
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -332,7 +345,7 @@ export class IpcHandler {
         this.services.settingsStore.set('settings', updated);
         return this._ok(updated);
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -345,7 +358,7 @@ export class IpcHandler {
         this.services.settingsStore.set('settings', settings);
         return this._ok({ launchOnStartup: enable });
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
   }
@@ -395,7 +408,7 @@ export class IpcHandler {
         this._validateSender(event);
         return this._ok({ status: this.services.sync.getStatus() });
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
   }
@@ -408,7 +421,7 @@ export class IpcHandler {
         this._validateSender(event);
         return this._ok(await this.services.manager.getTeam());
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -418,7 +431,7 @@ export class IpcHandler {
         await this.services.manager.approveRequest(userId);
         return this._ok();
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -428,7 +441,7 @@ export class IpcHandler {
         await this.services.manager.rejectRequest(userId);
         return this._ok();
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -437,7 +450,7 @@ export class IpcHandler {
         this._validateSender(event);
         return this._ok(await this.services.manager.assignTask(payload));
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -446,7 +459,7 @@ export class IpcHandler {
         this._validateSender(event);
         return this._ok(await this.services.manager.getTasks());
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -456,7 +469,7 @@ export class IpcHandler {
         await this.services.manager.updateOrgSettings(settings);
         return this._ok();
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -465,7 +478,7 @@ export class IpcHandler {
         this._validateSender(event);
         return this._ok(await this.services.manager.addEmployee(payload));
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -474,7 +487,7 @@ export class IpcHandler {
         this._validateSender(event);
         return this._ok(await this.services.manager.getEmployeeTasks(userId));
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
   }
@@ -487,7 +500,7 @@ export class IpcHandler {
         this._validateSender(event);
         return this._ok(await this.services.drive.getAuthUrl());
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -497,7 +510,7 @@ export class IpcHandler {
         await this.services.drive.handleCallback(code);
         return this._ok();
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -506,7 +519,7 @@ export class IpcHandler {
         this._validateSender(event);
         return this._ok(await this.services.drive.isConnected());
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -516,7 +529,7 @@ export class IpcHandler {
         await this.services.drive.openFolder(url);
         return this._ok();
       } catch (err) {
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -525,99 +538,99 @@ export class IpcHandler {
 
     ipcMain.handle(IPC.PROJECTS.LIST, async (event) => {
       try { this._validateSender(event); return this._ok(await api().get('/api/projects')); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.PROJECTS.GET, async (event, id: string) => {
       try { this._validateSender(event); return this._ok(await api().get(`/api/projects/${id}`)); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.PROJECTS.CREATE, async (event, payload: unknown) => {
       try { this._validateSender(event); return this._ok(await api().post('/api/projects', payload)); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.PROJECTS.UPDATE, async (event, { id, payload }: { id: string; payload: unknown }) => {
       try { this._validateSender(event); return this._ok(await api().patch(`/api/projects/${id}`, payload)); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.PROJECTS.DELETE, async (event, id: string) => {
       try { this._validateSender(event); return this._ok(await api().delete(`/api/projects/${id}`)); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.PROJECTS.ADD_MEMBER, async (event, { projectId, userId }: { projectId: string; userId: string }) => {
       try { this._validateSender(event); return this._ok(await api().post(`/api/projects/${projectId}/members`, { userId })); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.PROJECTS.REMOVE_MEMBER, async (event, { projectId, userId }: { projectId: string; userId: string }) => {
       try { this._validateSender(event); return this._ok(await api().delete(`/api/projects/${projectId}/members/${userId}`)); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.PROJECTS.GET_TASKS, async (event, projectId: string) => {
       try { this._validateSender(event); return this._ok(await api().get(`/api/projects/${projectId}/tasks`)); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.PROJECTS.CREATE_TASK, async (event, { projectId, payload }: { projectId: string; payload: unknown }) => {
       try { this._validateSender(event); return this._ok(await api().post(`/api/projects/${projectId}/tasks`, payload)); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.PROJECTS.UPDATE_TASK, async (event, { projectId, taskId, payload }: { projectId: string; taskId: string; payload: unknown }) => {
       try { this._validateSender(event); return this._ok(await api().patch(`/api/projects/${projectId}/tasks/${taskId}`, payload)); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
 
     // ── Enterprise: Clients (portal) ────────────────────────────────────────
     ipcMain.handle(IPC.CLIENTS.PROJECTS, async (event) => {
       try { this._validateSender(event); return this._ok(await api().get('/api/clients/projects')); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.CLIENTS.PROJECT_SCREENSHOTS, async (event, projectId: string) => {
       try { this._validateSender(event); return this._ok(await api().get(`/api/screenshots/project/${projectId}`)); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
 
     // ── Enterprise: Role management ─────────────────────────────────────────
     ipcMain.handle(IPC.MANAGER.GET_MEMBERS, async (event) => {
       try { this._validateSender(event); return this._ok(await api().get('/api/manager/members')); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.MANAGER.SET_ROLE, async (event, { userId, role }: { userId: string; role: string }) => {
       try { this._validateSender(event); return this._ok(await api().patch(`/api/manager/members/${userId}/role`, { role })); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
 
     // ── Enterprise: Departments ─────────────────────────────────────────────
     ipcMain.handle(IPC.DEPARTMENTS.LIST, async (event) => {
       try { this._validateSender(event); return this._ok(await api().get('/api/departments')); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.DEPARTMENTS.CREATE, async (event, payload: unknown) => {
       try { this._validateSender(event); return this._ok(await api().post('/api/departments', payload)); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.DEPARTMENTS.UPDATE, async (event, { id, payload }: { id: string; payload: unknown }) => {
       try { this._validateSender(event); return this._ok(await api().patch(`/api/departments/${id}`, payload)); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.DEPARTMENTS.DELETE, async (event, id: string) => {
       try { this._validateSender(event); return this._ok(await api().delete(`/api/departments/${id}`)); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
 
     // ── Enterprise: Time Logs ───────────────────────────────────────────────
     ipcMain.handle(IPC.TIMELOGS.CLOCK_IN, async (event) => {
       try { this._validateSender(event); return this._ok(await api().post('/api/timelogs/clock-in')); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.TIMELOGS.CLOCK_OUT, async (event) => {
       try { this._validateSender(event); return this._ok(await api().post('/api/timelogs/clock-out')); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.TIMELOGS.BREAK_START, async (event) => {
       try { this._validateSender(event); return this._ok(await api().post('/api/timelogs/break-start')); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.TIMELOGS.BREAK_END, async (event) => {
       try { this._validateSender(event); return this._ok(await api().post('/api/timelogs/break-end')); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.TIMELOGS.FETCH, async (event, params: unknown) => {
       try {
@@ -625,7 +638,7 @@ export class IpcHandler {
         const p = params as Record<string, string> | undefined;
         const qs = p ? '?' + new URLSearchParams(p as Record<string, string>).toString() : '';
         return this._ok(await api().get(`/api/timelogs${qs}`));
-      } catch (err) { return this._err((err as Error).message); }
+      } catch (err) { return this._err(err); }
     });
 
     // ── Enterprise: Timesheets ──────────────────────────────────────────────
@@ -635,7 +648,7 @@ export class IpcHandler {
         const p = params as Record<string, string> | undefined;
         const qs = p ? '?' + new URLSearchParams(p as Record<string, string>).toString() : '';
         return this._ok(await api().get(`/api/timesheets/daily${qs}`));
-      } catch (err) { return this._err((err as Error).message); }
+      } catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.TIMESHEETS.WEEKLY, async (event, params: unknown) => {
       try {
@@ -643,7 +656,7 @@ export class IpcHandler {
         const p = params as Record<string, string> | undefined;
         const qs = p ? '?' + new URLSearchParams(p as Record<string, string>).toString() : '';
         return this._ok(await api().get(`/api/timesheets/weekly${qs}`));
-      } catch (err) { return this._err((err as Error).message); }
+      } catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.TIMESHEETS.MONTHLY, async (event, params: unknown) => {
       try {
@@ -651,7 +664,7 @@ export class IpcHandler {
         const p = params as Record<string, string> | undefined;
         const qs = p ? '?' + new URLSearchParams(p as Record<string, string>).toString() : '';
         return this._ok(await api().get(`/api/timesheets/monthly${qs}`));
-      } catch (err) { return this._err((err as Error).message); }
+      } catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.TIMESHEETS.TEAM, async (event, params: unknown) => {
       try {
@@ -659,13 +672,13 @@ export class IpcHandler {
         const p = params as Record<string, string> | undefined;
         const qs = p ? '?' + new URLSearchParams(p as Record<string, string>).toString() : '';
         return this._ok(await api().get(`/api/timesheets/team${qs}`));
-      } catch (err) { return this._err((err as Error).message); }
+      } catch (err) { return this._err(err); }
     });
 
     // ── Enterprise: Attendance ──────────────────────────────────────────────
     ipcMain.handle(IPC.ATTENDANCE.LIVE, async (event) => {
       try { this._validateSender(event); return this._ok(await api().get('/api/attendance/live')); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.ATTENDANCE.HISTORY, async (event, params: unknown) => {
       try {
@@ -673,11 +686,11 @@ export class IpcHandler {
         const p = params as Record<string, string> | undefined;
         const qs = p ? '?' + new URLSearchParams(p as Record<string, string>).toString() : '';
         return this._ok(await api().get(`/api/attendance/history${qs}`));
-      } catch (err) { return this._err((err as Error).message); }
+      } catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.ATTENDANCE.SUMMARY, async (event) => {
       try { this._validateSender(event); return this._ok(await api().get('/api/attendance/summary')); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
 
     // ── Enterprise: App Notifications ───────────────────────────────────────
@@ -687,15 +700,15 @@ export class IpcHandler {
         const p = params as Record<string, string> | undefined;
         const qs = p ? '?' + new URLSearchParams(p as Record<string, string>).toString() : '';
         return this._ok(await api().get(`/api/notifications${qs}`));
-      } catch (err) { return this._err((err as Error).message); }
+      } catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.APP_NOTIFICATIONS.MARK_READ, async (event, id: string) => {
       try { this._validateSender(event); return this._ok(await api().post(`/api/notifications/${id}/read`)); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.APP_NOTIFICATIONS.MARK_ALL_READ, async (event) => {
       try { this._validateSender(event); return this._ok(await api().post('/api/notifications/read-all')); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
 
     // ── Enterprise: Reports ─────────────────────────────────────────────────
@@ -705,7 +718,7 @@ export class IpcHandler {
         const p = params as Record<string, string> | undefined;
         const qs = p ? '?' + new URLSearchParams(p as Record<string, string>).toString() : '';
         return this._ok(await api().get(`/api/reports/overview${qs}`));
-      } catch (err) { return this._err((err as Error).message); }
+      } catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.REPORTS.EMPLOYEE, async (event, params: { id: string } & Record<string, string>) => {
       try {
@@ -713,11 +726,11 @@ export class IpcHandler {
         const { id, ...rest } = params;
         const qs = Object.keys(rest).length ? '?' + new URLSearchParams(rest).toString() : '';
         return this._ok(await api().get(`/api/reports/employee/${id}${qs}`));
-      } catch (err) { return this._err((err as Error).message); }
+      } catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.REPORTS.PROJECT, async (event, id: string) => {
       try { this._validateSender(event); return this._ok(await api().get(`/api/reports/project/${id}`)); }
-      catch (err) { return this._err((err as Error).message); }
+      catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.REPORTS.ATTENDANCE, async (event, params: unknown) => {
       try {
@@ -725,7 +738,7 @@ export class IpcHandler {
         const p = params as Record<string, string> | undefined;
         const qs = p ? '?' + new URLSearchParams(p as Record<string, string>).toString() : '';
         return this._ok(await api().get(`/api/reports/attendance${qs}`));
-      } catch (err) { return this._err((err as Error).message); }
+      } catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.REPORTS.PRODUCTIVITY, async (event, params: unknown) => {
       try {
@@ -733,7 +746,7 @@ export class IpcHandler {
         const p = params as Record<string, string> | undefined;
         const qs = p ? '?' + new URLSearchParams(p as Record<string, string>).toString() : '';
         return this._ok(await api().get(`/api/reports/productivity${qs}`));
-      } catch (err) { return this._err((err as Error).message); }
+      } catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.REPORTS.TIMESHEET, async (event, params: unknown) => {
       try {
@@ -741,7 +754,7 @@ export class IpcHandler {
         const p = params as Record<string, string> | undefined;
         const qs = p ? '?' + new URLSearchParams(p as Record<string, string>).toString() : '';
         return this._ok(await api().get(`/api/reports/timesheet${qs}`));
-      } catch (err) { return this._err((err as Error).message); }
+      } catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.REPORTS.EXPORT_XLSX, async (event, params: unknown) => {
       try {
@@ -767,7 +780,7 @@ export class IpcHandler {
         return this._ok({ saved: true, filePath });
       } catch (err) {
         log.error('Excel export failed', { error: (err as Error).message });
-        return this._err((err as Error).message);
+        return this._err(err);
       }
     });
 
@@ -778,7 +791,7 @@ export class IpcHandler {
         const p = params as Record<string, string> | undefined;
         const qs = p ? '?' + new URLSearchParams(p as Record<string, string>).toString() : '';
         return this._ok(await api().get(`/api/dashboard/me${qs}`));
-      } catch (err) { return this._err((err as Error).message); }
+      } catch (err) { return this._err(err); }
     });
   }
 }
