@@ -39,3 +39,13 @@ jobs:
             npm run package:linux
           fi
         shell: bash
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: worktrack-${{ runner.os }}
+          path: |
+            out/**/*.exe
+            out/**/*.dmg
+            out/**/*.AppImage
+          retention-days: 7
