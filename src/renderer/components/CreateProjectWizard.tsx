@@ -222,9 +222,9 @@ export function CreateProjectWizard({ onClose, onCreated }: Props) {
           {step === 5 && (
             <div className="space-y-3">
               <label className="block text-xs font-medium text-muted-foreground">Due Date</label>
-              <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)}
+              <input type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)}
                 className="w-full bg-input border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition" />
-              <p className="text-xs text-muted-foreground">Optional — set a target completion date for the project.</p>
+              <p className="text-xs text-muted-foreground">Optional — set a target completion date and time for the project.</p>
             </div>
           )}
 
@@ -237,7 +237,9 @@ export function CreateProjectWizard({ onClose, onCreated }: Props) {
                 ['Client', clientName || clientEmail ? `${clientName || 'Client'}${clientEmail ? ` · ${clientEmail}` : ''}` : 'None'],
                 ['Team', memberIds.length ? memberIds.map(memberName).join(', ') : 'None'],
                 ['Priority', PRIORITIES.find((p) => p.value === priority)?.label ?? priority],
-                ['Due Date', deadline || 'None'],
+                ['Due Date', deadline
+                  ? new Date(deadline).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+                  : 'None'],
               ].map(([k, v]) => (
                 <div key={k} className="flex justify-between gap-4 py-2 border-b border-border/60">
                   <span className="text-xs text-muted-foreground shrink-0">{k}</span>
