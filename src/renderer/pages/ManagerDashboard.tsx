@@ -480,9 +480,28 @@ export function ManagerDashboard() {
                     </div>
                   </div>
                   {tracking ? (
-                    <span className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-primary text-xs font-medium shrink-0">
-                      <MaterialIcon name="play_arrow" size={16} /> Tracking
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="font-mono text-sm font-semibold text-primary mr-1">
+                        {formatDuration(timerOnBreak ? timer.breakSeconds : timer.elapsedSeconds)}
+                      </span>
+                      {timerRunning && (
+                        <button onClick={() => timer.pauseTimer()} className="w-9 h-9 rounded-full bg-muted hover:bg-muted/70 flex items-center justify-center" title="Pause"><MaterialIcon name="pause" size={16} /></button>
+                      )}
+                      {timerPaused && (
+                        <button onClick={() => timer.resumeTimer()} className="w-9 h-9 rounded-full bg-primary text-primary-foreground hover:opacity-90 flex items-center justify-center" title="Resume"><MaterialIcon name="play_arrow" size={16} /></button>
+                      )}
+                      <button
+                        onClick={() => (timerOnBreak ? timer.endBreak() : timer.startBreak())}
+                        disabled={timerPaused}
+                        className="w-9 h-9 rounded-full bg-muted hover:bg-muted/70 flex items-center justify-center disabled:opacity-40"
+                        title={timerOnBreak ? 'End break' : 'Take a break'}
+                      >
+                        <MaterialIcon name={timerOnBreak ? 'play_circle' : 'coffee'} size={16} />
+                      </button>
+                      <button onClick={() => timer.stopTimer()} className="w-9 h-9 rounded-full bg-muted hover:bg-destructive/20 hover:text-destructive flex items-center justify-center" title="Stop">
+                        <MaterialIcon name="stop_circle" size={16} />
+                      </button>
+                    </div>
                   ) : (
                     <button
                       onClick={() => handleStartTask(t.id)}
