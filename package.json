@@ -125,6 +125,13 @@
             "x64",
             "arm64"
           ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "icon": "assets/icons/icon.icns",
@@ -150,8 +157,9 @@
     },
     "publish": {
       "provider": "github",
-      "owner": "worktrack",
-      "repo": "worktrack-desktop"
+      "owner": "mkamrandeveloper",
+      "repo": "worktrack-desktop",
+      "releaseType": "release"
     },
     "afterSign": null
   }

@@ -177,6 +177,8 @@ const api = {
     quit: () => invoke(IPC.SYSTEM.QUIT),
     onUpdateAvailable: (cb: EventCallback<{ version: string }>) =>
       on(IPC.SYSTEM.UPDATE_AVAILABLE, cb),
+    onUpdateDownloaded: (cb: EventCallback<{ version: string }>) =>
+      on(IPC.SYSTEM.UPDATE_DOWNLOADED, cb),
   },
 
   // ── Projects ─────────────────────────────────────────────────────────────────

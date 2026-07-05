@@ -168,6 +168,7 @@ interface WorktrackAPI {
     openExternal: (url: string) => Promise<IpcResponse>;
     quit: () => Promise<IpcResponse>;
     onUpdateAvailable: (cb: EventCallback<{ version: string }>) => EventUnsubscribe;
+    onUpdateDownloaded: (cb: EventCallback<{ version: string }>) => EventUnsubscribe;
   };
 }
 

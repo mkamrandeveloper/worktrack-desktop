@@ -379,8 +379,10 @@ app.on('ready', async () => {
   // Start activity monitoring always (idle detection works without auth)
   activityMonitor.start();
 
-  // Check for updates after startup (2 minute delay)
-  setTimeout(() => updaterService.checkForUpdates(), 120_000);
+  // Check for updates shortly after startup, then keep re-checking in the
+  // background every few hours so long-running sessions still pick up new
+  // releases without needing a restart to trigger the first check.
+  setTimeout(() => updaterService.startPeriodicChecks(), 120_000);
 
   log.info('WorkTrack Desktop started successfully');
 });

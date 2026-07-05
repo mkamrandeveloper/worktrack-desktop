@@ -87,7 +87,16 @@ export class NotificationService {
       id: `update-${version}`,
       type: 'info',
       title: 'Update Available',
-      message: `WorkTrack Desktop v${version} is ready to install.`,
+      message: `WorkTrack Desktop v${version} is downloading in the background.`,
+    });
+  }
+
+  updateReadyToInstall(version: string): void {
+    this.show({
+      id: `update-ready-${version}`,
+      type: 'info',
+      title: 'Update Ready',
+      message: `WorkTrack Desktop v${version} will install the next time you restart the app.`,
     });
   }
 

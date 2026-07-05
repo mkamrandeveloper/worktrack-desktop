@@ -70,6 +70,7 @@ export const IPC = {
     CHECK_UPDATE: 'system:check-update',
     INSTALL_UPDATE: 'system:install-update',
     UPDATE_AVAILABLE: 'system:update-available',
+    UPDATE_DOWNLOADED: 'system:update-downloaded',
     OPEN_EXTERNAL: 'system:open-external',
     QUIT: 'system:quit',
   },

@@ -1,18 +1,25 @@
 import { autoUpdater, UpdateInfo } from 'electron-updater';
-import { app, BrowserWindow, dialog } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import { NotificationService } from '../notifications/NotificationService';
 import { createLogger } from '../logger/Logger';
 import { IPC } from '../../shared/constants/ipcChannels';
 
 const log = createLogger('UpdaterService');
 
+const RECHECK_INTERVAL_MS = 4 * 60 * 60 * 1000; // re-check every 4 hours for long-running sessions
+
 /**
  * Manages application auto-updates using electron-updater.
- * Silently downloads updates and prompts the user to restart.
+ *
+ * Fully quiet: updates are checked for periodically, downloaded in the
+ * background with no user interaction, and installed automatically the
+ * next time the app quits and relaunches (autoInstallOnAppQuit) — no
+ * restart-now dialog interrupts the current session.
  */
 export class UpdaterService {
   private windows: Set<BrowserWindow> = new Set();
   private notificationService: NotificationService;
+  private recheckTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(notificationService: NotificationService) {
     this.notificationService = notificationService;
@@ -49,8 +56,9 @@ export class UpdaterService {
     });
 
     autoUpdater.on('update-downloaded', (info: UpdateInfo) => {
-      log.info(`Update downloaded: v${info.version}`);
-      this._promptRestart(info.version);
+      log.info(`Update downloaded: v${info.version} — will install on next quit`);
+      this.notificationService.updateReadyToInstall(info.version);
+      this._broadcast(IPC.SYSTEM.UPDATE_DOWNLOADED, { version: info.version });
     });
 
     autoUpdater.on('error', (err: Error) => {
@@ -70,6 +78,21 @@ export class UpdaterService {
     });
   }
 
+  /** Checks immediately, then re-checks on an interval for long-running sessions. */
+  startPeriodicChecks(intervalMs: number = RECHECK_INTERVAL_MS): void {
+    this.checkForUpdates();
+    if (this.recheckTimer) clearInterval(this.recheckTimer);
+    this.recheckTimer = setInterval(() => this.checkForUpdates(), intervalMs);
+  }
+
+  stopPeriodicChecks(): void {
+    if (this.recheckTimer) {
+      clearInterval(this.recheckTimer);
+      this.recheckTimer = null;
+    }
+  }
+
+  /** Manual install trigger (e.g. from a tray/menu action), still user-initiated only. */
   installUpdateAndRestart(): void {
     autoUpdater.quitAndInstall(false, true);
   }
@@ -77,29 +100,6 @@ export class UpdaterService {
   registerWindow(win: BrowserWindow): void {
     this.windows.add(win);
     win.on('closed', () => this.windows.delete(win));
-  }
-
-  private async _promptRestart(version: string): Promise<void> {
-    const focusedWindow = BrowserWindow.getFocusedWindow();
-    if (!focusedWindow) {
-      // Auto-install if no window is focused
-      setTimeout(() => autoUpdater.quitAndInstall(false, true), 5000);
-      return;
-    }
-
-    const result = await dialog.showMessageBox(focusedWindow, {
-      type: 'info',
-      title: 'Update Ready',
-      message: `WorkTrack Desktop v${version} has been downloaded.`,
-      detail: 'Restart the application to apply the update.',
-      buttons: ['Restart Now', 'Later'],
-      defaultId: 0,
-      cancelId: 1,
-    });
-
-    if (result.response === 0) {
-      autoUpdater.quitAndInstall(false, true);
-    }
   }
 
   private _broadcast(channel: string, data: unknown): void {

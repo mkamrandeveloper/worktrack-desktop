@@ -7,11 +7,14 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write # required so GITHUB_TOKEN can create/upload to a GitHub Release
+
 jobs:
   build:
     strategy:
       matrix:
-        os: [windows-latest, macos-latest]
+        os: [windows-latest, macos-latest, ubuntu-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -27,25 +30,49 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Build Electron App
+      # sharp ships a different prebuilt native binary per OS/arch. A runner
+      # only installs the one matching its own platform by default, but we
+      # build multiple target archs (mac x64+arm64, win x64+ia32) from a
+      # single runner, so every platform's binary needs to be present
+      # up front for asarUnpack to package correctly.
+      - name: Ensure all target-platform sharp binaries are present
+        shell: bash
+        run: |
+          PKGS=$(node -e "
+            const deps = require('./node_modules/sharp/package.json').optionalDependencies;
+            const wanted = Object.entries(deps).filter(([name]) =>
+              /^@img\/sharp-(darwin-(x64|arm64)|win32-(x64|ia32)|linux-x64)$/.test(name) ||
+              /^@img\/sharp-libvips-(darwin-(x64|arm64)|linux-x64)$/.test(name)
+            );
+            console.log(wanted.map(([name, ver]) => name + '@' + ver).join(' '));
+          ")
+          npm install --no-save --force $PKGS
+
+      - name: Determine release version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            BASE=$(node -p "require('./package.json').version.split('.').slice(0,2).join('.')")
+            VERSION="${BASE}.${GITHUB_RUN_NUMBER}"
+          fi
+          echo "Resolved release version: $VERSION"
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
+
+      - name: Build Renderer + Main
+        run: npm run build
+
+      - name: Build and Publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
-            npm run package:win
+            npx electron-builder --win --publish always
           elif [ "$RUNNER_OS" == "macOS" ]; then
-            npm run package:mac
+            npx electron-builder --mac --publish always
           else
-            npm run package:linux
+            npx electron-builder --linux --publish always
           fi
-        shell: bash
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: worktrack-${{ runner.os }}
-          path: |
-            out/**/*.exe
-            out/**/*.dmg
-            out/**/*.AppImage
-          retention-days: 7
