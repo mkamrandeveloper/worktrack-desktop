@@ -12,7 +12,6 @@ import type {
   NotificationPayload,
   SignupCreateOrgPayload,
   SignupJoinOrgPayload,
-  AssignTaskPayload,
   TeamMember,
   Project,
   Department,
@@ -133,8 +132,6 @@ const api = {
       invoke(IPC.MANAGER.APPROVE_REQUEST, userId),
     rejectRequest: (userId: string) =>
       invoke(IPC.MANAGER.REJECT_REQUEST, userId),
-    assignTask: (payload: AssignTaskPayload) =>
-      invoke<Task>(IPC.MANAGER.ASSIGN_TASK, payload),
     getTasks: () =>
       invoke<Task[]>(IPC.MANAGER.GET_TASKS),
     updateOrgSettings: (settings: Record<string, unknown>) =>

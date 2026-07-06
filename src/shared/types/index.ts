@@ -63,17 +63,6 @@ export interface ClientProject {
   created_at: string;
 }
 
-export interface AssignTaskPayload {
-  title: string;
-  description: string;
-  assigneeId: string;
-  estimatedHours: number;
-  projectId?: string;
-  customScreenshotInterval?: number;
-  deadline?: string;
-  priority?: TaskPriority;
-}
-
 export interface Organization {
   id: string;
   name: string;

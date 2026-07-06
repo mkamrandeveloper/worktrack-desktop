@@ -88,7 +88,6 @@ export const IPC = {
     GET_TEAM: 'manager:get-team',
     APPROVE_REQUEST: 'manager:approve-request',
     REJECT_REQUEST: 'manager:reject-request',
-    ASSIGN_TASK: 'manager:assign-task',
     GET_TASKS: 'manager:get-tasks',
     UPDATE_ORG_SETTINGS: 'manager:update-org-settings',
     ADD_EMPLOYEE: 'manager:add-employee',

@@ -4,7 +4,6 @@ import {
   ExternalLink, UserCheck, XCircle, FolderOpen
 } from 'lucide-react';
 import { TeamMember } from '@shared/types';
-import { AssignTaskModal } from '../components/AssignTaskModal';
 import { AddEmployeeModal } from '../components/AddEmployeeModal';
 
 export function TeamManagement() {
@@ -12,7 +11,6 @@ export function TeamManagement() {
   const [requests, setRequests] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showAssign, setShowAssign] = useState<TeamMember | null>(null);
   const [showAddEmployee, setShowAddEmployee] = useState(false);
   const [actionPending, setActionPending] = useState<string | null>(null);
 
@@ -177,14 +175,6 @@ export function TeamManagement() {
                     Active
                   </span>
                   <button
-                    id={`btn-assign-task-${member.id}`}
-                    onClick={() => setShowAssign(member)}
-                    className="flex items-center gap-1.5 text-xs font-medium text-primary bg-primary/10 border border-primary/30 rounded-lg px-3 py-1.5 hover:bg-primary/20 transition"
-                  >
-                    <Plus className="w-3 h-3" />
-                    Assign Task
-                  </button>
-                  <button
                     id={`btn-open-drive-${member.id}`}
                     onClick={() => openDrive(member.driveFolderUrl)}
                     className="flex items-center gap-1.5 text-xs text-muted-foreground border border-border rounded-lg px-3 py-1.5 hover:bg-muted hover:text-foreground transition"
@@ -198,14 +188,6 @@ export function TeamManagement() {
           </div>
         )}
       </div>
-
-      {showAssign && (
-        <AssignTaskModal
-          member={showAssign}
-          onClose={() => setShowAssign(null)}
-          onSuccess={() => { setShowAssign(null); }}
-        />
-      )}
 
       {showAddEmployee && (
         <AddEmployeeModal

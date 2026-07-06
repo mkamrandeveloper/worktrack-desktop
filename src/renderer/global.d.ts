@@ -12,7 +12,6 @@ import type {
   IpcResponse,
   SignupCreateOrgPayload,
   SignupJoinOrgPayload,
-  AssignTaskPayload,
   TeamMember,
   Project,
   Department,
@@ -89,7 +88,6 @@ interface WorktrackAPI {
     getTeam: () => Promise<IpcResponse<{ members: TeamMember[]; requests: TeamMember[] }>>;
     approveRequest: (userId: string) => Promise<IpcResponse>;
     rejectRequest: (userId: string) => Promise<IpcResponse>;
-    assignTask: (payload: AssignTaskPayload) => Promise<IpcResponse<Task>>;
     getTasks: () => Promise<IpcResponse<Task[]>>;
     updateOrgSettings: (settings: Record<string, unknown>) => Promise<IpcResponse>;
     addEmployee: (payload: { name: string; email: string; password: string }) => Promise<IpcResponse>;

@@ -732,7 +732,9 @@ export function ManagerDashboard() {
                           <div key={task.id} className="p-3 flex items-center justify-between hover:bg-card/80 transition">
                             <div className="flex-1 min-w-0 pr-4">
                               <p className="text-sm font-medium text-foreground truncate">{task.title}</p>
-                              <p className="text-xs text-muted-foreground truncate">{task.description || 'No description'}</p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {task.projectName ?? 'No project'} · {task.description || 'No description'}
+                              </p>
                             </div>
                             <div className="flex items-center gap-6">
                               <span className={clsx(

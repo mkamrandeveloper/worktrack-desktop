@@ -1,6 +1,6 @@
 import { getApiService } from '../services/ApiService';
 import { API_ENDPOINTS } from '../../shared/constants/events';
-import { TeamMember, AssignTaskPayload, Task } from '../../shared/types';
+import { TeamMember, Task } from '../../shared/types';
 import { createLogger } from '../logger/Logger';
 
 const log = createLogger('ManagerService');
@@ -21,13 +21,6 @@ export class ManagerService {
     const api = getApiService();
     await api.post(API_ENDPOINTS.MANAGER.REJECT_REQUEST(userId));
     log.info(`Rejected request for user ${userId}`);
-  }
-
-  async assignTask(payload: AssignTaskPayload): Promise<Task> {
-    const api = getApiService();
-    const task = await api.post<Task>(API_ENDPOINTS.MANAGER.ASSIGN_TASK, payload);
-    log.info(`Assigned task ${task.id} to user ${payload.assigneeId}`);
-    return task;
   }
 
   async getTasks(): Promise<Task[]> {

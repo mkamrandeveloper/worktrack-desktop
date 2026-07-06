@@ -19,7 +19,6 @@ import {
   UserSettings,
   SignupCreateOrgPayload,
   SignupJoinOrgPayload,
-  AssignTaskPayload,
   ClientAcceptPayload,
 } from '../../shared/types';
 import { createLogger } from '../logger/Logger';
@@ -440,15 +439,6 @@ export class IpcHandler {
         this._validateSender(event);
         await this.services.manager.rejectRequest(userId);
         return this._ok();
-      } catch (err) {
-        return this._err(err);
-      }
-    });
-
-    ipcMain.handle(IPC.MANAGER.ASSIGN_TASK, async (event, payload: AssignTaskPayload) => {
-      try {
-        this._validateSender(event);
-        return this._ok(await this.services.manager.assignTask(payload));
       } catch (err) {
         return this._err(err);
       }

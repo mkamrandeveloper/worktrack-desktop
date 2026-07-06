@@ -69,7 +69,6 @@ export const API_ENDPOINTS = {
     GET_TEAM: '/api/manager/team',
     APPROVE_REQUEST: (userId: string) => `/api/manager/requests/${userId}/approve`,
     REJECT_REQUEST: (userId: string) => `/api/manager/requests/${userId}/reject`,
-    ASSIGN_TASK: '/api/manager/tasks',
     GET_TASKS: '/api/manager/tasks',
     ADD_EMPLOYEE: '/api/manager/employees',
     GET_EMPLOYEE_TASKS: (userId: string) => `/api/manager/employees/${userId}/tasks`,
