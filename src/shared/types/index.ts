@@ -431,7 +431,7 @@ export interface ScreenshotListFilters {
   offset?: number;
 }
 
-export interface BreakInterval {
+export interface ScreenshotBreakInterval {
   userId: string;
   employeeName: string;
   start: string;

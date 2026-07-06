@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
-import { ScreenshotRecord, TeamMember, BreakInterval } from '@shared/types';
+import { ScreenshotRecord, TeamMember, ScreenshotBreakInterval } from '@shared/types';
 import { formatDuration } from '../utils/formatTime';
 import { clsx } from 'clsx';
 
@@ -14,7 +14,7 @@ function fmtTime(iso: string): string {
 
 type DayItem =
   | { kind: 'screenshot'; time: string; record: ScreenshotRecord }
-  | { kind: 'break'; time: string; brk: BreakInterval };
+  | { kind: 'break'; time: string; brk: ScreenshotBreakInterval };
 
 function fmtDayHeading(dateKey: string): string {
   const d = new Date(`${dateKey}T00:00:00`);
@@ -95,7 +95,7 @@ function ScreenshotThumb({ record, imageCache, onLoaded, onOpen, showEmployee }:
   );
 }
 
-function BreakCard({ brk, showEmployee }: { brk: BreakInterval; showEmployee: boolean }) {
+function BreakCard({ brk, showEmployee }: { brk: ScreenshotBreakInterval; showEmployee: boolean }) {
   const durationLabel = brk.end
     ? formatDuration(Math.round((new Date(brk.end).getTime() - new Date(brk.start).getTime()) / 1000))
     : 'Ongoing';
@@ -126,7 +126,7 @@ export function ScreenshotsPage() {
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [allDates, setAllDates] = useState(!!initialProjectId);
   const [records, setRecords] = useState<ScreenshotRecord[]>([]);
-  const [breaks, setBreaks] = useState<BreakInterval[]>([]);
+  const [breaks, setBreaks] = useState<ScreenshotBreakInterval[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);

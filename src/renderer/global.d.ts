@@ -31,7 +31,7 @@ import type {
   MonthlyTimesheet,
   ScreenshotRecord,
   ScreenshotListFilters,
-  BreakInterval,
+  ScreenshotBreakInterval,
 } from '@shared/types';
 
 type EventUnsubscribe = () => void;
@@ -70,7 +70,7 @@ interface WorktrackAPI {
     onSettingsChanged: (cb: EventCallback<unknown>) => EventUnsubscribe;
     list: (filters?: ScreenshotListFilters) => Promise<IpcResponse<ScreenshotRecord[]>>;
     getImage: (screenshotId: string) => Promise<IpcResponse<{ dataUrl: string }>>;
-    listBreaks: (filters?: ScreenshotListFilters) => Promise<IpcResponse<BreakInterval[]>>;
+    listBreaks: (filters?: ScreenshotListFilters) => Promise<IpcResponse<ScreenshotBreakInterval[]>>;
   };
   activity: {
     getStatus: () => Promise<IpcResponse<ActivitySnapshot>>;
