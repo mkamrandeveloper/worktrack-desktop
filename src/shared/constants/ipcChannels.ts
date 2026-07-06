@@ -42,6 +42,8 @@ export const IPC = {
     UPLOAD_STATUS: 'screenshots:upload-status',
     SETTINGS_CHANGED: 'screenshots:settings-changed',
     TEST: 'screenshots:test',
+    LIST: 'screenshots:list',
+    GET_IMAGE: 'screenshots:get-image',
   },
 
   // ── Activity ────────────────────────────────────────────────────────────────
@@ -109,11 +111,6 @@ export const IPC = {
     GET_AUTH_URL: 'drive:get-auth-url',
     HANDLE_CALLBACK: 'drive:handle-callback',
     IS_CONNECTED: 'drive:is-connected',
-  },
-
-  // ── Screenshots ─────────────────────────────────────────────────────────────
-  SCREENSHOT_MGR: {
-    RECENT: 'screenshot-mgr:recent',
   },
 
   // ── Projects ─────────────────────────────────────────────────────────────────

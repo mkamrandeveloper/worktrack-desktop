@@ -56,6 +56,8 @@ export const API_ENDPOINTS = {
   },
   SCREENSHOTS: {
     UPLOAD: '/api/screenshots/upload',
+    LIST: '/api/screenshots',
+    IMAGE: (id: string) => `/api/screenshots/${id}/image`,
   },
   ACTIVITY: {
     HEARTBEAT: '/api/activity/heartbeat',

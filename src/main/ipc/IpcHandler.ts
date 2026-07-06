@@ -20,6 +20,7 @@ import {
   SignupCreateOrgPayload,
   SignupJoinOrgPayload,
   ClientAcceptPayload,
+  ScreenshotListFilters,
 } from '../../shared/types';
 import { createLogger } from '../logger/Logger';
 import Store from 'electron-store';
@@ -279,6 +280,36 @@ export class IpcHandler {
   // ── Screenshots ───────────────────────────────────────────────────────────────
 
   private _registerScreenshotHandlers(): void {
+    const api = () => (this.services as any).apiService || require('../services/ApiService').getApiService();
+
+    ipcMain.handle(IPC.SCREENSHOTS.LIST, async (event, filters?: ScreenshotListFilters) => {
+      try {
+        this._validateSender(event);
+        const params = new URLSearchParams();
+        if (filters?.userId) params.set('userId', filters.userId);
+        if (filters?.projectId) params.set('projectId', filters.projectId);
+        if (filters?.from) params.set('from', filters.from);
+        if (filters?.to) params.set('to', filters.to);
+        if (filters?.limit) params.set('limit', String(filters.limit));
+        if (filters?.offset) params.set('offset', String(filters.offset));
+        const qs = params.toString() ? `?${params.toString()}` : '';
+        return this._ok(await api().get(`/api/screenshots${qs}`));
+      } catch (err) {
+        return this._err(err);
+      }
+    });
+
+    ipcMain.handle(IPC.SCREENSHOTS.GET_IMAGE, async (event, screenshotId: string) => {
+      try {
+        this._validateSender(event);
+        const data = await api().get(`/api/screenshots/${screenshotId}/image`, { responseType: 'arraybuffer' });
+        const base64 = Buffer.from(data as ArrayBuffer).toString('base64');
+        return this._ok({ dataUrl: `data:image/jpeg;base64,${base64}` });
+      } catch (err) {
+        return this._err(err);
+      }
+    });
+
     ipcMain.handle(IPC.SCREENSHOTS.GET_QUEUE, (event) => {
       try {
         this._validateSender(event);

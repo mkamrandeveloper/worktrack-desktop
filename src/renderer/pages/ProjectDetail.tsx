@@ -1,18 +1,15 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, X } from 'lucide-react';
-import { Project, Task, TeamMember, ProjectMember } from '@shared/types';
+import { Project, Task, TeamMember, ProjectMember, ScreenshotRecord } from '@shared/types';
 import { useAuthStore } from '../store/authStore';
 import { useTimerStore } from '../store/timerStore';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
+import { ScreenshotImage } from '../components/ScreenshotImage';
 import { formatDuration } from '../utils/formatTime';
 import { clsx } from 'clsx';
 
 type FullProject = Project & { members: ProjectMember[]; tasks: Task[] };
-
-interface ProjectScreenshot {
-  id: string; captured_at: string; drive_file_url?: string; employee_name?: string;
-}
 
 const STATUS_BADGE: Record<string, string> = {
   ACTIVE: 'bg-secondary/10 text-secondary border-secondary/20',
@@ -51,7 +48,7 @@ export function ProjectDetail() {
   const timer = useTimerStore();
 
   const [project, setProject] = useState<FullProject | null>(null);
-  const [screenshots, setScreenshots] = useState<ProjectScreenshot[]>([]);
+  const [screenshots, setScreenshots] = useState<ScreenshotRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddTask, setShowAddTask] = useState(false);
 
@@ -61,7 +58,7 @@ export function ProjectDetail() {
       window.worktrack.clients.projectScreenshots(id),
     ]);
     if (detail.success && detail.data) setProject(detail.data as unknown as FullProject);
-    if (shots.success && Array.isArray(shots.data)) setScreenshots(shots.data as ProjectScreenshot[]);
+    if (shots.success && Array.isArray(shots.data)) setScreenshots(shots.data as ScreenshotRecord[]);
     setLoading(false);
   }, [id]);
 
@@ -101,7 +98,7 @@ export function ProjectDetail() {
   // Recent activity — real, timestamped: reuse the same screenshot captures
   // already fetched for this project (genuine per-employee activity signal).
   const recentActivity = [...screenshots]
-    .sort((a, b) => new Date(b.captured_at).getTime() - new Date(a.captured_at).getTime())
+    .sort((a, b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime())
     .slice(0, 5);
 
   return (
@@ -358,8 +355,8 @@ export function ProjectDetail() {
                   <div key={s.id} className="relative">
                     <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-secondary ring-4 ring-card" />
                     <div className="text-sm">
-                      <p className="text-foreground"><span className="font-medium">{s.employee_name ?? 'A team member'}</span> captured a work screenshot</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{new Date(s.captured_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                      <p className="text-foreground"><span className="font-medium">{s.employeeName ?? 'A team member'}</span> captured a work screenshot</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{new Date(s.capturedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
                   </div>
                 ))}
@@ -379,20 +376,24 @@ export function ProjectDetail() {
                 {screenshots.slice(0, 6).map((s) => (
                   <button
                     key={s.id}
-                    onClick={() => s.drive_file_url && window.worktrack.system.openExternal(s.drive_file_url)}
+                    onClick={() => s.driveFileUrl && window.worktrack.system.openExternal(s.driveFileUrl)}
                     className="group relative rounded-xl overflow-hidden border border-border aspect-square bg-muted"
-                    title={`${s.employee_name ?? 'Team'} · ${new Date(s.captured_at).toLocaleString()}`}
+                    title={`${s.employeeName ?? 'Team'} · ${new Date(s.capturedAt).toLocaleString()}`}
                   >
-                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/50 group-hover:text-secondary transition-colors">
-                      <MaterialIcon name="image" size={24} />
-                    </div>
+                    <ScreenshotImage screenshotId={s.id} />
                     <div className="absolute bottom-0 inset-x-0 bg-black/50 backdrop-blur-sm px-2 py-1 text-[10px] text-white truncate">
-                      {new Date(s.captured_at).toLocaleDateString()}
+                      {new Date(s.capturedAt).toLocaleDateString()}
                     </div>
                   </button>
                 ))}
               </div>
             )}
+            <button
+              onClick={() => navigate('/screenshots?projectId=' + id)}
+              className="mt-4 w-full py-2.5 rounded-xl border border-dashed border-border text-xs font-medium text-muted-foreground hover:bg-card/50 hover:text-foreground transition-colors"
+            >
+              View all in Screenshots →
+            </button>
           </div>
         </div>
       </div>

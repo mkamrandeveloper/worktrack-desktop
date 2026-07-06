@@ -27,6 +27,8 @@ import type {
   OrgPresenceEvent,
   OrgTimerActivityEvent,
   MonthlyTimesheet,
+  ScreenshotRecord,
+  ScreenshotListFilters,
 } from '../shared/types';
 
 type EventCallback<T> = (data: T) => void;
@@ -89,6 +91,10 @@ const api = {
       on(IPC.SCREENSHOTS.UPLOAD_STATUS, cb),
     onSettingsChanged: (cb: EventCallback<unknown>) =>
       on(IPC.SCREENSHOTS.SETTINGS_CHANGED, cb),
+    list: (filters?: ScreenshotListFilters) =>
+      invoke<ScreenshotRecord[]>(IPC.SCREENSHOTS.LIST, filters),
+    getImage: (screenshotId: string) =>
+      invoke<{ dataUrl: string }>(IPC.SCREENSHOTS.GET_IMAGE, screenshotId),
   },
 
   // ── Activity ──────────────────────────────────────────────────────────────────

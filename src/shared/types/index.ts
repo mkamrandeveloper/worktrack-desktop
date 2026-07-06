@@ -405,6 +405,32 @@ export interface ScreenshotUploadResult {
   driveFileId: string;
 }
 
+// A row from GET /api/screenshots (and the narrower /recent, /employee/:id,
+// /project/:id variants) — what the desktop actually displays.
+export interface ScreenshotRecord {
+  id: string;
+  capturedAt: string;
+  uploadStatus: 'pending' | 'uploading' | 'uploaded' | 'failed';
+  driveFileId?: string;
+  driveFileUrl?: string;
+  error?: string;
+  userId?: string;
+  employeeName?: string;
+  taskId?: string;
+  taskTitle?: string;
+  projectId?: string;
+  projectName?: string;
+}
+
+export interface ScreenshotListFilters {
+  userId?: string;
+  projectId?: string;
+  from?: string;
+  to?: string;
+  limit?: number;
+  offset?: number;
+}
+
 // ─── Activity ─────────────────────────────────────────────────────────────────
 
 export type ActivityStatus = 'active' | 'idle' | 'on_break' | 'offline';

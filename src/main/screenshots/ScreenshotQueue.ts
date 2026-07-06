@@ -80,11 +80,13 @@ export class ScreenshotQueue {
 
       try {
         this._updateItem(item.id, { uploadStatus: 'uploading' });
+        // Holds the server-side screenshot id, not an actual URL — the real
+        // Drive URL lands later via the backend's own async Drive upload.
         const remoteUrl = await this._upload(item);
         this._updateItem(item.id, { uploadStatus: 'uploaded', remoteUrl });
         this._deleteLocalFile(item.localPath);
         uploaded++;
-        log.info(`Screenshot uploaded: ${item.id} → ${remoteUrl}`);
+        log.info(`Screenshot uploaded: ${item.id} → server id ${remoteUrl}`);
       } catch (err) {
         this._updateItem(item.id, {
           uploadStatus: 'pending',
@@ -113,25 +115,21 @@ export class ScreenshotQueue {
 
     const fileBuffer = fs.readFileSync(item.localPath);
     const formData = new FormData();
-    formData.append('file', new Blob([fileBuffer], { type: 'image/jpeg' }), `${item.id}.jpg`);
-    formData.append('metadata', JSON.stringify({
-      screenshotId: item.id,
-      taskId: item.taskId,
-      sessionId: item.sessionId,
-      userId: item.userId,
-      capturedAt: item.capturedAt,
-      monitorIndex: item.monitorIndex,
-      monitorCount: item.monitorCount,
-      width: item.width,
-      height: item.height,
-    }));
+    // Field name and flat body fields must match the backend's
+    // `upload.single('screenshot')` + `req.body.taskId/sessionId` exactly.
+    formData.append('screenshot', new Blob([fileBuffer], { type: 'image/jpeg' }), `${item.id}.jpg`);
+    if (item.taskId) formData.append('taskId', item.taskId);
+    if (item.sessionId) formData.append('sessionId', item.sessionId);
 
     const api = getApiService();
-    const result = await api.uploadFile<{ url: string }>(
+    // The backend accepts the file synchronously but uploads to Drive
+    // asynchronously (the real drive_file_url lands later) — it only ever
+    // returns the screenshot's server-side id at this point.
+    const result = await api.uploadFile<{ screenshotId: string }>(
       API_ENDPOINTS.SCREENSHOTS.UPLOAD,
       formData
     );
-    return result.url;
+    return result.screenshotId;
   }
 
   private _updateItem(id: string, updates: Partial<ScreenshotMetadata>): void {

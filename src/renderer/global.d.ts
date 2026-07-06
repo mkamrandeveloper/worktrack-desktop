@@ -29,6 +29,8 @@ import type {
   OrgPresenceEvent,
   OrgTimerActivityEvent,
   MonthlyTimesheet,
+  ScreenshotRecord,
+  ScreenshotListFilters,
 } from '@shared/types';
 
 type EventUnsubscribe = () => void;
@@ -65,6 +67,8 @@ interface WorktrackAPI {
     flushQueue: () => Promise<IpcResponse<{ uploaded: number; failed: number }>>;
     onUploadStatus: (cb: EventCallback<unknown>) => EventUnsubscribe;
     onSettingsChanged: (cb: EventCallback<unknown>) => EventUnsubscribe;
+    list: (filters?: ScreenshotListFilters) => Promise<IpcResponse<ScreenshotRecord[]>>;
+    getImage: (screenshotId: string) => Promise<IpcResponse<{ dataUrl: string }>>;
   };
   activity: {
     getStatus: () => Promise<IpcResponse<ActivitySnapshot>>;

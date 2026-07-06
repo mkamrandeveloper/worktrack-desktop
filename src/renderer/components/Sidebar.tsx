@@ -19,6 +19,7 @@ export function Sidebar() {
           title: 'Client',
           items: [
             { to: '/client-portal', icon: 'folder_shared', label: 'My Projects', end: true },
+            { to: '/screenshots', icon: 'photo_camera', label: 'Screenshots', end: false },
             { to: '/notifications', icon: 'notifications', label: 'Notifications', end: false },
           ]
         },
@@ -36,6 +37,7 @@ export function Sidebar() {
         { to: isManagerOrAbove() ? '/' : '/dashboard', icon: 'dashboard', label: 'Dashboard', end: true },
         { to: '/projects', icon: 'work_outline', label: 'Projects', end: false },
         { to: '/timesheets', icon: 'schedule', label: 'Timesheets', end: false },
+        { to: '/screenshots', icon: 'photo_camera', label: 'Screenshots', end: false },
         { to: '/notifications', icon: 'notifications', label: 'Notifications', end: false },
       ]
     },

@@ -23,6 +23,7 @@ import { AttendancePage } from './pages/AttendancePage';
 import { DepartmentsPage } from './pages/DepartmentsPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { NotificationsPage } from './pages/NotificationsPage';
+import { ScreenshotsPage } from './pages/ScreenshotsPage';
 import { ClientPortal } from './pages/ClientPortal';
 import { AcceptInvitePage } from './pages/AcceptInvitePage';
 
@@ -217,6 +218,7 @@ export function App() {
                   <Route path="/dashboard" element={<StaffRoute><DashboardPage /></StaffRoute>} />
 
                   {/* Available to every authenticated role */}
+                  <Route path="/screenshots" element={<ScreenshotsPage />} />
                   <Route path="/notifications" element={<NotificationsPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="*" element={<HomeRedirect />} />

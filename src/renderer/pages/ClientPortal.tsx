@@ -3,20 +3,14 @@ import {
   FolderKanban, ChevronLeft, Loader2, CalendarClock, CheckCircle2,
   ListTodo, ImageIcon, Building2, RefreshCw,
 } from 'lucide-react';
-import { ClientProject, Task } from '@shared/types';
+import { ClientProject, Task, ScreenshotRecord } from '@shared/types';
 import { KPICard } from '../components/ui/KPICard';
 import { Card, Badge } from '../components/ui/primitives';
+import { ScreenshotImage } from '../components/ScreenshotImage';
 import { clsx } from 'clsx';
 
 interface ProjectDetail extends ClientProject {
   tasks?: Task[];
-}
-
-interface ProjectScreenshot {
-  id: string;
-  captured_at: string;
-  drive_file_url?: string;
-  employee_name?: string;
 }
 
 const STATUS_VARIANT: Record<string, 'default' | 'info' | 'success' | 'warning' | 'danger'> = {
@@ -32,7 +26,7 @@ export function ClientPortal() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<ProjectDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [screenshots, setScreenshots] = useState<ProjectScreenshot[]>([]);
+  const [screenshots, setScreenshots] = useState<ScreenshotRecord[]>([]);
 
   async function loadProjects() {
     setLoading(true);
@@ -60,7 +54,7 @@ export function ClientPortal() {
         setSelected({ ...p, tasks: detail.tasks ?? [] });
       }
       if (shotsRes.success && Array.isArray(shotsRes.data)) {
-        setScreenshots(shotsRes.data as ProjectScreenshot[]);
+        setScreenshots(shotsRes.data as ScreenshotRecord[]);
       }
     } finally {
       setDetailLoading(false);
@@ -154,16 +148,14 @@ export function ClientPortal() {
               {screenshots.map((s) => (
                 <a
                   key={s.id}
-                  href={s.drive_file_url || '#'}
-                  onClick={(e) => { if (s.drive_file_url) { e.preventDefault(); window.worktrack.system.openExternal(s.drive_file_url); } }}
+                  href={s.driveFileUrl || '#'}
+                  onClick={(e) => { if (s.driveFileUrl) { e.preventDefault(); window.worktrack.system.openExternal(s.driveFileUrl); } }}
                   className="group block rounded-lg overflow-hidden border border-border bg-secondary/40 aspect-video relative"
-                  title={`${s.employee_name ?? 'Team'} · ${new Date(s.captured_at).toLocaleString()}`}
+                  title={`${s.employeeName ?? 'Team'} · ${new Date(s.capturedAt).toLocaleString()}`}
                 >
-                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/50 group-hover:text-primary transition-colors">
-                    <ImageIcon className="w-6 h-6" />
-                  </div>
+                  <ScreenshotImage screenshotId={s.id} />
                   <div className="absolute bottom-0 inset-x-0 bg-background/80 backdrop-blur-sm px-2 py-1 text-[10px] text-muted-foreground truncate">
-                    {new Date(s.captured_at).toLocaleDateString()}
+                    {new Date(s.capturedAt).toLocaleDateString()}
                   </div>
                 </a>
               ))}
