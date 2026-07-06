@@ -4,7 +4,7 @@ import Store from 'electron-store';
 import dotenv from 'dotenv';
 import { setupCrashReporting, createLogger } from './logger/Logger';
 import { SecurityManager } from './security/SecurityManager';
-import { initApiService } from './services/ApiService';
+import { initApiService, getApiService } from './services/ApiService';
 import { TokenManager } from './authentication/TokenManager';
 import { AuthService } from './authentication/AuthService';
 import { TimerEngine } from './timer/TimerEngine';
@@ -117,6 +117,11 @@ async function handleTimerStart(taskId: string): Promise<void> {
     const timerState = timerEngine.getState();
     activityMonitor.onTimerStatusChanged('running');
     screenshotService?.onTimerStateChanged(timerState, user.id);
+
+    // Auto clock-in on the first task start of the day. The backend already
+    // no-ops (400 "Already clocked in") if a clock-in exists for today, so
+    // this is safe to call unconditionally on every task start.
+    getApiService().post('/api/timelogs/clock-in').catch(() => {});
   }
 
   // Emit socket event
@@ -179,6 +184,9 @@ async function handleBreakStart(): Promise<void> {
       log.error('Break start failed', { error: err.message });
     });
   }
+  // Log the break interval (used by the attendance summary, dashboard
+  // in/out/break status, and the Screenshots page's break placeholders).
+  getApiService().post('/api/timelogs/break-start').catch(() => {});
   syncService.sendToSocket(SOCKET_EVENTS.EMIT.BREAK_START, { sessionId: state.sessionId });
 }
 
@@ -192,6 +200,7 @@ async function handleBreakEnd(): Promise<void> {
       log.error('Break end failed', { error: err.message });
     });
   }
+  getApiService().post('/api/timelogs/break-end').catch(() => {});
   syncService.sendToSocket(SOCKET_EVENTS.EMIT.BREAK_END, { sessionId: state.sessionId });
 }
 

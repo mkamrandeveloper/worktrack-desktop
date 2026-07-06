@@ -1,7 +1,74 @@
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { MaterialIcon } from './ui/MaterialIcon';
 import { clsx } from 'clsx';
+
+function fmtClockTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+/** Personal clock-in/out control — visible to every staff member on every page. */
+function ClockWidget() {
+  const [clockInTime, setClockInTime] = useState<string | null>(null);
+  const [clockOutTime, setClockOutTime] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const refresh = () => {
+    window.worktrack.dashboard.getPersonalAnalytics('daily').then((res) => {
+      if (res.success && res.data) {
+        setClockInTime(res.data.clockInTime);
+        setClockOutTime(res.data.clockOutTime);
+      }
+    });
+  };
+
+  useEffect(() => { refresh(); }, []);
+
+  // Clocked in if there's a clock-in with no later clock-out yet.
+  const isClockedIn = !!clockInTime && (!clockOutTime || new Date(clockOutTime) < new Date(clockInTime));
+
+  const handleClick = async () => {
+    setBusy(true);
+    try {
+      if (isClockedIn) {
+        const timerState = await window.worktrack.timer.getState();
+        if (timerState.success && timerState.data && timerState.data.status !== 'idle' && timerState.data.status !== 'stopped') {
+          await window.worktrack.timer.stop();
+        }
+        await window.worktrack.timelogs.clockOut();
+      } else {
+        await window.worktrack.timelogs.clockIn();
+      }
+    } finally {
+      setBusy(false);
+      refresh();
+    }
+  };
+
+  return (
+    <div className="px-4 pb-3 shrink-0">
+      <button
+        onClick={handleClick}
+        disabled={busy}
+        className={clsx(
+          'flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50',
+          isClockedIn
+            ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
+            : 'bg-primary text-primary-foreground hover:opacity-90'
+        )}
+      >
+        <MaterialIcon name={isClockedIn ? 'logout' : 'login'} size={16} />
+        {isClockedIn ? 'Clock Out' : 'Clock In'}
+      </button>
+      {(clockInTime || clockOutTime) && (
+        <p className="text-[10px] text-muted-foreground text-center mt-1.5">
+          {isClockedIn ? `Clocked in at ${fmtClockTime(clockInTime!)}` : clockOutTime ? `Clocked out at ${fmtClockTime(clockOutTime)}` : ''}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export function Sidebar() {
   const navigate = useNavigate();
@@ -86,6 +153,8 @@ export function Sidebar() {
           {roleBadge.label}
         </div>
       </div>
+
+      {!isClient() && <ClockWidget />}
 
       {/* Navigation */}
       <nav className="flex-1 px-3 space-y-6 overflow-y-auto custom-scrollbar">

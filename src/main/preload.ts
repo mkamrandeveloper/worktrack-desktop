@@ -29,6 +29,7 @@ import type {
   MonthlyTimesheet,
   ScreenshotRecord,
   ScreenshotListFilters,
+  BreakInterval,
 } from '../shared/types';
 
 type EventCallback<T> = (data: T) => void;
@@ -95,6 +96,8 @@ const api = {
       invoke<ScreenshotRecord[]>(IPC.SCREENSHOTS.LIST, filters),
     getImage: (screenshotId: string) =>
       invoke<{ dataUrl: string }>(IPC.SCREENSHOTS.GET_IMAGE, screenshotId),
+    listBreaks: (filters?: ScreenshotListFilters) =>
+      invoke<BreakInterval[]>(IPC.SCREENSHOTS.LIST_BREAKS, filters),
   },
 
   // ── Activity ──────────────────────────────────────────────────────────────────

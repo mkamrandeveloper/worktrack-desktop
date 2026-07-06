@@ -310,6 +310,20 @@ export class IpcHandler {
       }
     });
 
+    ipcMain.handle(IPC.SCREENSHOTS.LIST_BREAKS, async (event, filters?: ScreenshotListFilters) => {
+      try {
+        this._validateSender(event);
+        const params = new URLSearchParams();
+        if (filters?.userId) params.set('userId', filters.userId);
+        if (filters?.from) params.set('from', filters.from);
+        if (filters?.to) params.set('to', filters.to);
+        const qs = params.toString() ? `?${params.toString()}` : '';
+        return this._ok(await api().get(`/api/screenshots/breaks${qs}`));
+      } catch (err) {
+        return this._err(err);
+      }
+    });
+
     ipcMain.handle(IPC.SCREENSHOTS.GET_QUEUE, (event) => {
       try {
         this._validateSender(event);

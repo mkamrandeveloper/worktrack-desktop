@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
-import { ScreenshotRecord, TeamMember } from '@shared/types';
+import { ScreenshotRecord, TeamMember, BreakInterval } from '@shared/types';
+import { formatDuration } from '../utils/formatTime';
 import { clsx } from 'clsx';
 
 const PAGE_SIZE = 36;
@@ -10,6 +11,10 @@ const PAGE_SIZE = 36;
 function fmtTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
+
+type DayItem =
+  | { kind: 'screenshot'; time: string; record: ScreenshotRecord }
+  | { kind: 'break'; time: string; brk: BreakInterval };
 
 function fmtDayHeading(dateKey: string): string {
   const d = new Date(`${dateKey}T00:00:00`);
@@ -75,15 +80,34 @@ function ScreenshotThumb({ record, imageCache, onLoaded, onOpen, showEmployee }:
           <MaterialIcon name="image" size={22} />
         </div>
       )}
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent p-2 flex items-end justify-between">
-        <span className="text-white text-[11px] font-medium drop-shadow">{fmtTime(record.capturedAt)}</span>
-        {showEmployee && record.employeeName && (
-          <span className="w-5 h-5 rounded-full bg-white/20 backdrop-blur text-white text-[9px] font-bold flex items-center justify-center shrink-0">
+      {showEmployee && record.employeeName && (
+        <div className="absolute inset-x-0 top-0 bg-gradient-to-b from-black/75 to-transparent px-2 py-1.5 flex items-center gap-1.5">
+          <span className="w-4 h-4 rounded-full bg-white/25 backdrop-blur text-white text-[8px] font-bold flex items-center justify-center shrink-0">
             {initials(record.employeeName)}
           </span>
-        )}
+          <span className="text-white text-[11px] font-semibold truncate drop-shadow">{record.employeeName}</span>
+        </div>
+      )}
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent p-2">
+        <span className="text-white text-[11px] font-medium drop-shadow">{fmtTime(record.capturedAt)}</span>
       </div>
     </button>
+  );
+}
+
+function BreakCard({ brk, showEmployee }: { brk: BreakInterval; showEmployee: boolean }) {
+  const durationLabel = brk.end
+    ? formatDuration(Math.round((new Date(brk.end).getTime() - new Date(brk.start).getTime()) / 1000))
+    : 'Ongoing';
+  return (
+    <div className="aspect-video rounded-xl border border-amber-300/50 bg-amber-50 dark:bg-amber-500/10 flex flex-col items-center justify-center gap-1 text-amber-700 dark:text-amber-400 p-2 text-center">
+      <MaterialIcon name="coffee" size={20} />
+      <span className="text-[11px] font-semibold">On Break</span>
+      <span className="text-[10px] opacity-80">
+        {fmtTime(brk.start)}{brk.end ? ` – ${fmtTime(brk.end)}` : ''} · {durationLabel}
+      </span>
+      {showEmployee && <span className="text-[10px] font-medium truncate max-w-full">{brk.employeeName}</span>}
+    </div>
   );
 }
 
@@ -102,6 +126,7 @@ export function ScreenshotsPage() {
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [allDates, setAllDates] = useState(!!initialProjectId);
   const [records, setRecords] = useState<ScreenshotRecord[]>([]);
+  const [breaks, setBreaks] = useState<BreakInterval[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -147,16 +172,39 @@ export function ScreenshotsPage() {
     load(0, false);
   }, [load]);
 
+  useEffect(() => {
+    if (isClient) return;
+    const filters: Record<string, string> = {};
+    if (isManager && employeeId) filters.userId = employeeId;
+    if (!allDates) {
+      filters.from = `${date}T00:00:00`;
+      filters.to = `${date}T23:59:59`;
+    }
+    window.worktrack.screenshots.listBreaks(filters).then((res) => {
+      if (res.success && res.data) setBreaks(res.data);
+    });
+  }, [employeeId, date, allDates, isManager, isClient]);
+
   const onImageLoaded = (id: string, dataUrl: string) => {
     imageCache.set(id, dataUrl);
     forceRerender((n) => n + 1);
   };
 
-  const groups = records.reduce<Record<string, ScreenshotRecord[]>>((acc, r) => {
+  const groups = records.reduce<Record<string, DayItem[]>>((acc, r) => {
     const key = dayKey(r.capturedAt);
-    (acc[key] ??= []).push(r);
+    (acc[key] ??= []).push({ kind: 'screenshot', time: r.capturedAt, record: r });
     return acc;
   }, {});
+  // Breaks are only merged into days that already have at least one
+  // screenshot in view (avoids showing a lone break card on an "all dates"
+  // view for a day the current filters wouldn't otherwise surface).
+  for (const brk of breaks) {
+    const key = dayKey(brk.start);
+    if (groups[key]) groups[key].push({ kind: 'break', time: brk.start, brk });
+  }
+  for (const key of Object.keys(groups)) {
+    groups[key].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+  }
   const dayKeys = Object.keys(groups).sort((a, b) => b.localeCompare(a));
 
   const lightboxRecord = lightboxIndex !== null ? records[lightboxIndex] : null;
@@ -255,19 +303,25 @@ export function ScreenshotsPage() {
             <div key={key}>
               <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                 {fmtDayHeading(key)}
-                <span className="text-xs font-normal text-muted-foreground">({groups[key].length})</span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  ({groups[key].filter((i) => i.kind === 'screenshot').length})
+                </span>
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                {groups[key].map((r) => (
-                  <ScreenshotThumb
-                    key={r.id}
-                    record={r}
-                    imageCache={imageCache}
-                    onLoaded={onImageLoaded}
-                    onOpen={() => setLightboxIndex(records.findIndex((x) => x.id === r.id))}
-                    showEmployee={showEmployeeBadge}
-                  />
-                ))}
+                {groups[key].map((item) =>
+                  item.kind === 'screenshot' ? (
+                    <ScreenshotThumb
+                      key={item.record.id}
+                      record={item.record}
+                      imageCache={imageCache}
+                      onLoaded={onImageLoaded}
+                      onOpen={() => setLightboxIndex(records.findIndex((x) => x.id === item.record.id))}
+                      showEmployee={showEmployeeBadge}
+                    />
+                  ) : (
+                    <BreakCard key={`${item.brk.userId}-${item.brk.start}`} brk={item.brk} showEmployee={showEmployeeBadge} />
+                  )
+                )}
               </div>
             </div>
           ))}

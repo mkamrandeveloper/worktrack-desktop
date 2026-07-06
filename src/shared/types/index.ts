@@ -431,6 +431,13 @@ export interface ScreenshotListFilters {
   offset?: number;
 }
 
+export interface BreakInterval {
+  userId: string;
+  employeeName: string;
+  start: string;
+  end: string | null; // null means still on break
+}
+
 // ─── Activity ─────────────────────────────────────────────────────────────────
 
 export type ActivityStatus = 'active' | 'idle' | 'on_break' | 'offline';

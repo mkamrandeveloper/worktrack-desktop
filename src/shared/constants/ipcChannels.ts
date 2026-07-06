@@ -44,6 +44,7 @@ export const IPC = {
     TEST: 'screenshots:test',
     LIST: 'screenshots:list',
     GET_IMAGE: 'screenshots:get-image',
+    LIST_BREAKS: 'screenshots:list-breaks',
   },
 
   // ── Activity ────────────────────────────────────────────────────────────────

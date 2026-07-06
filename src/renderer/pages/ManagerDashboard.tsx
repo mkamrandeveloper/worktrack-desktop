@@ -691,13 +691,17 @@ export function ManagerDashboard() {
             {members.map(member => {
               const memberTasks = tasks.filter(t => t.assigneeId === member.id);
               const live = liveTaskInfo.get(member.id);
+              const attendanceStatus = onlineStatus.get(member.id);
+              const isOut = !attendanceStatus || attendanceStatus === 'clocked_out' || attendanceStatus === 'offline';
               const liveBadge = live?.status === 'running'
                 ? { cls: 'text-emerald-700 bg-emerald-100 border-emerald-200', icon: 'bolt', label: 'Working' }
                 : live?.status === 'paused'
                 ? { cls: 'text-amber-700 bg-amber-100 border-amber-200', icon: 'pause_circle', label: 'Paused' }
                 : live?.status === 'on_break'
                 ? { cls: 'text-amber-700 bg-amber-100 border-amber-200', icon: 'coffee', label: 'On Break' }
-                : { cls: 'text-muted-foreground bg-muted border-border', icon: null, label: 'Idle' };
+                : isOut
+                ? { cls: 'text-muted-foreground bg-muted border-border', icon: 'logout', label: 'Out' }
+                : { cls: 'text-sky-700 bg-sky-100 border-sky-200', icon: 'login', label: 'In' };
               return (
                 <div key={member.id} className="flex flex-col border-b border-border last:border-0 hover:bg-card/40 transition">
                   <div className="flex items-center gap-4 px-5 py-4">
