@@ -68,6 +68,12 @@ export function ManagerDashboard() {
   const [onlineStatus, setOnlineStatus] = useState<Map<string, string>>(new Map());
   const [runningTimers, setRunningTimers] = useState<Set<string>>(new Set());
   const [recentActivity, setRecentActivity] = useState<{ id: string; label: string; timestamp: string }[]>([]);
+  // Per-employee live session info — sourced from real open sessions (attendance.live())
+  // and kept current via socket events, NOT from the task's own persisted status
+  // column (which stays "IN_PROGRESS" indefinitely once started, so it can't tell
+  // an owner/manager whether someone is actually running, paused, on break, or
+  // has simply stopped for the day).
+  const [liveTaskInfo, setLiveTaskInfo] = useState<Map<string, { status: string; taskTitle: string | null; projectName: string | null }>>(new Map());
 
   const pushActivity = (label: string, timestamp: string) => {
     setRecentActivity((prev) => [{ id: `${timestamp}-${Math.random()}`, label, timestamp }, ...prev].slice(0, 8));
@@ -81,12 +87,19 @@ export function ManagerDashboard() {
       if (r.success && r.data) {
         const statusMap = new Map<string, string>();
         const running = new Set<string>();
+        const taskInfo = new Map<string, { status: string; taskTitle: string | null; projectName: string | null }>();
         for (const emp of r.data) {
           statusMap.set(emp.id, emp.displayStatus);
           if (emp.displayStatus === 'active' && emp.currentTask) running.add(emp.id);
+          taskInfo.set(emp.id, {
+            status: emp.currentTask ? emp.displayStatus : 'idle',
+            taskTitle: emp.currentTask ?? null,
+            projectName: emp.currentProject ?? null,
+          });
         }
         setOnlineStatus(statusMap);
         setRunningTimers(running);
+        setLiveTaskInfo(taskInfo);
       }
     });
   }, []);
@@ -111,6 +124,13 @@ export function ManagerDashboard() {
         const next = new Set(prev);
         if (evt.status === 'running') next.add(evt.userId);
         else next.delete(evt.userId);
+        return next;
+      });
+      setLiveTaskInfo((prev) => {
+        const next = new Map(prev);
+        next.set(evt.userId, evt.status === 'stopped'
+          ? { status: 'idle', taskTitle: null, projectName: null }
+          : { status: evt.status, taskTitle: evt.taskTitle ?? null, projectName: evt.projectName ?? null });
         return next;
       });
       const verb = evt.status === 'running' ? 'started working on' : evt.status === 'paused' ? 'paused' : evt.status === 'on_break' ? 'took a break from' : 'stopped working on';
@@ -670,7 +690,14 @@ export function ManagerDashboard() {
           <div className="divide-y divide-border">
             {members.map(member => {
               const memberTasks = tasks.filter(t => t.assigneeId === member.id);
-              const activeMemberTask = memberTasks.find(t => t.status === 'IN_PROGRESS' || t.status === 'in_progress');
+              const live = liveTaskInfo.get(member.id);
+              const liveBadge = live?.status === 'running'
+                ? { cls: 'text-emerald-700 bg-emerald-100 border-emerald-200', icon: 'bolt', label: 'Working' }
+                : live?.status === 'paused'
+                ? { cls: 'text-amber-700 bg-amber-100 border-amber-200', icon: 'pause_circle', label: 'Paused' }
+                : live?.status === 'on_break'
+                ? { cls: 'text-amber-700 bg-amber-100 border-amber-200', icon: 'coffee', label: 'On Break' }
+                : { cls: 'text-muted-foreground bg-muted border-border', icon: null, label: 'Idle' };
               return (
                 <div key={member.id} className="flex flex-col border-b border-border last:border-0 hover:bg-card/40 transition">
                   <div className="flex items-center gap-4 px-5 py-4">
@@ -679,17 +706,15 @@ export function ManagerDashboard() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground">{member.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {live?.taskTitle ? `${live.taskTitle}${live.projectName ? ` · ${live.projectName}` : ''}` : member.email}
+                      </p>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span>{memberTasks.length} task{memberTasks.length !== 1 ? 's' : ''}</span>
-                      {activeMemberTask ? (
-                        <span className="flex items-center gap-1 text-emerald-700 bg-emerald-100 border border-emerald-200 rounded-full px-2 py-0.5">
-                          <MaterialIcon name="bolt" size={12} /> Working
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground bg-muted border border-border rounded-full px-2 py-0.5">Idle</span>
-                      )}
+                      <span className={clsx('flex items-center gap-1 border rounded-full px-2 py-0.5', liveBadge.cls)}>
+                        {liveBadge.icon && <MaterialIcon name={liveBadge.icon} size={12} />} {liveBadge.label}
+                      </span>
                     </div>
                     <button
                       onClick={() => window.worktrack.drive.openFolder(member.driveFolderUrl ?? 'https://drive.google.com')}
