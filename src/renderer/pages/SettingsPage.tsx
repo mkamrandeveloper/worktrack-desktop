@@ -34,7 +34,7 @@ function SettingRow({
   return (
     <div className="flex items-center justify-between py-4">
       <div className="flex items-start gap-4">
-        <div className="p-2 rounded-lg bg-secondary text-muted-foreground shrink-0 mt-0.5">
+        <div className="p-2 rounded-lg bg-secondary text-secondary-foreground shrink-0 mt-0.5">
           {icon}
         </div>
         <div>

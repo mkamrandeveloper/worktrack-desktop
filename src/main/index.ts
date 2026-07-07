@@ -286,7 +286,12 @@ function createMainWindow(): BrowserWindow {
         log.warn(`${prefix} ${msg}  (${src}:${line})`);
       }
     });
-    win.webContents.openDevTools({ mode: 'detach' });
+    // Opt-in only — previously this opened unconditionally in every dev
+    // run, which is disruptive when you just want to test the UI. Set
+    // OPEN_DEVTOOLS=true in .env to get the old always-open behavior back.
+    if (process.env.OPEN_DEVTOOLS === 'true') {
+      win.webContents.openDevTools({ mode: 'detach' });
+    }
   } else {
     win.loadFile(path.join(__dirname, '../renderer/index.html'));
   }

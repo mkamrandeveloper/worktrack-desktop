@@ -93,7 +93,11 @@ export function SignupPage() {
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Left brand panel */}
+      {/* Left brand panel — background is always dark regardless of the
+          app's theme, so text is hardcoded to a light palette rather than
+          the theme-driven text-foreground / text-muted-foreground tokens,
+          which flip to dark colors in light mode and become unreadable
+          against this permanently-dark panel. */}
       <div className="hidden lg:flex flex-col w-[42%] bg-gradient-to-br from-slate-900 via-slate-900 to-primary/20 p-12 relative overflow-hidden">
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 right-0 w-72 h-72 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -101,20 +105,20 @@ export function SignupPage() {
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/40">
             <Activity className="w-6 h-6 text-primary-foreground" />
           </div>
-          <span className="text-xl font-bold text-foreground tracking-tight">WorkTrack</span>
+          <span className="text-xl font-bold text-white tracking-tight">WorkTrack</span>
         </div>
         <div className="flex-1 flex flex-col justify-center z-10">
-          <h1 className="text-4xl font-bold text-foreground leading-tight mb-5">
+          <h1 className="text-4xl font-bold text-white leading-tight mb-5 whitespace-pre-line">
             {flow === 'create-org' ? 'Build your\nteam workspace.' : 'Join your\nteam today.'}
           </h1>
-          <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
+          <p className="text-slate-300 text-sm leading-relaxed max-w-xs">
             {flow === 'create-org'
               ? 'Set up an organization, invite your team, and start tracking everyone\'s productivity automatically.'
               : 'Request access to your organization. The manager will approve your account and assign tasks to you.'}
           </p>
           <div className="mt-10 space-y-4">
             {['Automatic time tracking', 'Per-employee screenshots', 'Google Drive integration', 'Real-time dashboards'].map((feat) => (
-              <div key={feat} className="flex items-center gap-3 text-sm text-muted-foreground">
+              <div key={feat} className="flex items-center gap-3 text-sm text-slate-300">
                 <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
                 {feat}
               </div>

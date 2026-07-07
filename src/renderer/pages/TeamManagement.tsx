@@ -5,8 +5,10 @@ import {
 } from 'lucide-react';
 import { TeamMember } from '@shared/types';
 import { AddEmployeeModal } from '../components/AddEmployeeModal';
+import { useAuthStore } from '../store/authStore';
 
 export function TeamManagement() {
+  const { organization } = useAuthStore();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [requests, setRequests] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,12 +46,10 @@ export function TeamManagement() {
   };
 
   const openDrive = async (url?: string) => {
-    if (url) {
-      await window.worktrack.drive.openFolder(url);
-    } else {
-      // Open root drive
-      await window.worktrack.system.openExternal('https://drive.google.com');
-    }
+    // Falls back to the org's own shared Drive folder (the same one
+    // screenshots actually upload to) rather than the generic Drive
+    // homepage, so this always lands somewhere relevant.
+    await window.worktrack.drive.openFolder(url ?? organization?.driveFolderUrl ?? 'https://drive.google.com');
   };
 
   return (

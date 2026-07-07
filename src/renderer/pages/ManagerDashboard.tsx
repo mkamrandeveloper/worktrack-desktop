@@ -631,7 +631,7 @@ export function ManagerDashboard() {
           </div>
           <button
             id="btn-open-drive"
-            onClick={() => window.worktrack.drive.openFolder('https://drive.google.com')}
+            onClick={() => window.worktrack.drive.openFolder(organization?.driveFolderUrl ?? 'https://drive.google.com')}
             className="w-full py-2.5 text-sm font-semibold border border-border rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition"
           >
             Open Drive

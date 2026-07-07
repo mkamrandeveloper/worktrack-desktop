@@ -38,7 +38,11 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Left Panel — Brand */}
+      {/* Left Panel — Brand. Background is always dark regardless of the
+          app's light/dark theme setting, so text here is hardcoded to a
+          light palette instead of the theme-driven text-foreground /
+          text-muted-foreground tokens — those flip to dark colors in light
+          mode and become unreadable against this permanently-dark panel. */}
       <div className="hidden lg:flex flex-col w-[45%] bg-gradient-to-br from-slate-900 via-slate-900 to-primary/20 p-12 relative overflow-hidden">
         {/* Decorative blobs */}
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
@@ -48,15 +52,15 @@ export function LoginPage() {
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/40">
             <Activity className="w-6 h-6 text-primary-foreground" />
           </div>
-          <span className="text-xl font-bold text-foreground tracking-tight">WorkTrack</span>
+          <span className="text-xl font-bold text-white tracking-tight">WorkTrack</span>
         </div>
 
         <div className="flex-1 flex flex-col justify-center z-10">
-          <h1 className="text-4xl font-bold text-foreground leading-tight mb-5">
+          <h1 className="text-4xl font-bold text-white leading-tight mb-5">
             Productivity,<br />
             tracked <span className="text-primary">automatically.</span>
           </h1>
-          <p className="text-muted-foreground text-base leading-relaxed max-w-sm">
+          <p className="text-slate-300 text-base leading-relaxed max-w-sm">
             WorkTrack monitors your work sessions, captures screenshots, and syncs everything seamlessly — so you can focus on what matters.
           </p>
 
@@ -68,14 +72,14 @@ export function LoginPage() {
               { label: 'Cross Platform', desc: 'Windows, macOS, and Linux.' },
             ].map((feat) => (
               <div key={feat.label} className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-                <div className="text-sm font-semibold text-foreground mb-1">{feat.label}</div>
-                <div className="text-xs text-muted-foreground">{feat.desc}</div>
+                <div className="text-sm font-semibold text-white mb-1">{feat.label}</div>
+                <div className="text-xs text-slate-300">{feat.desc}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <p className="text-xs text-muted-foreground z-10">
+        <p className="text-xs text-slate-400 z-10">
           v{import.meta.env.VITE_APP_VERSION ?? '1.0.0'} • Enterprise Grade Security
         </p>
       </div>

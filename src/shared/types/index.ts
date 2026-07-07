@@ -76,6 +76,7 @@ export interface Organization {
   workingHoursEnd?: string;   // HH:mm
   timezone: string;
   teamSize?: number;
+  driveFolderUrl?: string;
 }
 
 export interface AuthTokens {
