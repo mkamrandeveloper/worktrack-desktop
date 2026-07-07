@@ -28,19 +28,28 @@ export function formatShortDate(iso: string): string {
 }
 
 /**
- * Returns how many days until a deadline, as a string.
+ * Live countdown to a task deadline, down to the minute once it's close.
  */
-export function formatDeadline(iso: string): { label: string; isOverdue: boolean; isUrgent: boolean } {
-  const deadline = new Date(iso);
-  const now = new Date();
-  const diffMs = deadline.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+export function formatDeadlineCountdown(iso: string): { label: string; isOverdue: boolean; isUrgent: boolean } {
+  const diffMs = new Date(iso).getTime() - Date.now();
+  const overdue = diffMs < 0;
+  const abs = Math.abs(diffMs);
 
-  if (diffDays < 0) return { label: `${Math.abs(diffDays)}d overdue`, isOverdue: true, isUrgent: false };
-  if (diffDays === 0) return { label: 'Due today', isOverdue: false, isUrgent: true };
-  if (diffDays === 1) return { label: 'Due tomorrow', isOverdue: false, isUrgent: true };
-  if (diffDays <= 7) return { label: `${diffDays}d left`, isOverdue: false, isUrgent: true };
-  return { label: `${diffDays}d left`, isOverdue: false, isUrgent: false };
+  const days = Math.floor(abs / 86400000);
+  const hours = Math.floor((abs % 86400000) / 3600000);
+  const minutes = Math.floor((abs % 3600000) / 60000);
+
+  let span: string;
+  if (days > 0) span = `${days}d ${hours}h`;
+  else if (hours > 0) span = `${hours}h ${minutes}m`;
+  else if (minutes > 0) span = `${minutes}m`;
+  else span = 'a moment';
+
+  return {
+    label: overdue ? `Overdue by ${span}` : `${span} left`,
+    isOverdue: overdue,
+    isUrgent: !overdue && diffMs <= 86400000,
+  };
 }
 
 /**

@@ -107,8 +107,6 @@ interface WorktrackAPI {
     projectScreenshots: (projectId: string) => Promise<IpcResponse<unknown>>;
   };
   drive: {
-    getAuthUrl: () => Promise<IpcResponse<{ url: string }>>;
-    handleCallback: (code: string) => Promise<IpcResponse<{ orgFolderUrl?: string }>>;
     isConnected: () => Promise<IpcResponse<{ connected: boolean; orgFolderUrl?: string }>>;
     openFolder: (url: string) => Promise<IpcResponse>;
   };

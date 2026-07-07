@@ -562,25 +562,6 @@ export class IpcHandler {
   // ── Drive ─────────────────────────────────────────────────────────────────────
 
   private _registerDriveHandlers(): void {
-    ipcMain.handle(IPC.DRIVE.GET_AUTH_URL, async (event) => {
-      try {
-        this._validateSender(event);
-        return this._ok(await this.services.drive.getAuthUrl());
-      } catch (err) {
-        return this._err(err);
-      }
-    });
-
-    ipcMain.handle(IPC.DRIVE.HANDLE_CALLBACK, async (event, code: string) => {
-      try {
-        this._validateSender(event);
-        const result = await this.services.drive.handleCallback(code);
-        return this._ok(result);
-      } catch (err) {
-        return this._err(err);
-      }
-    });
-
     ipcMain.handle(IPC.DRIVE.IS_CONNECTED, async (event) => {
       try {
         this._validateSender(event);

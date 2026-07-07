@@ -6,7 +6,7 @@ import { useTimer } from '../hooks/useTimer';
 import { TeamMember, Task, DashboardAnalytics, LiveStatus, OrgPresenceEvent, OrgTimerActivityEvent } from '@shared/types';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
 import { Badge } from '../components/ui/primitives';
-import { formatDuration, calcProgress, hoursToSeconds } from '../utils/formatTime';
+import { formatDuration, calcProgress, hoursToSeconds, formatDeadlineCountdown } from '../utils/formatTime';
 import { clsx } from 'clsx';
 
 interface OrgSettings {
@@ -39,6 +39,14 @@ export function ManagerDashboard() {
     }
   }, [timer.taskId]);
 
+  // Ticks once a minute purely to keep the deadline countdown below live,
+  // for whenever the selected task has no running timer of its own.
+  const [, setCountdownTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setCountdownTick((n) => n + 1), 60000);
+    return () => clearInterval(t);
+  }, []);
+
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [settings] = useState<OrgSettings>({ screenshotInterval: 1 });
@@ -46,9 +54,6 @@ export function ManagerDashboard() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [driveConnected, setDriveConnected] = useState(false);
-  const [driveLoading, setDriveLoading] = useState(false);
-  const [authCode, setAuthCode] = useState('');
-  const [showAuthInput, setShowAuthInput] = useState(false);
 
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
   const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
@@ -181,30 +186,6 @@ export function ManagerDashboard() {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const handleConnectDrive = async () => {
-    setDriveLoading(true);
-    const res = await window.worktrack.drive.getAuthUrl();
-    setDriveLoading(false);
-    if (res.success && res.data) {
-      await window.worktrack.system.openExternal(res.data.url);
-      setShowAuthInput(true);
-    }
-  };
-
-  const handleAuthSubmit = async () => {
-    if (!authCode) return;
-    setDriveLoading(true);
-    const res = await window.worktrack.drive.handleCallback(authCode);
-    setDriveLoading(false);
-    if (res.success) {
-      setDriveConnected(true);
-      setShowAuthInput(false);
-      setAuthCode('');
-    } else {
-      alert(res.error || 'Failed to authenticate');
-    }
-  };
-
   const pendingTasks = tasks.filter(t => t.status === 'TODO' || t.status === 'pending').length;
   const activeTasks = tasks.filter(t => t.status === 'IN_PROGRESS' || t.status === 'in_progress').length;
   const completedTasks = tasks.filter(t => t.status === 'completed' || t.status === 'DONE').length;
@@ -227,6 +208,7 @@ export function ManagerDashboard() {
   const ringProgress = calcProgress(timer.elapsedSeconds, ringTarget);
   const circumference = 283;
   const ringOffset = circumference - (ringProgress / 100) * circumference;
+  const deadlineCountdown = selectedTask?.deadline ? formatDeadlineCountdown(selectedTask.deadline) : null;
   const timerRunning = timer.status === 'running';
   const timerOnBreak = timer.status === 'on_break';
   const timerPaused = timer.status === 'paused';
@@ -422,7 +404,22 @@ export function ManagerDashboard() {
               </div>
             )}
             <h3 className="text-xl font-display font-bold text-foreground mb-2">{selectedTask ? selectedTask.title : 'Pick a task to start tracking'}</h3>
-            <p className="text-muted-foreground mb-6">{selectedTask?.projectName ?? 'No project selected'}</p>
+            <p className="text-muted-foreground mb-2">{selectedTask?.projectName ?? 'No project selected'}</p>
+            {deadlineCountdown && (
+              <div
+                className={clsx(
+                  'inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-mono text-[11px] uppercase tracking-widest mb-4',
+                  deadlineCountdown.isOverdue
+                    ? 'bg-destructive/10 text-destructive'
+                    : deadlineCountdown.isUrgent
+                    ? 'bg-amber-500/10 text-amber-600'
+                    : 'bg-muted text-muted-foreground'
+                )}
+              >
+                <MaterialIcon name={deadlineCountdown.isOverdue ? 'error' : 'timer'} size={14} />
+                {deadlineCountdown.label}
+              </div>
+            )}
 
             <div className="flex items-center gap-3 w-full justify-center md:justify-start">
               {!selectedTask ? (
@@ -626,51 +623,19 @@ export function ManagerDashboard() {
             <h4 className="font-semibold text-foreground text-sm">Google Drive</h4>
           </div>
           <p className="text-xs text-muted-foreground mb-4">
-            Connect Google Drive to automatically store screenshots organized in per-employee folders.
+            Screenshots are automatically stored in Drive, organized into a folder per employee — connected by default, no setup needed.
           </p>
           <div className="flex items-center gap-3 mb-4">
             <div className={clsx('w-2.5 h-2.5 rounded-full', driveConnected ? 'bg-emerald-500' : 'bg-muted-foreground')} />
-            <span className="text-sm text-foreground">{driveConnected ? 'Connected' : 'Not Connected'}</span>
+            <span className="text-sm text-foreground">{driveConnected ? 'Connected' : 'Not available'}</span>
           </div>
-          <div className="flex gap-2">
-            <button
-              id="btn-connect-drive"
-              onClick={handleConnectDrive}
-              disabled={driveLoading || driveConnected}
-              className="flex-1 py-2.5 text-sm font-semibold bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition disabled:opacity-60"
-            >
-              {driveLoading ? 'Opening...' : driveConnected ? 'Connected' : 'Connect Google Drive'}
-            </button>
-            <button
-              id="btn-open-drive"
-              onClick={() => window.worktrack.drive.openFolder('https://drive.google.com')}
-              className="px-4 py-2.5 border border-border rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition"
-            >
-              Open Drive
-            </button>
-          </div>
-
-          {showAuthInput && !driveConnected && (
-            <div className="mt-4 p-4 bg-muted/50 rounded-xl border border-border animate-fade-in">
-              <label className="block text-xs font-medium text-muted-foreground mb-2">Paste the Authorization Code here:</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={authCode}
-                  onChange={e => setAuthCode(e.target.value)}
-                  placeholder="4/1AdkVLP..."
-                  className="flex-1 bg-input border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition font-mono"
-                />
-                <button
-                  onClick={handleAuthSubmit}
-                  disabled={driveLoading || !authCode}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:opacity-90 transition disabled:opacity-60"
-                >
-                  {driveLoading ? '...' : 'Submit'}
-                </button>
-              </div>
-            </div>
-          )}
+          <button
+            id="btn-open-drive"
+            onClick={() => window.worktrack.drive.openFolder('https://drive.google.com')}
+            className="w-full py-2.5 text-sm font-semibold border border-border rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition"
+          >
+            Open Drive
+          </button>
         </div>
       </div>
 

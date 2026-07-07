@@ -6,26 +6,10 @@ import { API_ENDPOINTS } from '../../shared/constants/events';
 const log = createLogger('DriveService');
 
 export class DriveService {
-  /** Get the OAuth URL to open in the user's browser */
-  async getAuthUrl(): Promise<{ url: string }> {
-    const api = getApiService();
-    const result = await api.get<{ url: string }>(API_ENDPOINTS.DRIVE.AUTH_URL);
-    log.info('Drive auth URL retrieved');
-    return result;
-  }
-
-  /** Exchange the OAuth code returned by Google for tokens (backend saves them) */
-  async handleCallback(code: string): Promise<{ orgFolderUrl?: string }> {
-    const api = getApiService();
-    const result = await api.post<{ success: boolean; orgFolderUrl?: string }>(
-      API_ENDPOINTS.DRIVE.CALLBACK,
-      { code }
-    );
-    log.info('Drive OAuth callback handled, folders created');
-    return { orgFolderUrl: result.orgFolderUrl };
-  }
-
-  /** Check if Drive is connected and return folder URL */
+  /** Check if Drive is connected and return folder URL. Every organization
+   * shares one pre-authorized Drive account set up server-side — there's no
+   * per-org connect flow, so this just reflects whether the backend has
+   * that shared account configured. */
   async isConnected(): Promise<{ connected: boolean; orgFolderUrl?: string }> {
     try {
       const api = getApiService();

@@ -77,8 +77,6 @@ export const API_ENDPOINTS = {
     UPDATE_ORG_SETTINGS: '/api/manager/org-settings',
   },
   DRIVE: {
-    AUTH_URL: '/api/drive/auth-url',
-    CALLBACK: '/api/drive/callback',
     STATUS: '/api/drive/status',
   },
   UPDATES: {

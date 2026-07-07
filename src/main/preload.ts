@@ -167,8 +167,6 @@ const api = {
 
   // ── Google Drive ──────────────────────────────────────────────────────────────
   drive: {
-    getAuthUrl: () => invoke<{ url: string }>(IPC.DRIVE.GET_AUTH_URL),
-    handleCallback: (code: string) => invoke<{ orgFolderUrl?: string }>(IPC.DRIVE.HANDLE_CALLBACK, code),
     isConnected: () => invoke<{ connected: boolean; orgFolderUrl?: string }>(IPC.DRIVE.IS_CONNECTED),
     openFolder: (url: string) => invoke(IPC.DRIVE.OPEN_FOLDER, url),
   },

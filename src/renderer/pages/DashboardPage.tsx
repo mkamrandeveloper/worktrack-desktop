@@ -5,7 +5,7 @@ import { useAuthStore } from '../store/authStore';
 import { useTaskStore } from '../store/taskStore';
 import { MaterialIcon } from '../components/ui/MaterialIcon';
 import { DashboardAnalytics, Project, TimelineEvent } from '@shared/types';
-import { formatDuration, calcProgress, hoursToSeconds } from '../utils/formatTime';
+import { formatDuration, calcProgress, hoursToSeconds, formatDeadlineCountdown } from '../utils/formatTime';
 import { clsx } from 'clsx';
 
 const ICON_COLORS: { bg: string; text: string }[] = [
@@ -55,6 +55,16 @@ export function DashboardPage() {
       selectTask(timer.taskId);
     }
   }, [timer.taskId]);
+
+  // Ticks once a minute purely to keep the deadline countdown below live —
+  // the timer's own per-second ticking already covers re-renders while a
+  // session is active, but a selected task with no running timer wouldn't
+  // otherwise re-render and the countdown would go stale.
+  const [, setCountdownTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setCountdownTick((n) => n + 1), 60000);
+    return () => clearInterval(t);
+  }, []);
 
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
   const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
@@ -119,6 +129,7 @@ export function DashboardPage() {
   const timerOnBreak = timer.status === 'on_break';
   const timerPaused = timer.status === 'paused';
   const timerActive = timerRunning || timerOnBreak || timerPaused;
+  const deadlineCountdown = selectedTask?.deadline ? formatDeadlineCountdown(selectedTask.deadline) : null;
 
   const chartData = analytics?.chartData ?? [];
   const maxWorkHours = Math.max(1, ...chartData.map((d) => d.workHours));
@@ -272,7 +283,22 @@ export function DashboardPage() {
             <h3 className="text-xl font-display font-bold text-foreground mb-2">
               {selectedTask ? selectedTask.title : 'Pick a task to start tracking'}
             </h3>
-            <p className="text-muted-foreground mb-6">{selectedTask?.projectName ?? 'No project selected'}</p>
+            <p className="text-muted-foreground mb-2">{selectedTask?.projectName ?? 'No project selected'}</p>
+            {deadlineCountdown && (
+              <div
+                className={clsx(
+                  'inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-mono text-[11px] uppercase tracking-widest mb-4',
+                  deadlineCountdown.isOverdue
+                    ? 'bg-destructive/10 text-destructive'
+                    : deadlineCountdown.isUrgent
+                    ? 'bg-amber-500/10 text-amber-600'
+                    : 'bg-muted text-muted-foreground'
+                )}
+              >
+                <MaterialIcon name={deadlineCountdown.isOverdue ? 'error' : 'timer'} size={14} />
+                {deadlineCountdown.label}
+              </div>
+            )}
 
             <div className="flex items-center gap-3 w-full justify-center md:justify-start">
               {!selectedTask ? (

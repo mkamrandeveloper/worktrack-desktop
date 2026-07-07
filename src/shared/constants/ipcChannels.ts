@@ -109,8 +109,6 @@ export const IPC = {
   // ── Google Drive ──────────────────────────────────────────────────────────────
   DRIVE: {
     OPEN_FOLDER: 'drive:open-folder',
-    GET_AUTH_URL: 'drive:get-auth-url',
-    HANDLE_CALLBACK: 'drive:handle-callback',
     IS_CONNECTED: 'drive:is-connected',
   },
 
