@@ -145,7 +145,7 @@ const api = {
       invoke<Task[]>(IPC.MANAGER.GET_TASKS),
     updateOrgSettings: (settings: Record<string, unknown>) =>
       invoke(IPC.MANAGER.UPDATE_ORG_SETTINGS, settings),
-    addEmployee: (payload: { name: string; email: string; password: string }) =>
+    addEmployee: (payload: { name: string; email: string; password: string; departmentId?: string; position?: string }) =>
       invoke(IPC.MANAGER.ADD_EMPLOYEE, payload),
     getEmployeeTasks: (userId: string) =>
       invoke<Task[]>(IPC.MANAGER.GET_EMPLOYEE_TASKS, userId),
@@ -238,6 +238,7 @@ const api = {
     fetch: (params?: { unreadOnly?: boolean; limit?: number }) => invoke<{ notifications: AppNotification[]; unreadCount: number }>(IPC.APP_NOTIFICATIONS.FETCH, params),
     markRead: (id: string) => invoke(IPC.APP_NOTIFICATIONS.MARK_READ, id),
     markAllRead: () => invoke(IPC.APP_NOTIFICATIONS.MARK_ALL_READ),
+    delete: (id: string) => invoke(IPC.APP_NOTIFICATIONS.DELETE, id),
   },
 
   reports: {

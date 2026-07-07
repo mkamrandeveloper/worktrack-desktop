@@ -30,6 +30,11 @@ export function NotificationsPage() {
     loadNotifications();
   }
 
+  async function deleteNotification(id: string) {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    await window.worktrack.appNotifications.delete(id);
+  }
+
   return (
     <div className="flex flex-col h-full bg-background/50">
       <header className="flex-none px-8 py-6 border-b border-border/50 bg-background/80 backdrop-blur-md sticky top-0 z-10">
@@ -69,7 +74,7 @@ export function NotificationsPage() {
             </div>
           ) : (
             notifications.map(notif => (
-              <NotificationItem key={notif.id} notification={notif} onRead={loadNotifications} />
+              <NotificationItem key={notif.id} notification={notif} onRead={loadNotifications} onDelete={deleteNotification} />
             ))
           )}
 
@@ -79,7 +84,7 @@ export function NotificationsPage() {
   );
 }
 
-function NotificationItem({ notification, onRead }: { notification: AppNotification, onRead: () => void }) {
+function NotificationItem({ notification, onRead, onDelete }: { notification: AppNotification, onRead: () => void, onDelete: (id: string) => void }) {
   const getIcon = () => {
     switch (notification.type) {
       case 'task_assigned':
@@ -136,7 +141,7 @@ function NotificationItem({ notification, onRead }: { notification: AppNotificat
       <button 
         className="opacity-0 group-hover:opacity-100 p-2 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all"
         title="Delete notification"
-        onClick={(e) => { e.stopPropagation(); /* Optional delete implementation */ }}
+        onClick={(e) => { e.stopPropagation(); onDelete(notification.id); }}
       >
         <Trash2 className="w-4 h-4" />
       </button>

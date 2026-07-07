@@ -96,7 +96,7 @@ interface WorktrackAPI {
     rejectRequest: (userId: string) => Promise<IpcResponse>;
     getTasks: () => Promise<IpcResponse<Task[]>>;
     updateOrgSettings: (settings: Record<string, unknown>) => Promise<IpcResponse>;
-    addEmployee: (payload: { name: string; email: string; password: string }) => Promise<IpcResponse>;
+    addEmployee: (payload: { name: string; email: string; password: string; departmentId?: string; position?: string }) => Promise<IpcResponse>;
     getEmployeeTasks: (userId: string) => Promise<IpcResponse<Task[]>>;
     getMembers: () => Promise<IpcResponse<TeamMember[]>>;
     setRole: (userId: string, role: string) => Promise<IpcResponse<TeamMember>>;
@@ -152,6 +152,7 @@ interface WorktrackAPI {
     fetch: (params?: { unreadOnly?: boolean; limit?: number }) => Promise<IpcResponse<{ notifications: AppNotification[]; unreadCount: number }>>;
     markRead: (id: string) => Promise<IpcResponse>;
     markAllRead: () => Promise<IpcResponse>;
+    delete: (id: string) => Promise<IpcResponse>;
   };
   reports: {
     overview: (params?: { from?: string; to?: string }) => Promise<IpcResponse<OrgOverviewReport>>;

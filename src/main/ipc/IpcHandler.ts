@@ -49,6 +49,7 @@ interface Services {
   onResumeTimer: () => void;
   onBreakStart: () => Promise<void>;
   onBreakEnd: () => Promise<void>;
+  onSessionEstablished: () => Promise<void>;
 }
 
 /**
@@ -112,6 +113,11 @@ export class IpcHandler {
       try {
         this._validateSender(event);
         const result = await this.services.auth.login(credentials);
+        // Bootstraps screenshot config, WebSocket sync, heartbeat, and the
+        // initial task fetch — previously only ran for a session restored at
+        // app startup, so a fresh login (without restarting the app) got none
+        // of these until the process was relaunched.
+        await this.services.onSessionEstablished();
         return this._ok(result);
       } catch (err) {
         log.error('Login failed', { error: (err as Error).message });
@@ -123,6 +129,7 @@ export class IpcHandler {
       try {
         this._validateSender(event);
         const result = await this.services.auth.signupCreateOrg(payload);
+        await this.services.onSessionEstablished();
         return this._ok(result);
       } catch (err) {
         return this._err(err);
@@ -172,6 +179,7 @@ export class IpcHandler {
       try {
         this._validateSender(event);
         const result = await this.services.auth.acceptClientInvite(payload);
+        await this.services.onSessionEstablished();
         return this._ok(result);
       } catch (err) {
         log.error('Client invite accept failed', { error: (err as Error).message });
@@ -410,37 +418,61 @@ export class IpcHandler {
   // ── System ────────────────────────────────────────────────────────────────────
 
   private _registerSystemHandlers(): void {
+    // All five wrapped in try/catch to match every other handler in this file
+    // — without it, a failed _validateSender() or a thrown updater/shell call
+    // rejects the invoke promise with a raw Error instead of the normalized
+    // IpcResponse shape the renderer's typed preload contract assumes.
     ipcMain.handle(IPC.SYSTEM.GET_APP_VERSION, (event) => {
-      this._validateSender(event);
-      return this._ok({ version: app.getVersion() });
+      try {
+        this._validateSender(event);
+        return this._ok({ version: app.getVersion() });
+      } catch (err) {
+        return this._err(err);
+      }
     });
 
     ipcMain.handle(IPC.SYSTEM.CHECK_UPDATE, (event) => {
-      this._validateSender(event);
-      this.services.updater.checkForUpdates();
-      return this._ok();
+      try {
+        this._validateSender(event);
+        this.services.updater.checkForUpdates();
+        return this._ok();
+      } catch (err) {
+        return this._err(err);
+      }
     });
 
     ipcMain.handle(IPC.SYSTEM.INSTALL_UPDATE, (event) => {
-      this._validateSender(event);
-      this.services.updater.installUpdateAndRestart();
-      return this._ok();
+      try {
+        this._validateSender(event);
+        this.services.updater.installUpdateAndRestart();
+        return this._ok();
+      } catch (err) {
+        return this._err(err);
+      }
     });
 
     ipcMain.handle(IPC.SYSTEM.OPEN_EXTERNAL, async (event, url: string) => {
-      this._validateSender(event);
-      // Only allow https:// URLs
-      if (!url.startsWith('https://')) {
-        return this._err('Only HTTPS URLs are allowed');
+      try {
+        this._validateSender(event);
+        // Only allow https:// URLs
+        if (!url.startsWith('https://')) {
+          return this._err('Only HTTPS URLs are allowed');
+        }
+        await shell.openExternal(url);
+        return this._ok();
+      } catch (err) {
+        return this._err(err);
       }
-      await shell.openExternal(url);
-      return this._ok();
     });
 
     ipcMain.handle(IPC.SYSTEM.QUIT, (event) => {
-      this._validateSender(event);
-      app.quit();
-      return this._ok();
+      try {
+        this._validateSender(event);
+        app.quit();
+        return this._ok();
+      } catch (err) {
+        return this._err(err);
+      }
     });
   }
 
@@ -508,7 +540,7 @@ export class IpcHandler {
       }
     });
 
-    ipcMain.handle(IPC.MANAGER.ADD_EMPLOYEE, async (event, payload: { name: string; email: string; password: string }) => {
+    ipcMain.handle(IPC.MANAGER.ADD_EMPLOYEE, async (event, payload: { name: string; email: string; password: string; departmentId?: string; position?: string }) => {
       try {
         this._validateSender(event);
         return this._ok(await this.services.manager.addEmployee(payload));
@@ -542,8 +574,8 @@ export class IpcHandler {
     ipcMain.handle(IPC.DRIVE.HANDLE_CALLBACK, async (event, code: string) => {
       try {
         this._validateSender(event);
-        await this.services.drive.handleCallback(code);
-        return this._ok();
+        const result = await this.services.drive.handleCallback(code);
+        return this._ok(result);
       } catch (err) {
         return this._err(err);
       }
@@ -743,6 +775,10 @@ export class IpcHandler {
     });
     ipcMain.handle(IPC.APP_NOTIFICATIONS.MARK_ALL_READ, async (event) => {
       try { this._validateSender(event); return this._ok(await api().post('/api/notifications/read-all')); }
+      catch (err) { return this._err(err); }
+    });
+    ipcMain.handle(IPC.APP_NOTIFICATIONS.DELETE, async (event, id: string) => {
+      try { this._validateSender(event); return this._ok(await api().delete(`/api/notifications/${id}`)); }
       catch (err) { return this._err(err); }
     });
 

@@ -47,6 +47,12 @@ export class ActivityMonitor extends EventEmitter {
   }
 
   start(): void {
+    // IdleDetector.start() already no-ops on a repeat call, but snapshotTimer
+    // had no equivalent guard — calling start() twice (as index.ts used to,
+    // once inline for a restored session and again unconditionally right
+    // after) silently overwrote the handle and leaked the first interval
+    // forever, doubling _recordSnapshot()'s cadence.
+    if (this.snapshotTimer) return;
     this.idleDetector.start();
     this.snapshotTimer = setInterval(() => this._recordSnapshot(), 60_000);
     log.info('Activity monitor started');

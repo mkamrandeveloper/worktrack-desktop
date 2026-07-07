@@ -38,6 +38,12 @@ export class DriveService {
   /** Open a Google Drive URL in the default browser */
   async openFolder(url: string): Promise<void> {
     const target = url || 'https://drive.google.com';
+    // Matches the same https-only allow-list SYSTEM.OPEN_EXTERNAL enforces —
+    // this handler forwarded any renderer-supplied string straight to
+    // shell.openExternal with no scheme check at all.
+    if (!target.startsWith('https://')) {
+      throw new Error('Only HTTPS URLs are allowed');
+    }
     log.info(`Opening Google Drive: ${target}`);
     await shell.openExternal(target);
   }

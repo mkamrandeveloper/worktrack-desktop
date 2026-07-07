@@ -165,6 +165,7 @@ export const IPC = {
     FETCH: 'app-notifications:fetch',
     MARK_READ: 'app-notifications:mark-read',
     MARK_ALL_READ: 'app-notifications:mark-all-read',
+    DELETE: 'app-notifications:delete',
   },
 
   // ── Reports ──────────────────────────────────────────────────────────────────

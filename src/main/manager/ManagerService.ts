@@ -33,7 +33,7 @@ export class ManagerService {
     return api.get<Task[]>(API_ENDPOINTS.MANAGER.GET_EMPLOYEE_TASKS(userId));
   }
 
-  async addEmployee(payload: { name: string; email: string; password: string }): Promise<{
+  async addEmployee(payload: { name: string; email: string; password: string; departmentId?: string; position?: string }): Promise<{
     employee: { id: string; name: string; email: string };
     credentials: { email: string; password: string };
   }> {

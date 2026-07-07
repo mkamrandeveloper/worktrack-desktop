@@ -6,6 +6,7 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 export function AttendancePage() {
   const [employees, setEmployees] = useState<LiveEmployee[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     loadLiveStatus();
@@ -27,9 +28,20 @@ export function AttendancePage() {
     }
   }
 
-  const activeCount = employees.filter(e => e.displayStatus === 'active').length;
+  // LiveStatus is 'active' | 'working' | 'idle' | 'on_break' | 'offline' |
+  // 'clocked_out' | 'overtime' — these counts previously only matched
+  // 'active', so anyone reported as 'working' or 'overtime' fell through
+  // every bucket (miscounted as neither online nor offline) and rendered
+  // with the wrong card body ("Currently offline" despite being on a task).
+  const activeCount = employees.filter(e => ['active', 'working', 'overtime'].includes(e.displayStatus)).length;
   const breakCount = employees.filter(e => e.displayStatus === 'on_break').length;
   const offlineCount = employees.filter(e => ['offline', 'clocked_out'].includes(e.displayStatus)).length;
+  const totalOnline = employees.length - offlineCount;
+
+  const filteredEmployees = employees.filter(e =>
+    e.name.toLowerCase().includes(search.trim().toLowerCase()) ||
+    e.email.toLowerCase().includes(search.trim().toLowerCase())
+  );
 
   return (
     <div className="flex flex-col h-full bg-background/50">
@@ -55,7 +67,7 @@ export function AttendancePage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground font-medium">Total Online</p>
-                <p className="text-2xl font-bold">{activeCount + breakCount} <span className="text-sm text-muted-foreground font-normal">/ {employees.length}</span></p>
+                <p className="text-2xl font-bold">{totalOnline} <span className="text-sm text-muted-foreground font-normal">/ {employees.length}</span></p>
               </div>
             </div>
             
@@ -96,6 +108,8 @@ export function AttendancePage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
                 placeholder="Search team members..."
                 className="w-full pl-9 pr-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
               />
@@ -106,15 +120,21 @@ export function AttendancePage() {
           </div>
 
           {/* Employee Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {loading ? (
-              [1, 2, 3, 4].map(i => (
-                <div key={i} className="h-40 rounded-xl border border-border bg-card animate-pulse" />
-              ))
-            ) : employees.map(emp => (
-              <EmployeeLiveCard key={emp.id} employee={emp} />
-            ))}
-          </div>
+          {!loading && filteredEmployees.length === 0 ? (
+            <div className="text-center py-16 text-sm text-muted-foreground">
+              No team members match "{search}".
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {loading ? (
+                [1, 2, 3, 4].map(i => (
+                  <div key={i} className="h-40 rounded-xl border border-border bg-card animate-pulse" />
+                ))
+              ) : filteredEmployees.map(emp => (
+                <EmployeeLiveCard key={emp.id} employee={emp} />
+              ))}
+            </div>
+          )}
 
         </div>
       </div>
@@ -124,12 +144,15 @@ export function AttendancePage() {
 
 function EmployeeLiveCard({ employee }: { employee: LiveEmployee }) {
   const getVariant = (status: string) => {
-    if (status === 'active') return 'active';
+    if (status === 'active' || status === 'working') return 'active';
+    if (status === 'overtime') return 'overtime';
     if (status === 'idle') return 'idle';
     if (status === 'on_break') return 'break';
     if (status === 'clocked_out') return 'clocked_out';
     return 'offline';
   };
+
+  const isWorking = ['active', 'working', 'overtime', 'idle'].includes(employee.displayStatus);
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -147,15 +170,15 @@ function EmployeeLiveCard({ employee }: { employee: LiveEmployee }) {
             <p className="text-xs text-muted-foreground line-clamp-1">{employee.email}</p>
           </div>
         </div>
-        <StatusBadge 
+        <StatusBadge
           variant={getVariant(employee.displayStatus)}
           dot
-          pulse={employee.displayStatus === 'active'}
+          pulse={employee.displayStatus === 'active' || employee.displayStatus === 'working'}
         />
       </div>
 
       <div className="flex-1">
-        {employee.displayStatus === 'active' || employee.displayStatus === 'idle' ? (
+        {isWorking ? (
           <div className="text-xs">
             <p className="text-muted-foreground mb-1">Working on:</p>
             <p className="font-medium line-clamp-2">{employee.currentTask || 'No active task'}</p>

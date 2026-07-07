@@ -35,14 +35,14 @@ export class ScreenshotService extends EventEmitter {
   private currentUserId: string | null = null;
   private readonly screenshotsDir: string;
 
-  constructor(queue: ScreenshotQueue, organization: Organization) {
+  constructor(queue: ScreenshotQueue, organization: Pick<Organization, 'screenshotInterval' | 'screenshotMonitors'>) {
     super();
     this.queue = queue;
     this.screenshotsDir = queue.getScreenshotsDir();
 
     this.config = {
-      intervalMinutes: organization.screenshotInterval,
-      captureMonitors: organization.screenshotMonitors,
+      intervalMinutes: ScreenshotService._safeInterval(organization.screenshotInterval),
+      captureMonitors: organization.screenshotMonitors === 'all' ? 'all' : 'primary',
       maxDimension: parseInt(process.env.SCREENSHOT_MAX_DIMENSION ?? '1920', 10),
       jpegQuality: parseInt(process.env.SCREENSHOT_JPEG_QUALITY ?? '75', 10),
     };
@@ -50,9 +50,20 @@ export class ScreenshotService extends EventEmitter {
     log.info(`Screenshot service initialized — interval: ${this.config.intervalMinutes}min`);
   }
 
+  // A missing/invalid interval must never reach setInterval() as NaN/0 — Node
+  // treats those as "fire almost immediately, repeatedly", which would hammer
+  // the machine and the upload queue with continuous captures. This has been
+  // a live risk: the backend's login/signup response didn't even include
+  // screenshotInterval until this was fixed, so this constructed with
+  // `undefined` in every real session prior to that fix.
+  private static _safeInterval(minutes: unknown): number {
+    const n = Number(minutes);
+    return Number.isFinite(n) && n > 0 ? n : 1;
+  }
+
   updateConfig(org: Partial<Pick<Organization, 'screenshotInterval' | 'screenshotMonitors'>>): void {
-    if (org.screenshotInterval) this.config.intervalMinutes = org.screenshotInterval;
-    if (org.screenshotMonitors) this.config.captureMonitors = org.screenshotMonitors;
+    if (org.screenshotInterval) this.config.intervalMinutes = ScreenshotService._safeInterval(org.screenshotInterval);
+    if (org.screenshotMonitors) this.config.captureMonitors = org.screenshotMonitors === 'all' ? 'all' : 'primary';
 
     // Restart timer with new interval if currently running
     if (this.captureTimer) {
@@ -139,7 +150,8 @@ export class ScreenshotService extends EventEmitter {
     displayId: number,
     monitorIndex: number,
     monitorCount: number,
-    capturedAt: string
+    capturedAt: string,
+    testMode = false
   ): Promise<void> {
     const screenshotId = crypto.randomUUID();
     const rawPath = path.join(this.screenshotsDir, `${screenshotId}_raw.png`);
@@ -170,6 +182,16 @@ export class ScreenshotService extends EventEmitter {
 
       // Get final file size
       const stats = fs.statSync(finalPath);
+
+      if (testMode) {
+        // Verifies the capture mechanism (display access, sharp compression,
+        // disk write) works — but there's no real task/session to attribute
+        // this to, so it must never be queued for upload.
+        log.info(`Test screenshot captured successfully (${Math.round(stats.size / 1024)}KB)`);
+        fs.unlinkSync(finalPath);
+        return;
+      }
+
       const finalMeta = await sharp(finalPath).metadata();
 
       const metadata: ScreenshotMetadata = {
@@ -200,10 +222,14 @@ export class ScreenshotService extends EventEmitter {
     }
   }
 
+  /** Verifies capture works (permissions, monitor access, compression) without
+   * enqueuing anything for upload — there's no real task/session to attach a
+   * test capture to, so previously this used fake 'test-session'/'test-task'/
+   * 'test-user' IDs that got queued and later failed against the real backend. */
   public async takeTestScreenshot(): Promise<void> {
     log.info('Manual test screenshot triggered');
     this.isCapturing = true;
-    
+
     try {
       const displays = await (screenshot as any).listDisplays();
       const captures = this.config.captureMonitors === 'primary'
@@ -215,20 +241,7 @@ export class ScreenshotService extends EventEmitter {
 
       for (let i = 0; i < targetDisplays.length; i++) {
         const display = targetDisplays[i];
-        // Ensure we have dummy session/task/user IDs if none exist
-        const oldSession = this.currentSessionId;
-        const oldTask = this.currentTaskId;
-        const oldUser = this.currentUserId;
-        
-        if (!this.currentSessionId) this.currentSessionId = 'test-session';
-        if (!this.currentTaskId) this.currentTaskId = 'test-task';
-        if (!this.currentUserId) this.currentUserId = 'test-user';
-        
-        await this._captureDisplay(display.id, i, targetDisplays.length, capturedAt);
-        
-        this.currentSessionId = oldSession;
-        this.currentTaskId = oldTask;
-        this.currentUserId = oldUser;
+        await this._captureDisplay(display.id, i, targetDisplays.length, capturedAt, /* testMode */ true);
       }
     } finally {
       this.isCapturing = false;

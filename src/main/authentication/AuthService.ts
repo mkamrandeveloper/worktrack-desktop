@@ -87,6 +87,12 @@ export class AuthService {
         this._clearState();
         return false;
       }
+      // TokenManager persisted the new tokens internally, but this.state
+      // still held the stale (already-expired) ones set above — AUTH.GET_STATE
+      // and STATE_CHANGED would report an expired token/expiry to the
+      // renderer even though real API calls (via TokenManager.getAccessToken())
+      // were working fine off the refreshed one.
+      this.state.tokens = this.tokenManager.getTokens();
     }
 
     log.info(`Session restored for user: ${user.email}`);

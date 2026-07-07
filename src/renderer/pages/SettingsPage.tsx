@@ -100,7 +100,7 @@ export function SettingsPage() {
   const { settings, loadSettings, updateSettings, toggleStartup } = useSettingsStore();
   const { organization } = useAuthStore();
   const [appVersion, setAppVersion] = useState<string>('--');
-  const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'available' | 'upToDate'>('idle');
+  const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'available' | 'downloaded' | 'upToDate'>('idle');
 
   useEffect(() => {
     loadSettings();
@@ -108,10 +108,22 @@ export function SettingsPage() {
       if (res.success && res.data) setAppVersion(res.data.version);
     });
 
+    // 'available' only means a newer version exists and has started
+    // downloading in the background — it isn't installable yet. The actual
+    // "Install Update" action only becomes valid once onUpdateDownloaded
+    // fires; previously the button relabeled itself at the 'available'
+    // stage but stayed wired to handleCheckUpdate, so clicking it just
+    // re-triggered a check instead of ever installing anything.
     const unsubUpdate = window.worktrack.system.onUpdateAvailable((_info) => {
       setUpdateStatus('available');
     });
-    return () => unsubUpdate();
+    const unsubDownloaded = window.worktrack.system.onUpdateDownloaded((_info) => {
+      setUpdateStatus('downloaded');
+    });
+    return () => {
+      unsubUpdate();
+      unsubDownloaded();
+    };
   }, []);
 
   const handleThemeChange = async (theme: Theme) => {
@@ -132,6 +144,10 @@ export function SettingsPage() {
     setTimeout(() => {
       setUpdateStatus((s) => s === 'checking' ? 'upToDate' : s);
     }, 5000);
+  };
+
+  const handleInstallUpdate = async () => {
+    await window.worktrack.system.installUpdate();
   };
 
   const themeOptions: Array<{ key: Theme; icon: React.ReactNode; label: string }> = [
@@ -290,12 +306,15 @@ export function SettingsPage() {
             description={`Current version: v${appVersion}`}
           >
             <button
-              onClick={handleCheckUpdate}
-              disabled={updateStatus === 'checking'}
+              onClick={updateStatus === 'downloaded' ? handleInstallUpdate : handleCheckUpdate}
+              disabled={updateStatus === 'checking' || updateStatus === 'available'}
               className="flex items-center gap-2 px-4 py-2 text-xs font-medium border border-border rounded-lg hover:bg-accent hover:text-foreground transition-all disabled:opacity-50"
             >
               {updateStatus === 'checking' && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-              {updateStatus === 'available' ? '⬇ Install Update' : updateStatus === 'upToDate' ? '✓ Up to Date' : 'Check Now'}
+              {updateStatus === 'downloaded' ? '⬇ Install Update'
+                : updateStatus === 'available' ? 'Downloading…'
+                : updateStatus === 'upToDate' ? '✓ Up to Date'
+                : 'Check Now'}
             </button>
           </SettingRow>
         </Section>

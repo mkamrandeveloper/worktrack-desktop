@@ -45,7 +45,11 @@ const IS_DEV = !app.isPackaged;
 const DEFAULT_PROD_API_URL = 'https://worktrack123-worktrack-backend.hf.space';
 const API_BASE_URL = process.env.API_BASE_URL ?? (IS_DEV ? 'http://localhost:3000' : DEFAULT_PROD_API_URL);
 const WS_URL = process.env.WS_URL ?? API_BASE_URL;
-const ENCRYPTION_KEY = process.env.STORAGE_ENCRYPTION_KEY ?? 'worktrack-default-key-change-me!';
+// A single hardcoded fallback string here would ship identically in every
+// install's source — anyone with the repo could decrypt any user's local
+// auth tokens/cache. Each install now gets its own randomly-generated key,
+// persisted in userData (see SecurityManager for the .env override + details).
+const ENCRYPTION_KEY = SecurityManager.getOrCreateEncryptionKey();
 
 // ── Service Instances ─────────────────────────────────────────────────────────
 
@@ -97,7 +101,17 @@ const pluginManager = new PluginManager();
 const managerService = new ManagerService();
 const driveService = new DriveService();
 
-let screenshotService: ScreenshotService | null = null;
+// Constructed eagerly (not left null) so IpcHandler's `services.screenshots`
+// is always a live object — the Services object below is built once, at
+// startup, before any session exists, so a lazily-assigned `let` variable
+// captured by value here would leave IpcHandler holding a permanently-stale
+// null reference even after a session later assigns a real instance to it.
+// Configured with safe defaults; updateConfig() below applies the real
+// per-org settings once a session (restored or freshly logged in) exists.
+const screenshotService = new ScreenshotService(screenshotQueue, {
+  screenshotInterval: 1,
+  screenshotMonitors: 'primary',
+});
 
 // ── Timer Orchestration ───────────────────────────────────────────────────────
 
@@ -202,6 +216,40 @@ async function handleBreakEnd(): Promise<void> {
   }
   getApiService().post('/api/timelogs/break-end').catch(() => {});
   syncService.sendToSocket(SOCKET_EVENTS.EMIT.BREAK_END, { sessionId: state.sessionId });
+}
+
+// ── Session Bootstrap ─────────────────────────────────────────────────────────
+// Shared by both a session restored at app startup AND a fresh login/signup/
+// client-invite-accept during the same running process. Previously this logic
+// only ran inline inside the startup restoreSession() branch, so logging in
+// without restarting the app skipped screenshot config, WebSocket sync,
+// heartbeat, and the initial task fetch entirely until the next relaunch.
+async function bootstrapSessionServices(): Promise<void> {
+  const user = authService.getUser();
+  const org = authService.getOrganization() as Organization | null;
+  if (!user || !org) return;
+
+  // CLIENT users are external, read-only viewers — never monitor them (no
+  // screenshots, heartbeat, or timer sync). Activity/idle monitoring runs
+  // unconditionally elsewhere, independent of auth state.
+  if (user.role === 'CLIENT') {
+    log.info('Session is a CLIENT — monitoring services disabled');
+    return;
+  }
+
+  screenshotService.updateConfig({
+    screenshotInterval: org.screenshotInterval,
+    screenshotMonitors: org.screenshotMonitors,
+  });
+
+  syncService.setTokenProvider(() => tokenManager.getAccessToken());
+  syncService.connect(WS_URL, user.id, org.id);
+
+  heartbeatService.start(user.id);
+
+  taskService.fetchTasks().catch((err) => {
+    log.warn('Initial task fetch failed', { error: err.message });
+  });
 }
 
 // ── Window Management ─────────────────────────────────────────────────────────
@@ -346,7 +394,7 @@ app.on('ready', async () => {
     auth: authService,
     timer: timerEngine,
     tasks: taskService,
-    screenshots: screenshotService!,
+    screenshots: screenshotService,
     screenshotQueue,
     activity: activityMonitor,
     sync: syncService,
@@ -360,40 +408,20 @@ app.on('ready', async () => {
     onResumeTimer: handleTimerResume,
     onBreakStart: handleBreakStart,
     onBreakEnd: handleBreakEnd,
+    onSessionEstablished: bootstrapSessionServices,
   });
   ipcHandler.register();
 
   // Attempt session restoration
   const restored = await authService.restoreSession();
   if (restored) {
-    const user = authService.getUser();
-    const org = authService.getOrganization() as Organization;
-    log.info(`Session restored for: ${user?.email}`);
-
-    // CLIENT users are external, read-only viewers — never monitor them
-    // (no screenshots, heartbeats, activity tracking, or timer sync).
-    if (user?.role === 'CLIENT') {
-      log.info('Restored session is a CLIENT — monitoring services disabled');
-    } else {
-      // Initialize screenshot service with org settings
-      screenshotService = new ScreenshotService(screenshotQueue, org);
-      activityMonitor.start();
-
-      // Connect WebSocket
-      syncService.setTokenProvider(() => tokenManager.getAccessToken());
-      syncService.connect(WS_URL, user!.id, org.id);
-
-      // Start heartbeat
-      heartbeatService.start(user!.id);
-
-      // Load tasks
-      taskService.fetchTasks().catch((err) => {
-        log.warn('Initial task fetch failed', { error: err.message });
-      });
-    }
+    log.info(`Session restored for: ${authService.getUser()?.email}`);
+    await bootstrapSessionServices();
   }
 
-  // Start activity monitoring always (idle detection works without auth)
+  // Start activity monitoring always (idle detection works without auth) —
+  // single call site; this used to also run inline above for a restored
+  // non-CLIENT session, leaking a duplicate setInterval every time.
   activityMonitor.start();
 
   // Check for updates shortly after startup, then keep re-checking in the

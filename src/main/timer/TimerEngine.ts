@@ -39,6 +39,15 @@ export class TimerEngine extends EventEmitter {
     const persisted = this.store.get('timerState');
     this.state = this._reconcilePersistedState(persisted);
     log.info(`Timer engine initialized — status: ${this.state.status}`);
+
+    // A recovered "running" timer had its elapsed time recomputed above, but
+    // the tick loop itself was never restarted — the UI would show a frozen
+    // clock (no 'tick'/'state-changed' events) until the user manually
+    // stopped it, since resume() also refuses to act while status is already
+    // 'running'.
+    if (this.state.status === 'running') {
+      this._startTicking();
+    }
   }
 
   static createInitialState(): TimerState {

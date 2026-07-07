@@ -66,6 +66,7 @@ export class IdleDetector extends EventEmitter {
   stop(): void {
     if (this.pollTimer) {
       clearInterval(this.pollTimer);
+      this.pollTimer = null;
     }
     powerMonitor.removeAllListeners('suspend');
     powerMonitor.removeAllListeners('resume');

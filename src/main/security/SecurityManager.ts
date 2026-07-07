@@ -1,4 +1,7 @@
 import { app, session } from 'electron';
+import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 import { createLogger } from '../logger/Logger';
 
 const log = createLogger('SecurityManager');
@@ -74,6 +77,38 @@ export class SecurityManager {
         return { action: 'deny' };
       });
     });
+  }
+
+  /**
+   * Returns the key used to encrypt local electron-store data (auth tokens,
+   * cached tasks, timer state, etc). An explicit STORAGE_ENCRYPTION_KEY env
+   * var (set via .env for local dev) always wins; otherwise generates a
+   * random key on first run and persists it in userData so every install
+   * gets its own unique key instead of the single literal string that used
+   * to ship hardcoded in source — visible to anyone with the repo, meaning
+   * every user's local data was effectively encrypted with a public key.
+   */
+  static getOrCreateEncryptionKey(): string {
+    if (process.env.STORAGE_ENCRYPTION_KEY) {
+      return process.env.STORAGE_ENCRYPTION_KEY;
+    }
+
+    const keyFile = path.join(app.getPath('userData'), '.enc-key');
+    try {
+      const existing = fs.readFileSync(keyFile, 'utf8').trim();
+      if (existing) return existing;
+    } catch {
+      // File doesn't exist yet (or is unreadable) — generate a new one below.
+    }
+
+    const generated = crypto.randomBytes(32).toString('hex');
+    try {
+      fs.mkdirSync(path.dirname(keyFile), { recursive: true });
+      fs.writeFileSync(keyFile, generated, { mode: 0o600 });
+    } catch (err) {
+      log.error('Failed to persist encryption key — it will not survive a restart', { error: (err as Error).message });
+    }
+    return generated;
   }
 
   /**
