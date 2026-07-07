@@ -49,7 +49,11 @@ export function AddEmployeeModal({ onClose, onSuccess }: Props) {
 
   const copyCredentials = () => {
     if (!result) return;
-    const text = `WorkTrack Login Credentials\nEmail: ${result.credentials.email}\nPassword: ${result.credentials.password}\nURL: http://localhost:3001`;
+    // Was a hardcoded "http://localhost:3001" — meaningless to an employee
+    // on their own machine. They log in via the desktop app itself, not a
+    // URL, so point at where to download it instead (same link the
+    // welcome email's button uses).
+    const text = `WorkTrack Login Credentials\nEmail: ${result.credentials.email}\nPassword: ${result.credentials.password}\nDownload WorkTrack Desktop: https://github.com/mkamrandeveloper/worktrack-desktop/releases/latest`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
