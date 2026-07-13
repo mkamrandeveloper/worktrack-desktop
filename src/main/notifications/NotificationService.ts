@@ -55,12 +55,14 @@ export class NotificationService {
     });
   }
 
-  screenshotUploadFailed(retryCount: number): void {
+  screenshotUploadFailed(failedCount: number): void {
     this.show({
       id: `screenshot-failed-${Date.now()}`,
       type: 'warning',
       title: 'Screenshot Upload Failed',
-      message: `Upload failed (attempt ${retryCount}). Will retry automatically.`,
+      message: failedCount === 1
+        ? '1 screenshot failed to upload. Will retry automatically.'
+        : `${failedCount} screenshots failed to upload. Will retry automatically.`,
     });
   }
 

@@ -374,6 +374,33 @@ app.on('ready', async () => {
     }
   }, 30_000);
 
+  // Screenshots were only ever added to a local queue — flushQueue() was
+  // reachable solely through a manual button in the status bar, so nothing
+  // uploaded automatically. Flush right after each capture for near-real-time
+  // upload, plus a periodic safety net (mirrors the offlineQueue pattern
+  // above) to retry anything that failed while offline.
+  const flushScreenshots = () => {
+    if (!net.isOnline()) return;
+    screenshotQueue.flush()
+      .then(({ failed }) => {
+        if (failed > 0) notificationService.screenshotUploadFailed(failed);
+      })
+      .catch((err) => log.error('Screenshot queue flush error', { error: err.message }));
+  };
+  screenshotService.on('captured', flushScreenshots);
+  setInterval(() => {
+    if (screenshotQueue.getPendingCount() > 0) flushScreenshots();
+  }, 30_000);
+
+  // EventEmitter throws (crashing the process) if 'error' is emitted with no
+  // listener attached — ScreenshotService had none, so any single capture
+  // failure (a transient screen-capture glitch, a disk write hiccup, sharp
+  // compression error) would silently kill the whole app and stop every
+  // future capture until manually relaunched.
+  screenshotService.on('error', (err: Error) => {
+    log.error('Screenshot capture error', { error: err.message });
+  });
+
   // Set up sync service event handlers
   syncService.setEventHandlers({
     onTaskAssigned: (task) => {
