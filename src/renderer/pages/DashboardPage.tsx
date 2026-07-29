@@ -183,7 +183,7 @@ export function DashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="glass-panel rounded-xl p-4 flex flex-col justify-between min-h-[120px]">
+        <div className="glass-panel rounded-2xl p-5 md:p-6 flex flex-col justify-between min-h-[140px] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
           <div className="flex justify-between items-start mb-2">
             <span className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">Hours Worked</span>
             <span className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
@@ -199,7 +199,7 @@ export function DashboardPage() {
           </div>
         </div>
 
-        <div className="glass-panel rounded-xl p-4 flex flex-col justify-between min-h-[120px]">
+        <div className="glass-panel rounded-2xl p-5 md:p-6 flex flex-col justify-between min-h-[140px] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
           <div className="flex justify-between items-start mb-2">
             <span className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">Active Tasks</span>
             <span className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
@@ -212,7 +212,7 @@ export function DashboardPage() {
           </div>
         </div>
 
-        <div className="glass-panel rounded-xl p-4 flex flex-col justify-between min-h-[120px]">
+        <div className="glass-panel rounded-2xl p-5 md:p-6 flex flex-col justify-between min-h-[140px] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
           <div className="flex justify-between items-start mb-2">
             <span className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">Productivity Score</span>
             <span className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center text-primary">
@@ -227,7 +227,7 @@ export function DashboardPage() {
           </div>
         </div>
 
-        <div className="glass-panel rounded-xl p-4 flex flex-col justify-between min-h-[120px]">
+        <div className="glass-panel rounded-2xl p-5 md:p-6 flex flex-col justify-between min-h-[140px] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
           <div className="flex justify-between items-start mb-2">
             <span className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">Idle Time</span>
             <span className="w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center text-destructive">
@@ -304,7 +304,7 @@ export function DashboardPage() {
               {!selectedTask ? (
                 <button
                   onClick={() => navigate('/projects')}
-                  className="h-14 px-6 rounded-full bg-primary text-primary-foreground font-semibold hover:opacity-90 hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                  className="h-14 px-8 rounded-full bg-primary text-primary-foreground font-semibold hover:opacity-90 hover:shadow-lg hover:-translate-y-1 active:scale-95 transition-all duration-300 flex items-center justify-center gap-2"
                 >
                   <MaterialIcon name="play_arrow" size={20} />
                   Pick a Task
@@ -312,7 +312,7 @@ export function DashboardPage() {
               ) : !timerActive ? (
                 <button
                   onClick={() => handleStartTask(selectedTask.id)}
-                  className="h-14 px-6 rounded-full bg-primary text-primary-foreground font-semibold hover:opacity-90 hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                  className="h-14 px-8 rounded-full bg-primary text-primary-foreground font-semibold hover:opacity-90 hover:shadow-lg hover:-translate-y-1 active:scale-95 transition-all duration-300 flex items-center justify-center gap-2"
                 >
                   <MaterialIcon name="play_arrow" size={20} />
                   Start Timer
@@ -338,7 +338,7 @@ export function DashboardPage() {
                   </button>
                   <button
                     onClick={() => timer.stopTimer()}
-                    className="flex-1 h-14 rounded-full bg-primary text-primary-foreground font-semibold hover:opacity-90 hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                    className="flex-1 h-14 rounded-full bg-primary text-primary-foreground font-semibold hover:opacity-90 hover:shadow-lg hover:-translate-y-1 active:scale-95 transition-all duration-300 flex items-center justify-center gap-2"
                   >
                     <MaterialIcon name="stop_circle" size={20} />
                     Complete Task
@@ -409,7 +409,7 @@ export function DashboardPage() {
               return (
                 <div
                   key={t.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-card/40 border border-border hover:bg-card/70 transition-colors"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-card/40 border border-border hover:bg-card/80 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
                 >
                   <div className="min-w-0">
                     <h4 className="text-sm font-medium text-foreground truncate">{t.title}</h4>
@@ -453,7 +453,7 @@ export function DashboardPage() {
                       onClick={() => handleStartTask(t.id)}
                       disabled={timerActive}
                       title={timerActive ? 'Stop the current timer first' : 'Start working'}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-secondary border border-secondary/30 hover:bg-secondary/10 transition-colors text-xs font-medium disabled:opacity-40 shrink-0"
+                      className="flex items-center gap-1 px-4 py-2 rounded-xl bg-secondary/10 text-secondary hover:bg-secondary/20 hover:shadow-sm hover:-translate-y-0.5 active:scale-95 transition-all duration-300 text-xs font-semibold disabled:opacity-40 shrink-0"
                     >
                       <MaterialIcon name="play_arrow" size={16} /> Start
                     </button>
@@ -485,7 +485,7 @@ export function DashboardPage() {
                   <div className="font-mono text-[11px] text-muted-foreground mb-1">
                     {new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
-                  <div className="bg-card/40 rounded-lg p-3 border border-border hover:bg-card/60 transition-colors">
+                  <div className="bg-card/40 rounded-xl p-4 border border-border hover:bg-card/70 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
                     <h4 className="text-sm font-medium text-foreground">{ev.label}</h4>
                   </div>
                 </div>
@@ -516,7 +516,7 @@ export function DashboardPage() {
                   <div key={p.id}>
                     <div
                       onClick={() => navigate(`/projects/${p.id}`)}
-                      className="group flex items-center justify-between p-3 rounded-xl hover:bg-card/50 border border-transparent hover:border-border transition-all cursor-pointer"
+                      className="group flex items-center justify-between p-4 rounded-xl hover:bg-card/60 border border-transparent hover:border-border hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className={clsx('w-10 h-10 rounded-lg flex items-center justify-center shrink-0', color.bg, color.text)}>

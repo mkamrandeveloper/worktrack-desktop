@@ -43,7 +43,7 @@ export function ProjectsPage() {
             </p>
           </div>
           {isManagerOrAbove() && (
-            <button onClick={() => setShowWizard(true)} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-colors shadow-sm">
+            <button onClick={() => setShowWizard(true)} className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold hover:opacity-90 hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-300">
               <MaterialIcon name="add" size={18} />
               New Project
             </button>
@@ -62,10 +62,10 @@ export function ProjectsPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search projects..."
-                className="w-full pl-10 pr-4 py-2 bg-card/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-shadow shadow-sm"
+                className="w-full pl-10 pr-4 py-2.5 bg-card/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all duration-300 shadow-sm hover:border-secondary/50"
               />
             </div>
-            <button className="flex items-center gap-2 px-3 py-2 border border-border rounded-xl text-sm font-medium hover:bg-card/50 transition-colors text-muted-foreground">
+            <button className="flex items-center gap-2 px-4 py-2.5 border border-border rounded-xl text-sm font-medium hover:bg-card/70 hover:shadow-sm transition-all duration-300 text-muted-foreground hover:text-foreground">
               <MaterialIcon name="filter_list" size={18} /> Filter
             </button>
           </div>
@@ -74,7 +74,7 @@ export function ProjectsPage() {
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {[1, 2, 3].map(i => (
-                <div key={i} className="h-64 rounded-xl glass-panel animate-pulse" />
+                <div key={i} className="h-64 rounded-2xl glass-panel animate-pulse opacity-70" />
               ))}
             </div>
           ) : projects.length === 0 ? (
@@ -87,7 +87,7 @@ export function ProjectsPage() {
                 Get started by creating a new project to organize your team's work.
               </p>
               {isManagerOrAbove() && (
-                <button onClick={() => setShowWizard(true)} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-colors shadow-sm">
+                <button onClick={() => setShowWizard(true)} className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold hover:opacity-90 hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-300">
                   Create Project
                 </button>
               )}
@@ -118,7 +118,7 @@ function ProjectCard({ project, onOpen }: { project: Project; onOpen: () => void
   const progressPercent = project.taskCount! > 0 ? Math.round((project.actualHours / (project.estimatedHours || 1)) * 100) : 0;
 
   return (
-    <div onClick={onOpen} className="group glass-panel rounded-xl p-5 hover:shadow-md hover:border-secondary/30 transition-all duration-200 flex flex-col cursor-pointer">
+    <div onClick={onOpen} className="group glass-panel rounded-2xl p-6 hover:shadow-lg hover:border-secondary/30 hover:-translate-y-1 transition-all duration-300 flex flex-col cursor-pointer">
       <div className="flex items-start justify-between mb-4">
         <StatusBadge
           variant={

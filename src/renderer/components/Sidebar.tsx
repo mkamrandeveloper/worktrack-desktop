@@ -52,7 +52,7 @@ function ClockWidget() {
         onClick={handleClick}
         disabled={busy}
         className={clsx(
-          'flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50',
+          'flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 disabled:opacity-50 hover:-translate-y-0.5 active:scale-95 hover:shadow-md',
           isClockedIn
             ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
             : 'bg-primary text-primary-foreground hover:opacity-90'
@@ -170,10 +170,10 @@ export function Sidebar() {
                 end={item.end}
                 className={({ isActive }) =>
                   clsx(
-                    'flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all duration-200',
+                    'flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all duration-300',
                     isActive
-                      ? 'bg-card/90 text-secondary font-bold shadow-sm'
-                      : 'text-muted-foreground hover:text-primary hover:bg-card/40 font-medium'
+                      ? 'bg-primary/10 text-primary font-bold shadow-[inset_4px_0_0_0_hsl(var(--primary))]'
+                      : 'text-muted-foreground hover:text-primary hover:bg-card/60 font-medium hover:translate-x-1'
                   )
                 }
               >
@@ -199,7 +199,7 @@ export function Sidebar() {
         <button
           id="btn-logout"
           onClick={handleLogout}
-          className="flex items-center justify-center gap-2 w-full px-3 py-2.5 text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-colors"
+          className="flex items-center justify-center gap-2 w-full px-3 py-2.5 text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
         >
           <MaterialIcon name="logout" size={18} />
           Log Out

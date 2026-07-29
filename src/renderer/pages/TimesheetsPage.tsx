@@ -90,10 +90,10 @@ export function TimesheetsPage() {
             <h1 className="text-2xl font-bold tracking-tight">Timesheets</h1>
             <p className="text-sm text-muted-foreground mt-1">Review your logged hours, breaks, and attendance history.</p>
           </div>
-          <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg border border-border">
+          <div className="flex items-center gap-1 bg-muted/50 p-1.5 rounded-xl border border-border">
             {(['daily', 'weekly', 'monthly'] as View[]).map((v) => (
               <button key={v} onClick={() => setView(v)}
-                className={clsx('px-4 py-1.5 text-sm font-medium rounded-md capitalize transition-all', view === v ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
+                className={clsx('px-5 py-2 text-sm font-semibold rounded-lg capitalize transition-all duration-300', view === v ? 'bg-background shadow-md text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/60')}>
                 {v}
               </button>
             ))}
@@ -246,11 +246,11 @@ function TimelineCard({ date, data }: { date: string; data: DailyTimesheet }) {
 // ── Weekly View ──────────────────────────────────────────────────────────────
 function DateNav({ label, onPrev, onNext, extra }: { label: string; onPrev: () => void; onNext: () => void; extra?: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between bg-card border border-border rounded-xl p-4">
+    <div className="flex items-center justify-between bg-card/80 border border-border rounded-2xl p-5 shadow-sm">
       <div className="flex items-center gap-2">
-        <button onClick={onPrev} className="p-2 hover:bg-muted rounded-lg text-muted-foreground transition-colors"><ChevronLeft className="w-5 h-5" /></button>
-        <span className="font-medium px-2">{label}</span>
-        <button onClick={onNext} className="p-2 hover:bg-muted rounded-lg text-muted-foreground transition-colors"><ChevronRight className="w-5 h-5" /></button>
+        <button onClick={onPrev} className="p-2.5 hover:bg-muted rounded-xl text-muted-foreground transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm active:scale-95"><ChevronLeft className="w-5 h-5" /></button>
+        <span className="font-semibold px-3 text-lg">{label}</span>
+        <button onClick={onNext} className="p-2.5 hover:bg-muted rounded-xl text-muted-foreground transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm active:scale-95"><ChevronRight className="w-5 h-5" /></button>
       </div>
       <div className="flex items-center gap-2">{extra}<Calendar className="w-4 h-4 text-muted-foreground" /></div>
     </div>
@@ -329,21 +329,21 @@ function WeeklyView({ weekStart, data, loading, onPrev, onNext, onSelectDay }: {
               {loading ? (
                 <tr><td colSpan={8} className="px-6 py-8 text-center text-muted-foreground animate-pulse">Loading timesheet...</td></tr>
               ) : data?.days.map((day) => (
-                <tr key={day.date} onClick={() => onSelectDay(day.date)} className="hover:bg-muted/30 transition-colors cursor-pointer">
-                  <td className="px-6 py-4 font-medium">{new Date(day.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</td>
-                  <td className="px-6 py-4">
+                <tr key={day.date} onClick={() => onSelectDay(day.date)} className="hover:bg-muted/40 transition-all duration-300 cursor-pointer group">
+                  <td className="px-6 py-5 font-semibold text-foreground group-hover:text-primary transition-colors">{new Date(day.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</td>
+                  <td className="px-6 py-5">
                     <StatusBadge variant={
                       day.attendance.status === 'present' ? 'success' :
                       day.attendance.status === 'absent' ? 'danger' :
                       day.attendance.status === 'late' ? 'warning' : 'default'
                     } />
                   </td>
-                  <td className="px-6 py-4 text-muted-foreground">{fmtClock(day.attendance.clockInTime)}</td>
-                  <td className="px-6 py-4 text-muted-foreground">{fmtClock(day.attendance.clockOutTime)}</td>
-                  <td className="px-6 py-4 font-medium">{fmtHours(day.workHours)}</td>
-                  <td className="px-6 py-4 text-muted-foreground">{fmtHours(day.breakHours)}</td>
-                  <td className="px-6 py-4 text-muted-foreground">{fmtHours(day.overtimeHours)}</td>
-                  <td className="px-6 py-4 text-muted-foreground">{fmtHours(day.idleHours)}</td>
+                  <td className="px-6 py-5 text-muted-foreground">{fmtClock(day.attendance.clockInTime)}</td>
+                  <td className="px-6 py-5 text-muted-foreground">{fmtClock(day.attendance.clockOutTime)}</td>
+                  <td className="px-6 py-5 font-semibold">{fmtHours(day.workHours)}</td>
+                  <td className="px-6 py-5 text-muted-foreground">{fmtHours(day.breakHours)}</td>
+                  <td className="px-6 py-5 text-muted-foreground">{fmtHours(day.overtimeHours)}</td>
+                  <td className="px-6 py-5 text-muted-foreground">{fmtHours(day.idleHours)}</td>
                 </tr>
               ))}
             </tbody>
@@ -481,7 +481,7 @@ function DayDetailModal({ date, onClose }: { date: string; onClose: () => void }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-card border border-border rounded-2xl w-full max-w-2xl shadow-2xl animate-fade-in max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <div className="relative bg-card/90 backdrop-blur-xl border border-border rounded-3xl w-full max-w-2xl shadow-2xl shadow-primary/5 animate-fade-in max-h-[90vh] overflow-y-auto custom-scrollbar">
         <div className="flex items-center justify-between p-5 border-b border-border sticky top-0 bg-card z-10">
           <div>
             <h3 className="font-semibold text-foreground">{new Date(date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</h3>

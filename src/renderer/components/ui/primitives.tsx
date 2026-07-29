@@ -85,9 +85,9 @@ export function Card({ children, className, glowing, onClick }: CardProps) {
   return (
     <div
       className={clsx(
-        'rounded-xl border border-border bg-card text-card-foreground',
+        'rounded-2xl border border-border bg-card/60 backdrop-blur-md text-card-foreground shadow-sm transition-all duration-300',
         glowing && 'shadow-lg shadow-primary/10 border-primary/20',
-        onClick && 'cursor-pointer',
+        onClick && 'cursor-pointer hover:bg-card hover:-translate-y-0.5 hover:shadow-md',
         className
       )}
       onClick={onClick}

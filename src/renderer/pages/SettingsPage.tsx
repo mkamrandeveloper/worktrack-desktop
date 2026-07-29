@@ -65,13 +65,13 @@ function Toggle({
       onClick={() => onChange(!checked)}
       disabled={disabled}
       className={clsx(
-        'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed',
+        'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-sm active:scale-95 duration-300',
         checked ? 'bg-primary' : 'bg-secondary'
       )}
     >
       <span
         className={clsx(
-          'inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform',
+          'inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-300',
           checked ? 'translate-x-5.5' : 'translate-x-0.5'
         )}
       />
@@ -83,11 +83,11 @@ function Toggle({
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div>
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1 px-1">
+    <div className="mb-6">
+      <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 px-2">
         {title}
       </h2>
-      <Card className="divide-y divide-border px-5">
+      <Card className="divide-y divide-border/60 px-6">
         {children}
       </Card>
     </div>
@@ -201,7 +201,7 @@ export function SettingsPage() {
             <select
               value={settings.language}
               onChange={(e) => updateSettings({ language: e.target.value as Language })}
-              className="h-9 px-3 rounded-lg border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="h-10 px-4 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-300 shadow-sm hover:border-secondary/50"
             >
               <option value="en">English</option>
               <option value="es">Español</option>
@@ -308,7 +308,7 @@ export function SettingsPage() {
             <button
               onClick={updateStatus === 'downloaded' ? handleInstallUpdate : handleCheckUpdate}
               disabled={updateStatus === 'checking' || updateStatus === 'available'}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-medium border border-border rounded-lg hover:bg-accent hover:text-foreground transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2.5 text-xs font-semibold border border-border rounded-xl hover:bg-accent hover:text-foreground transition-all duration-300 hover:shadow-sm hover:-translate-y-0.5 active:scale-95 disabled:opacity-50"
             >
               {updateStatus === 'checking' && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
               {updateStatus === 'downloaded' ? '⬇ Install Update'
@@ -331,7 +331,7 @@ export function SettingsPage() {
                 await window.worktrack.screenshots.test();
                 alert('Test screenshot requested! It will capture in the background and upload to Drive.');
               }}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-medium border border-border rounded-lg hover:bg-accent hover:text-foreground transition-all"
+              className="flex items-center gap-2 px-5 py-2.5 text-xs font-semibold border border-border rounded-xl hover:bg-accent hover:text-foreground transition-all duration-300 hover:shadow-sm hover:-translate-y-0.5 active:scale-95"
             >
               Capture & Upload Test
             </button>

@@ -159,3 +159,7 @@ Phase 1 is the hard dependency for everything (scoping + client role). 2 precede
 3. **Priority labels:** default → display "Urgent", store `URGENT`, still render legacy `CRITICAL`. (Flag if you'd rather fully migrate.)
 4. **Screenshots for clients:** default → clients see **work screenshots for their invited project(s) only**, scoped by `project_members`. (Sensitive — flag if clients should *not* see screenshots.)
 ```
+
+
+
+

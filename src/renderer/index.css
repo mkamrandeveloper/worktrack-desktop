@@ -39,7 +39,7 @@
     --input: 223 20% 16%;
     --ring: 243 100% 88%;
 
-    --radius: 0.625rem;
+    --radius: 0.85rem;
 
     --sidebar-background: 223 22% 14%;
     --sidebar-foreground: 233 100% 97%;
@@ -170,31 +170,37 @@
      Same glassy treatment in both themes; only the tint/opacity differs. */
   .glass-panel {
     background: hsl(var(--card) / 0.7);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     border: 1px solid hsl(var(--card-foreground) / 0.08);
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.12);
-    transition: background-color 0.2s ease;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.2), 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .glass-panel:hover {
-    background: hsl(var(--card) / 0.9);
+    background: hsl(var(--card) / 0.8);
+    box-shadow: 0 12px 50px rgba(0, 0, 0, 0.25), 0 4px 15px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
   }
   .light .glass-panel {
-    box-shadow: 0 4px 30px rgba(15, 23, 42, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 40px rgba(15, 23, 42, 0.06), 0 2px 10px rgba(15, 23, 42, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+  }
+  .light .glass-panel:hover {
+    box-shadow: 0 12px 50px rgba(15, 23, 42, 0.08), 0 4px 15px rgba(15, 23, 42, 0.05);
   }
 
   /* Edge-to-edge nav variant — same idea, border on one side only */
   .glass-nav {
     background: hsl(var(--sidebar-background) / 0.7);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
     border-right: 1px solid hsl(var(--sidebar-foreground) / 0.08);
-    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.15);
+    box-shadow: 10px 0 40px rgba(0, 0, 0, 0.18), 2px 0 10px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .light .glass-nav {
     border-right: 1px solid rgba(255, 255, 255, 0.4);
-    box-shadow: 30px 0 30px rgba(19, 27, 46, 0.04);
+    box-shadow: 20px 0 40px rgba(19, 27, 46, 0.05), 2px 0 10px rgba(19, 27, 46, 0.02);
   }
 
   .mesh-bg {
