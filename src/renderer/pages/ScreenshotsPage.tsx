@@ -1,10 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { MaterialIcon } from '../components/ui/MaterialIcon';
 import { ScreenshotRecord, TeamMember, ScreenshotBreakInterval } from '@shared/types';
 import { formatDuration } from '../utils/formatTime';
 import { clsx } from 'clsx';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ImageOff, Image as ImageIcon, Coffee, User, Briefcase, Calendar,
+  Loader2, Camera, X, ChevronLeft, ChevronRight, ExternalLink, CheckCircle
+} from 'lucide-react';
+import { Card } from '../components/ui/primitives';
 
 const PAGE_SIZE = 36;
 
@@ -64,34 +69,36 @@ function ScreenshotThumb({ record, imageCache, onLoaded, onOpen, showEmployee }:
   const src = cached ?? imageCache.get(record.id);
 
   return (
-    <button
+    <motion.button
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
       onClick={onOpen}
-      className="group relative aspect-video rounded-xl overflow-hidden bg-muted border border-border hover:border-primary/50 hover:shadow-md transition-all text-left"
+      className="group relative aspect-video rounded-xl overflow-hidden bg-card border border-border hover:border-primary/50 shadow-sm hover:shadow-md transition-all text-left"
     >
       {status === 'ready' && src ? (
         <img src={src} alt="" className="w-full h-full object-cover" />
       ) : status === 'error' ? (
-        <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground gap-1">
-          <MaterialIcon name="broken_image" size={22} />
-          <span className="text-[10px]">Unavailable</span>
+        <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground gap-1.5 bg-muted/20">
+          <ImageOff size={24} className="opacity-50" />
+          <span className="text-[10px] font-medium uppercase tracking-wider">Unavailable</span>
         </div>
       ) : (
-        <div className="w-full h-full flex items-center justify-center text-muted-foreground/50 animate-pulse">
-          <MaterialIcon name="image" size={22} />
+        <div className="w-full h-full flex items-center justify-center text-muted-foreground/30 bg-muted/20 animate-pulse">
+          <ImageIcon size={24} />
         </div>
       )}
       {showEmployee && record.employeeName && (
-        <div className="absolute inset-x-0 top-0 bg-gradient-to-b from-black/75 to-transparent px-2 py-1.5 flex items-center gap-1.5">
-          <span className="w-4 h-4 rounded-full bg-white/25 backdrop-blur text-white text-[8px] font-bold flex items-center justify-center shrink-0">
+        <div className="absolute inset-x-0 top-0 bg-gradient-to-b from-black/80 to-transparent px-2.5 py-2 flex items-center gap-2">
+          <span className="w-5 h-5 rounded-full bg-white/20 backdrop-blur-md text-white text-[9px] font-bold flex items-center justify-center shrink-0 border border-white/20 shadow-sm">
             {initials(record.employeeName)}
           </span>
-          <span className="text-white text-[11px] font-semibold truncate drop-shadow">{record.employeeName}</span>
+          <span className="text-white text-[11px] font-semibold truncate drop-shadow-md">{record.employeeName}</span>
         </div>
       )}
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent p-2">
-        <span className="text-white text-[11px] font-medium drop-shadow">{fmtTime(record.capturedAt)}</span>
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-2.5">
+        <span className="text-white text-[11px] font-medium drop-shadow-md">{fmtTime(record.capturedAt)}</span>
       </div>
-    </button>
+    </motion.button>
   );
 }
 
@@ -100,13 +107,13 @@ function BreakCard({ brk, showEmployee }: { brk: ScreenshotBreakInterval; showEm
     ? formatDuration(Math.round((new Date(brk.end).getTime() - new Date(brk.start).getTime()) / 1000))
     : 'Ongoing';
   return (
-    <div className="aspect-video rounded-xl border border-amber-300/50 bg-amber-50 dark:bg-amber-500/10 flex flex-col items-center justify-center gap-1 text-amber-700 dark:text-amber-400 p-2 text-center">
-      <MaterialIcon name="coffee" size={20} />
-      <span className="text-[11px] font-semibold">On Break</span>
-      <span className="text-[10px] opacity-80">
+    <div className="aspect-video rounded-xl border border-amber-500/20 bg-amber-500/5 flex flex-col items-center justify-center gap-1.5 text-amber-600 dark:text-amber-500 p-2 text-center shadow-sm">
+      <Coffee size={24} className="opacity-80" />
+      <span className="text-xs font-display font-bold uppercase tracking-wider">On Break</span>
+      <span className="text-[10px] opacity-80 font-medium">
         {fmtTime(brk.start)}{brk.end ? ` – ${fmtTime(brk.end)}` : ''} · {durationLabel}
       </span>
-      {showEmployee && <span className="text-[10px] font-medium truncate max-w-full">{brk.employeeName}</span>}
+      {showEmployee && <span className="text-[10px] font-semibold truncate max-w-full mt-0.5 opacity-90">{brk.employeeName}</span>}
     </div>
   );
 }
@@ -195,9 +202,6 @@ export function ScreenshotsPage() {
     (acc[key] ??= []).push({ kind: 'screenshot', time: r.capturedAt, record: r });
     return acc;
   }, {});
-  // Breaks are only merged into days that already have at least one
-  // screenshot in view (avoids showing a lone break card on an "all dates"
-  // view for a day the current filters wouldn't otherwise surface).
   for (const brk of breaks) {
     const key = dayKey(brk.start);
     if (groups[key]) groups[key].push({ kind: 'break', time: brk.start, brk });
@@ -210,8 +214,6 @@ export function ScreenshotsPage() {
   const lightboxRecord = lightboxIndex !== null ? records[lightboxIndex] : null;
   const showEmployeeBadge = isManager && !employeeId;
 
-  // Safety net: fetch the image directly if the lightbox opens on an id
-  // whose thumbnail hasn't finished loading yet.
   useEffect(() => {
     if (!lightboxRecord || imageCache.has(lightboxRecord.id)) return;
     let alive = true;
@@ -222,25 +224,25 @@ export function ScreenshotsPage() {
   }, [lightboxRecord?.id]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 animate-fade-in pb-24">
+    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 animate-fade-in pb-24 bg-background">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-display font-bold text-foreground">Screenshots</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <h2 className="text-3xl font-display font-bold text-foreground tracking-tight">Screenshots</h2>
+          <p className="text-sm font-medium text-muted-foreground mt-1">
             {isClient ? 'Work screenshots for your projects.' : isManager ? 'Work screenshots across your team.' : 'Your captured work screenshots.'}
           </p>
         </div>
       </div>
 
       {/* Filter bar */}
-      <div className="glass-panel rounded-xl p-4 flex flex-wrap items-center gap-3">
+      <Card className="p-4 flex flex-wrap items-center gap-4 bg-card/60 shadow-sm border-border/50">
         {isManager && (
           <div className="flex items-center gap-2">
-            <MaterialIcon name="person" size={16} className="text-muted-foreground" />
+            <User size={16} className="text-muted-foreground" />
             <select
               value={employeeId}
               onChange={(e) => setEmployeeId(e.target.value)}
-              className="bg-input border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="bg-card border border-border rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm"
             >
               <option value="">All employees</option>
               {members.map((m) => (
@@ -252,11 +254,11 @@ export function ScreenshotsPage() {
 
         {(isManager || isClient) && (
           <div className="flex items-center gap-2">
-            <MaterialIcon name="work_outline" size={16} className="text-muted-foreground" />
+            <Briefcase size={16} className="text-muted-foreground" />
             <select
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
-              className="bg-input border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="bg-card border border-border rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm"
             >
               <option value="">All projects</option>
               {projectOptions.map((p) => (
@@ -267,47 +269,49 @@ export function ScreenshotsPage() {
         )}
 
         <div className="flex items-center gap-2">
-          <MaterialIcon name="calendar_today" size={16} className="text-muted-foreground" />
+          <Calendar size={16} className="text-muted-foreground" />
           <input
             type="date"
             value={date}
             disabled={allDates}
             onChange={(e) => setDate(e.target.value)}
-            className="bg-input border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-40"
+            className="bg-card border border-border rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm disabled:opacity-40"
           />
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer select-none ml-auto">
-          <input type="checkbox" checked={allDates} onChange={(e) => setAllDates(e.target.checked)} className="accent-primary" />
+        <label className="flex items-center gap-2 text-sm font-semibold text-muted-foreground cursor-pointer select-none ml-auto hover:text-foreground transition-colors">
+          <input type="checkbox" checked={allDates} onChange={(e) => setAllDates(e.target.checked)} className="accent-primary w-4 h-4 rounded" />
           All dates
         </label>
-      </div>
+      </Card>
 
       {/* Content */}
       {loading && records.length === 0 ? (
-        <div className="flex items-center justify-center py-24 text-muted-foreground gap-2">
-          <MaterialIcon name="progress_activity" size={20} className="animate-spin" />
-          Loading screenshots...
+        <div className="flex flex-col items-center justify-center py-32 text-muted-foreground gap-3">
+          <Loader2 size={32} className="animate-spin text-primary" />
+          <span className="text-sm font-medium">Loading screenshots...</span>
         </div>
       ) : records.length === 0 ? (
-        <div className="glass-panel rounded-xl flex flex-col items-center justify-center py-24 text-center px-6">
-          <MaterialIcon name="photo_camera" size={32} className="text-muted-foreground mb-3" />
-          <p className="text-sm font-medium text-foreground mb-1">No screenshots yet</p>
-          <p className="text-xs text-muted-foreground">
+        <div className="flex flex-col items-center justify-center py-32 text-center px-6">
+          <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4 shadow-inner border border-border/50">
+            <Camera size={28} className="text-muted-foreground" />
+          </div>
+          <p className="text-lg font-semibold text-foreground mb-1">No screenshots yet</p>
+          <p className="text-sm text-muted-foreground font-medium">
             {allDates ? 'Nothing captured for this filter yet.' : 'Nothing captured on this day — try "All dates" or pick another day.'}
           </p>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-10">
           {dayKeys.map((key) => (
             <div key={key}>
-              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+              <h3 className="text-lg font-display font-bold text-foreground mb-4 flex items-center gap-2">
                 {fmtDayHeading(key)}
-                <span className="text-xs font-normal text-muted-foreground">
-                  ({groups[key].filter((i) => i.kind === 'screenshot').length})
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
+                  {groups[key].filter((i) => i.kind === 'screenshot').length} captures
                 </span>
               </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 {groups[key].map((item) =>
                   item.kind === 'screenshot' ? (
                     <ScreenshotThumb
@@ -327,84 +331,101 @@ export function ScreenshotsPage() {
           ))}
 
           {hasMore && (
-            <div className="flex justify-center">
-              <button
+            <div className="flex justify-center pt-4">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => load(records.length, true)}
                 disabled={loading}
-                className="px-5 py-2.5 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-muted transition disabled:opacity-50 flex items-center gap-2"
+                className="px-6 py-2.5 rounded-full border border-border/60 bg-card/50 text-sm font-semibold text-foreground hover:bg-muted hover:shadow-sm transition-all disabled:opacity-50 flex items-center gap-2"
               >
-                {loading && <MaterialIcon name="progress_activity" size={16} className="animate-spin" />}
+                {loading && <Loader2 size={16} className="animate-spin text-primary" />}
                 Load more
-              </button>
+              </motion.button>
             </div>
           )}
         </div>
       )}
 
       {/* Lightbox */}
-      {lightboxRecord && lightboxIndex !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6" onClick={() => setLightboxIndex(null)}>
-          <div className="absolute inset-0 bg-black/85 backdrop-blur-sm" />
-          <div className="relative z-10 max-w-4xl w-full flex flex-col items-center gap-4" onClick={(e) => e.stopPropagation()}>
-            <div className="w-full flex items-center justify-between text-white/90 text-sm">
-              <div className="flex items-center gap-3">
-                {lightboxRecord.employeeName && (
-                  <span className="flex items-center gap-1.5">
-                    <MaterialIcon name="person" size={16} /> {lightboxRecord.employeeName}
-                  </span>
-                )}
-                {lightboxRecord.taskTitle && (
-                  <span className="flex items-center gap-1.5 text-white/70">
-                    <MaterialIcon name="task_alt" size={16} /> {lightboxRecord.taskTitle}
-                    {lightboxRecord.projectName ? ` · ${lightboxRecord.projectName}` : ''}
-                  </span>
-                )}
-                <span className="text-white/60">{new Date(lightboxRecord.capturedAt).toLocaleString()}</span>
-              </div>
-              <button onClick={() => setLightboxIndex(null)} className="w-9 h-9 rounded-full hover:bg-white/10 flex items-center justify-center">
-                <MaterialIcon name="close" size={20} />
-              </button>
-            </div>
-
-            <div className="relative w-full flex items-center justify-center">
-              <button
-                disabled={lightboxIndex === 0}
-                onClick={() => setLightboxIndex((i) => (i !== null ? Math.max(0, i - 1) : i))}
-                className="absolute left-0 -translate-x-14 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center disabled:opacity-30"
-              >
-                <MaterialIcon name="chevron_left" size={22} />
-              </button>
-
-              {imageCache.get(lightboxRecord.id) ? (
-                <img src={imageCache.get(lightboxRecord.id)} alt="" className="max-h-[70vh] rounded-xl border border-white/10 shadow-2xl" />
-              ) : (
-                <div className="w-full h-[50vh] rounded-xl bg-white/5 flex items-center justify-center text-white/40">
-                  <MaterialIcon name="progress_activity" size={28} className="animate-spin" />
+      <AnimatePresence>
+        {lightboxRecord && lightboxIndex !== null && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-6" 
+            onClick={() => setLightboxIndex(null)}
+          >
+            <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" />
+            <div className="relative z-10 max-w-5xl w-full flex flex-col items-center gap-6" onClick={(e) => e.stopPropagation()}>
+              
+              <div className="w-full flex items-center justify-between text-white text-sm bg-black/40 p-4 rounded-2xl border border-white/10 shadow-lg">
+                <div className="flex items-center flex-wrap gap-4">
+                  {lightboxRecord.employeeName && (
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <User size={16} className="text-white/70" /> {lightboxRecord.employeeName}
+                    </span>
+                  )}
+                  {lightboxRecord.taskTitle && (
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <CheckCircle size={16} className="text-white/70" /> 
+                      {lightboxRecord.taskTitle}
+                      {lightboxRecord.projectName ? <span className="opacity-60 ml-1">· {lightboxRecord.projectName}</span> : ''}
+                    </span>
+                  )}
+                  <span className="text-white/60 font-mono text-xs">{new Date(lightboxRecord.capturedAt).toLocaleString()}</span>
                 </div>
+                <button onClick={() => setLightboxIndex(null)} className="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="relative w-full flex items-center justify-center">
+                <button
+                  disabled={lightboxIndex === 0}
+                  onClick={() => setLightboxIndex((i) => (i !== null ? Math.max(0, i - 1) : i))}
+                  className="absolute left-0 -translate-x-4 md:-translate-x-12 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center disabled:opacity-0 transition-all z-20 backdrop-blur-md border border-white/10"
+                >
+                  <ChevronLeft size={24} />
+                </button>
+
+                <motion.div 
+                  key={lightboxRecord.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {imageCache.get(lightboxRecord.id) ? (
+                    <img src={imageCache.get(lightboxRecord.id)} alt="" className="max-h-[75vh] object-contain rounded-xl border border-white/20 shadow-2xl" />
+                  ) : (
+                    <div className="w-[60vw] h-[60vh] max-w-4xl rounded-xl bg-white/5 flex items-center justify-center text-white/40 border border-white/10">
+                      <Loader2 size={32} className="animate-spin" />
+                    </div>
+                  )}
+                </motion.div>
+
+                <button
+                  disabled={lightboxIndex === records.length - 1}
+                  onClick={() => setLightboxIndex((i) => (i !== null ? Math.min(records.length - 1, i + 1) : i))}
+                  className="absolute right-0 translate-x-4 md:translate-x-12 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center disabled:opacity-0 transition-all z-20 backdrop-blur-md border border-white/10"
+                >
+                  <ChevronRight size={24} />
+                </button>
+              </div>
+
+              {lightboxRecord.driveFileUrl && (
+                <button
+                  onClick={() => window.worktrack.system.openExternal(lightboxRecord.driveFileUrl!)}
+                  className="flex items-center gap-2 text-sm font-medium text-white/70 hover:text-white bg-white/10 hover:bg-white/20 px-5 py-2.5 rounded-full transition-colors border border-white/10 shadow-sm"
+                >
+                  <ExternalLink size={16} /> Open in Google Drive
+                </button>
               )}
-
-              <button
-                disabled={lightboxIndex === records.length - 1}
-                onClick={() => setLightboxIndex((i) => (i !== null ? Math.min(records.length - 1, i + 1) : i))}
-                className="absolute right-0 translate-x-14 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center disabled:opacity-30"
-              >
-                <MaterialIcon name="chevron_right" size={22} />
-              </button>
             </div>
-
-            {lightboxRecord.driveFileUrl && (
-              <button
-                onClick={() => window.worktrack.system.openExternal(lightboxRecord.driveFileUrl!)}
-                className={clsx(
-                  'flex items-center gap-1.5 text-xs text-white/70 hover:text-white transition',
-                )}
-              >
-                <MaterialIcon name="open_in_new" size={14} /> Open in Google Drive
-              </button>
-            )}
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 {
   "name": "worktrack-desktop",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "WorkTrack Desktop Agent — Employee productivity and time tracking companion",
   "main": "dist/main/index.js",
   "homepage": ".",
@@ -46,6 +46,7 @@
     "electron-log": "^5.2.4",
     "electron-store": "^7.0.3",
     "electron-updater": "^6.3.9",
+    "framer-motion": "^13.1.0",
     "lucide-react": "^0.468.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

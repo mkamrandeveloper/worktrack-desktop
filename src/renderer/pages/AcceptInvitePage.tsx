@@ -1,14 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, FolderKanban, Loader2, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, FolderKanban, Loader2, AlertCircle, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { clsx } from 'clsx';
+import { motion, AnimatePresence } from 'framer-motion';
 
-/**
- * Client invitation acceptance. A client pastes the invitation code from their
- * email, sets a name + password, and is logged straight into the read-only
- * project portal.
- */
 export function AcceptInvitePage() {
   const navigate = useNavigate();
   const { acceptClientInvite } = useAuthStore();
@@ -51,25 +47,30 @@ export function AcceptInvitePage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-8 py-12">
-      <div className="w-full max-w-sm animate-fade-in">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-teal-500 flex items-center justify-center shadow-lg shadow-teal-500/40">
+    <div className="min-h-screen flex items-center justify-center bg-background px-8 py-12 relative overflow-hidden">
+      {/* Decorative background blur */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] max-w-[800px] max-h-[800px] bg-teal-500/5 rounded-full blur-[100px] pointer-events-none" />
+      
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-sm relative z-10">
+        
+        <div className="flex items-center gap-3 mb-10 justify-center">
+          <div className="w-12 h-12 rounded-xl bg-teal-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
             <FolderKanban className="w-6 h-6 text-white" />
           </div>
-          <span className="text-xl font-bold tracking-tight">WorkTrack</span>
+          <span className="text-3xl font-display font-bold tracking-tight text-foreground">WorkTrack</span>
         </div>
 
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-foreground mb-2">Accept your invitation</h2>
-          <p className="text-muted-foreground text-sm">
-            Enter the invitation code from your email and choose a password to access your project portal.
+        <div className="mb-10 text-center">
+          <h2 className="text-3xl font-display font-bold text-foreground tracking-tight mb-2">Accept invitation</h2>
+          <p className="text-muted-foreground font-medium text-base">
+            Enter your code to access your portal.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-          <div className="space-y-1.5">
-            <label htmlFor="token" className="text-sm font-medium text-foreground">Invitation Code</label>
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+          
+          <div className="space-y-2 group">
+            <label htmlFor="token" className="text-[11px] font-display font-bold uppercase tracking-widest text-muted-foreground">Invitation Code</label>
             <input
               id="token"
               type="text"
@@ -78,28 +79,28 @@ export function AcceptInvitePage() {
               onChange={(e) => setToken(e.target.value)}
               placeholder="Paste the code from your email"
               className={clsx(
-                'w-full h-11 px-4 rounded-lg border bg-input text-foreground placeholder:text-muted-foreground text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all',
-                error ? 'border-destructive focus:ring-destructive' : 'border-border'
+                'w-full h-14 px-5 rounded-xl border bg-card text-foreground font-medium placeholder:text-muted-foreground/60 text-base focus:outline-none focus:ring-2 transition-all shadow-sm group-hover:border-teal-500/50',
+                error ? 'border-destructive focus:ring-destructive/50' : 'border-border/60 focus:ring-teal-500/20 focus:border-teal-500'
               )}
               disabled={isLoading}
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label htmlFor="name" className="text-sm font-medium text-foreground">Your Name <span className="text-muted-foreground font-normal">(optional)</span></label>
+          <div className="space-y-2 group">
+            <label htmlFor="name" className="text-[11px] font-display font-bold uppercase tracking-widest text-muted-foreground">Your Name <span className="opacity-70 font-normal lowercase tracking-normal">(optional)</span></label>
             <input
               id="name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Jane Client"
-              className="w-full h-11 px-4 rounded-lg border border-border bg-input text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all"
+              className="w-full h-14 px-5 rounded-xl border border-border/60 bg-card text-foreground font-medium placeholder:text-muted-foreground/60 text-base focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all shadow-sm group-hover:border-teal-500/50"
               disabled={isLoading}
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label htmlFor="password" className="text-sm font-medium text-foreground">Set a Password</label>
+          <div className="space-y-2 group">
+            <label htmlFor="password" className="text-[11px] font-display font-bold uppercase tracking-widest text-muted-foreground">Set a Password</label>
             <div className="relative">
               <input
                 id="password"
@@ -108,56 +109,62 @@ export function AcceptInvitePage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="At least 6 characters"
                 className={clsx(
-                  'w-full h-11 px-4 pr-11 rounded-lg border bg-input text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all',
-                  error ? 'border-destructive focus:ring-destructive' : 'border-border'
+                  'w-full h-14 px-5 pr-14 rounded-xl border bg-card text-foreground font-medium placeholder:text-muted-foreground/60 text-base focus:outline-none focus:ring-2 transition-all shadow-sm group-hover:border-teal-500/50',
+                  error ? 'border-destructive focus:ring-destructive/50' : 'border-border/60 focus:ring-teal-500/20 focus:border-teal-500'
                 )}
                 disabled={isLoading}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
                 tabIndex={-1}
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
-          {error && (
-            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-              {error}
-            </div>
-          )}
+          <AnimatePresence>
+            {error && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium">
+                  <AlertCircle size={18} className="shrink-0" />
+                  {error}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full h-11 rounded-lg bg-teal-500 text-white font-semibold text-sm hover:bg-teal-500/90 active:scale-95 transition-all shadow-lg shadow-teal-500/25 disabled:opacity-60 disabled:pointer-events-none flex items-center justify-center gap-2"
+            className="w-full h-14 rounded-xl bg-teal-500 text-white font-bold text-base hover:bg-teal-600 active:scale-[0.98] transition-all shadow-[0_4px_14px_0_rgba(20,184,166,0.39)] hover:shadow-[0_6px_20px_rgba(20,184,166,0.23)] disabled:opacity-60 disabled:pointer-events-none flex items-center justify-center gap-2 mt-4"
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Setting up your portal...
+                <Loader2 size={20} className="animate-spin" />
+                Setting up...
               </>
             ) : (
-              'Accept & Continue'
+              <>
+                Accept & Continue <ArrowRight size={18} />
+              </>
             )}
           </button>
         </form>
 
-        <p className="text-center text-xs text-muted-foreground mt-6">
+        <p className="text-center text-sm font-medium text-muted-foreground mt-10">
           Already have an account?{' '}
           <button
             type="button"
             onClick={() => navigate('/login')}
-            className="text-teal-500 hover:underline font-medium"
+            className="text-teal-500 hover:underline font-bold"
           >
             Sign in
           </button>
         </p>
-      </div>
+      </motion.div>
     </div>
   );
 }

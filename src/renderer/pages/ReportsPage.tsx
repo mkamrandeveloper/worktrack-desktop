@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { OrgOverviewReport, TimesheetReport } from '@shared/types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from 'recharts';
-import { KPICard } from '../components/ui/KPICard';
-import { Card, Badge } from '../components/ui/primitives';
-import { FileSpreadsheet, Users, CheckCircle2, TrendingUp, Monitor, Loader2, CheckCircle } from 'lucide-react';
+import { Card, Badge, Button } from '../components/ui/primitives';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
+import { FileSpreadsheet, Users, CheckCircle2, TrendingUp, Monitor, Loader2, CheckCircle, Download } from 'lucide-react';
 import { clsx } from 'clsx';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type Period = 'daily' | 'weekly' | 'monthly';
 
@@ -52,7 +53,7 @@ export function ReportsPage() {
       if (res.success && res.data?.saved) {
         setExportMsg(`Saved to ${res.data.filePath}`);
       } else if (res.success) {
-        setExportMsg(null); // user cancelled the save dialog
+        setExportMsg(null);
       } else {
         setExportMsg(res.error ?? 'Export failed.');
       }
@@ -68,24 +69,31 @@ export function ReportsPage() {
     .slice(-14)
     .map((r) => ({ name: new Date(r.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), hours: r.workHours }));
 
+  const statColors: Record<string, string> = {
+    primary: 'bg-primary/10 text-primary',
+    success: 'bg-emerald-500/10 text-emerald-500',
+    warning: 'bg-amber-500/10 text-amber-500',
+    danger: 'bg-destructive/10 text-destructive',
+  };
+
   return (
-    <div className="flex flex-col h-full bg-background/50">
+    <div className="flex flex-col h-full bg-background">
       <header className="flex-none px-8 py-6 border-b border-border/50 bg-background/80 backdrop-blur-md sticky top-0 z-10">
-        <div className="flex items-center justify-between max-w-7xl mx-auto flex-wrap gap-4">
+        <div className="flex items-center justify-between max-w-[1400px] mx-auto flex-wrap gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Analytics &amp; Reports</h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <h1 className="text-3xl font-display font-bold text-foreground tracking-tight">Analytics & Reports</h1>
+            <p className="text-sm font-medium text-muted-foreground mt-1">
               Organization-wide insights and productivity metrics.
             </p>
           </div>
-          <div className="flex bg-background/50 border border-border/50 rounded-lg p-1">
+          <div className="flex bg-card/60 border border-border/50 rounded-lg p-1.5 shadow-sm">
             {(['daily', 'weekly', 'monthly'] as const).map((p) => (
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
                 className={clsx(
-                  'px-4 py-1.5 text-sm font-medium rounded-md capitalize transition-all duration-200',
-                  period === p ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-background/80'
+                  'px-5 py-2 text-sm font-bold tracking-wide uppercase rounded-md transition-all duration-300',
+                  period === p ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                 )}
               >
                 {p}
@@ -95,41 +103,85 @@ export function ReportsPage() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-8">
-        <div className="max-w-7xl mx-auto space-y-8">
+      <div className="flex-1 overflow-y-auto p-8 animate-fade-in pb-24">
+        <div className="max-w-[1400px] mx-auto space-y-8">
 
           {/* Top KPIs */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <KPICard title="Total Team" value={overview?.employees.total || 0} icon={<Users />} loading={loading} />
-            <KPICard title="Task Completion" value={`${overview?.tasks.completionRate || 0}%`} icon={<CheckCircle2 />} color="success" loading={loading} />
-            <KPICard title="Avg Work Hours" value={`${overview?.attendance.totalWorkHours || 0}h`} subtitle="Per employee" icon={<Monitor />} color="primary" loading={loading} />
-            <KPICard title="Active Projects" value={overview?.projects.active || 0} icon={<TrendingUp />} color="warning" loading={loading} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            <Card className="p-6 flex flex-col justify-between min-h-[140px]">
+              <div className="flex justify-between items-start mb-4">
+                <span className="font-display text-[12px] uppercase tracking-wider font-bold text-muted-foreground">Total Team</span>
+                <span className={clsx("w-9 h-9 rounded-full flex items-center justify-center shrink-0", statColors.primary)}>
+                  <Users size={18} />
+                </span>
+              </div>
+              <div>
+                <div className="text-3xl font-display font-bold text-foreground tracking-tight">{loading ? '—' : overview?.employees.total || 0}</div>
+              </div>
+            </Card>
+
+            <Card className="p-6 flex flex-col justify-between min-h-[140px]">
+              <div className="flex justify-between items-start mb-4">
+                <span className="font-display text-[12px] uppercase tracking-wider font-bold text-muted-foreground">Task Completion</span>
+                <span className={clsx("w-9 h-9 rounded-full flex items-center justify-center shrink-0", statColors.success)}>
+                  <CheckCircle2 size={18} />
+                </span>
+              </div>
+              <div>
+                <div className="text-3xl font-display font-bold text-foreground tracking-tight">{loading ? '—' : `${overview?.tasks.completionRate || 0}%`}</div>
+              </div>
+            </Card>
+
+            <Card className="p-6 flex flex-col justify-between min-h-[140px]">
+              <div className="flex justify-between items-start mb-4">
+                <span className="font-display text-[12px] uppercase tracking-wider font-bold text-muted-foreground">Avg Work Hours</span>
+                <span className={clsx("w-9 h-9 rounded-full flex items-center justify-center shrink-0", statColors.primary)}>
+                  <Monitor size={18} />
+                </span>
+              </div>
+              <div>
+                <div className="text-3xl font-display font-bold text-foreground tracking-tight">{loading ? '—' : `${overview?.attendance.totalWorkHours || 0}h`}</div>
+                <div className="text-sm font-medium text-muted-foreground mt-1">Per employee</div>
+              </div>
+            </Card>
+
+            <Card className="p-6 flex flex-col justify-between min-h-[140px]">
+              <div className="flex justify-between items-start mb-4">
+                <span className="font-display text-[12px] uppercase tracking-wider font-bold text-muted-foreground">Active Projects</span>
+                <span className={clsx("w-9 h-9 rounded-full flex items-center justify-center shrink-0", statColors.warning)}>
+                  <TrendingUp size={18} />
+                </span>
+              </div>
+              <div>
+                <div className="text-3xl font-display font-bold text-foreground tracking-tight">{loading ? '—' : overview?.projects.active || 0}</div>
+              </div>
+            </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Productivity Chart (real data) */}
-            <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-              <h3 className="text-lg font-semibold mb-6">Working Hours Trend</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Productivity Chart */}
+            <Card className="p-7">
+              <h3 className="text-sm font-display font-bold uppercase tracking-wider text-muted-foreground mb-6">Working Hours Trend</h3>
               <div className="h-72 w-full">
                 {productivityData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={productivityData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-                      <XAxis dataKey="name" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
-                      <Tooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', borderRadius: '8px' }} itemStyle={{ color: '#e5e7eb' }} />
-                      <Line type="monotone" dataKey="hours" stroke="#7c3aed" strokeWidth={3} dot={{ r: 3, fill: '#7c3aed' }} activeDot={{ r: 6 }} name="Working Hours" />
+                    <LineChart data={productivityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                      <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} dy={10} />
+                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} dx={-10} />
+                      <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', boxShadow: 'var(--tw-shadow-lg)' }} />
+                      <Line type="monotone" dataKey="hours" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 4, fill: 'hsl(var(--primary))', strokeWidth: 2, stroke: 'hsl(var(--card))' }} activeDot={{ r: 6 }} name="Working Hours" />
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-muted-foreground text-sm">No data for this period.</div>
+                  <div className="h-full flex items-center justify-center text-muted-foreground font-medium text-sm bg-muted/20 rounded-xl border border-dashed border-border/50">No data for this period.</div>
                 )}
               </div>
-            </div>
+            </Card>
 
-            {/* Break vs Overtime Chart (real data) */}
-            <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-              <h3 className="text-lg font-semibold mb-6">Break &amp; Overtime</h3>
+            {/* Break vs Overtime Chart */}
+            <Card className="p-7">
+              <h3 className="text-sm font-display font-bold uppercase tracking-wider text-muted-foreground mb-6">Break & Overtime</h3>
               <div className="h-72 w-full">
                 {productivityData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
@@ -137,46 +189,50 @@ export function ReportsPage() {
                       name: new Date(r.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
                       breakHours: r.breakHours,
                       overtimeHours: r.overtimeHours,
-                    }))}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-                      <XAxis dataKey="name" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
-                      <Tooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', borderRadius: '8px' }} cursor={{ fill: '#374151', opacity: 0.2 }} />
+                    }))} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                      <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} dy={10} />
+                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} dx={-10} />
+                      <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', boxShadow: 'var(--tw-shadow-lg)' }} cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }} />
                       <Bar dataKey="breakHours" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Break (hrs)" />
                       <Bar dataKey="overtimeHours" fill="#ef4444" radius={[4, 4, 0, 0]} name="Overtime (hrs)" />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-muted-foreground text-sm">No data for this period.</div>
+                  <div className="h-full flex items-center justify-center text-muted-foreground font-medium text-sm bg-muted/20 rounded-xl border border-dashed border-border/50">No data for this period.</div>
                 )}
               </div>
-            </div>
+            </Card>
           </div>
 
           {/* Detailed timesheet report */}
           <Card className="p-0 overflow-hidden">
-            <div className="flex items-center justify-between p-5 border-b border-border flex-wrap gap-3">
+            <div className="flex items-center justify-between p-6 border-b border-border/60 bg-muted/20 flex-wrap gap-4">
               <div>
-                <h3 className="text-lg font-semibold capitalize">{period} Timesheet Report</h3>
-                {report && <p className="text-xs text-muted-foreground mt-0.5">{report.range.from} to {report.range.to} · {report.summary.entries} entries</p>}
+                <h3 className="font-display font-bold text-xl capitalize text-foreground">{period} Timesheet Report</h3>
+                {report && <p className="text-sm font-medium text-muted-foreground mt-1">{report.range.from} to {report.range.to} · {report.summary.entries} entries</p>}
               </div>
-              <div className="flex items-center gap-3">
-                {exportMsg && (
-                  <span className="text-xs text-emerald-500 flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> {exportMsg}</span>
-                )}
-                <button
+              <div className="flex items-center gap-4">
+                <AnimatePresence>
+                  {exportMsg && (
+                    <motion.span initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="text-sm font-medium text-emerald-500 flex items-center gap-1.5 bg-emerald-500/10 px-3 py-1.5 rounded-md border border-emerald-500/20">
+                      <CheckCircle size={16} /> {exportMsg}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+                <Button
                   onClick={handleExport}
                   disabled={exporting || reportLoading || !report?.rows.length}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
+                  className="rounded-full shadow-sm"
                 >
-                  {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
-                  Export to Excel
-                </button>
+                  {exporting ? <Loader2 size={16} className="animate-spin mr-1.5" /> : <Download size={16} className="mr-1.5" />}
+                  Export Excel
+                </Button>
               </div>
             </div>
 
             {report && (
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-5 border-b border-border/60 bg-secondary/20">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-6 border-b border-border bg-card">
                 {[
                   ['Work Hours', `${report.summary.workHours}h`],
                   ['Break Hours', `${report.summary.breakHours}h`],
@@ -184,57 +240,72 @@ export function ReportsPage() {
                   ['Idle', `${report.summary.idleHours}h`],
                   ['Avg Productivity', `${report.summary.avgProductivity}%`],
                 ].map(([k, v]) => (
-                  <div key={k}>
-                    <div className="text-xs text-muted-foreground">{k}</div>
-                    <div className="text-lg font-semibold">{v}</div>
+                  <div key={k} className="bg-muted/30 p-4 rounded-xl border border-border/50">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">{k}</div>
+                    <div className="text-2xl font-display font-bold text-foreground">{v}</div>
                   </div>
                 ))}
               </div>
             )}
 
-            <div className="overflow-x-auto">
-              {reportLoading ? (
-                <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
-              ) : !report?.rows.length ? (
-                <p className="text-sm text-muted-foreground text-center py-12">No timesheet entries for this period.</p>
-              ) : (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-xs text-muted-foreground uppercase tracking-wider border-b border-border">
-                      <th className="px-5 py-3 font-medium">Employee</th>
-                      <th className="px-5 py-3 font-medium">Project</th>
-                      <th className="px-5 py-3 font-medium">Date</th>
-                      <th className="px-5 py-3 font-medium">Clock In</th>
-                      <th className="px-5 py-3 font-medium">Clock Out</th>
-                      <th className="px-5 py-3 font-medium text-right">Work</th>
-                      <th className="px-5 py-3 font-medium text-right">Break</th>
-                      <th className="px-5 py-3 font-medium text-right">OT</th>
-                      <th className="px-5 py-3 font-medium text-right">Idle</th>
-                      <th className="px-5 py-3 font-medium text-right">Productivity</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {report.rows.map((r, i) => (
-                      <tr key={`${r.email}-${r.date}-${i}`} className="border-b border-border/40 hover:bg-muted/30 transition-colors">
-                        <td className="px-5 py-3 font-medium">{r.employeeName}</td>
-                        <td className="px-5 py-3 text-muted-foreground truncate max-w-[180px]">{r.projects}</td>
-                        <td className="px-5 py-3 text-muted-foreground">{r.date}</td>
-                        <td className="px-5 py-3 text-muted-foreground">{r.clockIn}</td>
-                        <td className="px-5 py-3 text-muted-foreground">{r.clockOut}</td>
-                        <td className="px-5 py-3 text-right font-mono">{r.workHours}h</td>
-                        <td className="px-5 py-3 text-right font-mono text-muted-foreground">{r.breakHours}h</td>
-                        <td className="px-5 py-3 text-right font-mono text-muted-foreground">{r.overtimeHours}h</td>
-                        <td className="px-5 py-3 text-right font-mono text-muted-foreground">{r.idleHours}h</td>
-                        <td className="px-5 py-3 text-right">
-                          <Badge variant={r.productivity >= 70 ? 'success' : r.productivity >= 40 ? 'warning' : 'danger'}>{r.productivity}%</Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Employee</TableHead>
+                  <TableHead>Project</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Clock In</TableHead>
+                  <TableHead>Clock Out</TableHead>
+                  <TableHead className="text-right">Work</TableHead>
+                  <TableHead className="text-right">Break</TableHead>
+                  <TableHead className="text-right">OT</TableHead>
+                  <TableHead className="text-right">Idle</TableHead>
+                  <TableHead className="text-right">Prod.</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {reportLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={10} className="text-center py-20 text-muted-foreground">
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <Loader2 size={24} className="animate-spin text-primary" />
+                        <span className="font-medium">Loading report...</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : !report?.rows.length ? (
+                  <TableRow>
+                    <TableCell colSpan={10} className="text-center py-20">
+                      <div className="inline-flex flex-col items-center justify-center p-6 bg-muted/20 rounded-xl border border-dashed border-border/50">
+                        <FileSpreadsheet size={32} className="text-muted-foreground mb-3" />
+                        <p className="text-sm font-medium text-muted-foreground">No timesheet entries for this period.</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  report.rows.map((r, i) => (
+                    <TableRow key={`${r.email}-${r.date}-${i}`}>
+                      <TableCell className="font-semibold text-foreground">{r.employeeName}</TableCell>
+                      <TableCell className="text-muted-foreground max-w-[180px] truncate">{r.projects}</TableCell>
+                      <TableCell className="text-muted-foreground">{r.date}</TableCell>
+                      <TableCell className="text-muted-foreground font-mono">{r.clockIn}</TableCell>
+                      <TableCell className="text-muted-foreground font-mono">{r.clockOut}</TableCell>
+                      <TableCell className="text-right font-mono font-medium">{r.workHours}h</TableCell>
+                      <TableCell className="text-right font-mono text-muted-foreground">{r.breakHours}h</TableCell>
+                      <TableCell className="text-right font-mono text-muted-foreground">{r.overtimeHours}h</TableCell>
+                      <TableCell className="text-right font-mono text-muted-foreground">{r.idleHours}h</TableCell>
+                      <TableCell className="text-right">
+                        <Badge variant={r.productivity >= 70 ? 'success' : r.productivity >= 40 ? 'warning' : 'danger'} className="font-mono py-0.5">
+                          {r.productivity}%
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </Card>
+
         </div>
       </div>
     </div>

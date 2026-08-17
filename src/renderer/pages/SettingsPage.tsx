@@ -1,22 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Moon,
-  Sun,
-  Monitor,
-  Bell,
-  RefreshCw,
-  Power,
-  Globe,
-  Shield,
-  Building2,
-  Camera,
-  Info,
+  Moon, Sun, Monitor, Bell, RefreshCw, Power, Globe, 
+  Shield, Building2, Camera, Info, CheckCircle2
 } from 'lucide-react';
 import { useSettingsStore } from '../store/settingsStore';
 import { useAuthStore } from '../store/authStore';
 import { Theme, Language } from '@shared/types';
 import { clsx } from 'clsx';
-import { Card } from '../components/ui/primitives';
+import { Card, Button } from '../components/ui/primitives';
+import { motion } from 'framer-motion';
 
 // ── Small Components ──────────────────────────────────────────────────────────
 
@@ -32,19 +24,19 @@ function SettingRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between py-4">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between py-5 gap-4">
       <div className="flex items-start gap-4">
-        <div className="p-2 rounded-lg bg-secondary text-secondary-foreground shrink-0 mt-0.5">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20 shadow-inner">
           {icon}
         </div>
         <div>
-          <div className="text-sm font-medium text-foreground">{label}</div>
+          <div className="text-base font-semibold text-foreground">{label}</div>
           {description && (
-            <div className="text-xs text-muted-foreground mt-0.5">{description}</div>
+            <div className="text-sm font-medium text-muted-foreground mt-0.5 max-w-[400px]">{description}</div>
           )}
         </div>
       </div>
-      <div className="shrink-0 ml-6">{children}</div>
+      <div className="shrink-0 sm:ml-6 ml-14">{children}</div>
     </div>
   );
 }
@@ -65,14 +57,16 @@ function Toggle({
       onClick={() => onChange(!checked)}
       disabled={disabled}
       className={clsx(
-        'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-sm active:scale-95 duration-300',
-        checked ? 'bg-primary' : 'bg-secondary'
+        'relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-sm active:scale-95 duration-300 border',
+        checked ? 'bg-primary border-primary' : 'bg-secondary/50 border-border'
       )}
     >
-      <span
+      <motion.span
+        layout
+        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
         className={clsx(
-          'inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-300',
-          checked ? 'translate-x-5.5' : 'translate-x-0.5'
+          'inline-block h-5 w-5 rounded-full bg-white shadow-sm',
+          checked ? 'ml-[22px]' : 'ml-[3px]'
         )}
       />
     </button>
@@ -83,11 +77,11 @@ function Toggle({
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="mb-6">
-      <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 px-2">
+    <div className="mb-10">
+      <h2 className="text-sm font-display font-bold uppercase tracking-wider text-muted-foreground mb-4 px-2">
         {title}
       </h2>
-      <Card className="divide-y divide-border/60 px-6">
+      <Card className="divide-y divide-border/50 px-7 shadow-sm bg-card/60">
         {children}
       </Card>
     </div>
@@ -108,12 +102,6 @@ export function SettingsPage() {
       if (res.success && res.data) setAppVersion(res.data.version);
     });
 
-    // 'available' only means a newer version exists and has started
-    // downloading in the background — it isn't installable yet. The actual
-    // "Install Update" action only becomes valid once onUpdateDownloaded
-    // fires; previously the button relabeled itself at the 'available'
-    // stage but stayed wired to handleCheckUpdate, so clicking it just
-    // re-triggered a check instead of ever installing anything.
     const unsubUpdate = window.worktrack.system.onUpdateAvailable((_info) => {
       setUpdateStatus('available');
     });
@@ -128,7 +116,6 @@ export function SettingsPage() {
 
   const handleThemeChange = async (theme: Theme) => {
     await updateSettings({ theme });
-    // Apply to DOM
     const root = document.documentElement;
     if (theme === 'dark') root.classList.add('dark');
     else if (theme === 'light') root.classList.remove('dark');
@@ -151,18 +138,18 @@ export function SettingsPage() {
   };
 
   const themeOptions: Array<{ key: Theme; icon: React.ReactNode; label: string }> = [
-    { key: 'dark', icon: <Moon className="w-4 h-4" />, label: 'Dark' },
-    { key: 'light', icon: <Sun className="w-4 h-4" />, label: 'Light' },
-    { key: 'system', icon: <Monitor className="w-4 h-4" />, label: 'System' },
+    { key: 'dark', icon: <Moon size={16} />, label: 'Dark' },
+    { key: 'light', icon: <Sun size={16} />, label: 'Light' },
+    { key: 'system', icon: <Monitor size={16} />, label: 'System' },
   ];
 
   return (
-    <div className="flex-1 overflow-y-auto p-8 animate-fade-in">
-      <div className="max-w-2xl mx-auto space-y-8">
+    <div className="flex-1 overflow-y-auto p-8 animate-fade-in bg-background">
+      <div className="max-w-3xl mx-auto space-y-10 pb-24">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold">Settings</h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <h1 className="text-3xl font-display font-bold text-foreground tracking-tight">Settings</h1>
+          <p className="text-muted-foreground font-medium text-sm mt-1">
             Manage your preferences and account options.
           </p>
         </div>
@@ -170,20 +157,20 @@ export function SettingsPage() {
         {/* Appearance */}
         <Section title="Appearance">
           <SettingRow
-            icon={<Sun className="w-4 h-4" />}
+            icon={<Sun size={20} />}
             label="Theme"
             description="Choose how WorkTrack looks on your screen."
           >
-            <div className="flex gap-1 p-1 rounded-lg bg-secondary">
+            <div className="flex gap-1.5 p-1.5 rounded-xl bg-card border border-border/60 shadow-sm">
               {themeOptions.map((opt) => (
                 <button
                   key={opt.key}
                   onClick={() => handleThemeChange(opt.key)}
                   className={clsx(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all',
+                    'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all',
                     settings.theme === opt.key
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                   )}
                 >
                   {opt.icon}
@@ -194,16 +181,17 @@ export function SettingsPage() {
           </SettingRow>
 
           <SettingRow
-            icon={<Globe className="w-4 h-4" />}
+            icon={<Globe size={20} />}
             label="Language"
             description="Interface language for WorkTrack Desktop."
           >
             <select
               value={settings.language}
               onChange={(e) => updateSettings({ language: e.target.value as Language })}
-              className="h-10 px-4 rounded-xl border border-border bg-input text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-300 shadow-sm hover:border-secondary/50"
+              className="h-11 px-4 pr-8 rounded-xl border border-border bg-card text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-300 shadow-sm hover:border-border cursor-pointer appearance-none"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', backgroundSize: '16px' }}
             >
-              <option value="en">English</option>
+              <option value="en">English (US)</option>
               <option value="es">Español</option>
               <option value="fr">Français</option>
               <option value="de">Deutsch</option>
@@ -215,7 +203,7 @@ export function SettingsPage() {
         {/* System */}
         <Section title="System">
           <SettingRow
-            icon={<Power className="w-4 h-4" />}
+            icon={<Power size={20} />}
             label="Launch on Startup"
             description="Automatically start WorkTrack when you log in."
           >
@@ -226,7 +214,7 @@ export function SettingsPage() {
           </SettingRow>
 
           <SettingRow
-            icon={<Monitor className="w-4 h-4" />}
+            icon={<Monitor size={20} />}
             label="Minimize to Tray on Close"
             description="Keep WorkTrack running in the background when the window is closed."
           >
@@ -240,7 +228,7 @@ export function SettingsPage() {
         {/* Notifications */}
         <Section title="Notifications">
           <SettingRow
-            icon={<Bell className="w-4 h-4" />}
+            icon={<Bell size={20} />}
             label="Desktop Notifications"
             description="Show system notifications for important events."
           >
@@ -251,7 +239,7 @@ export function SettingsPage() {
           </SettingRow>
 
           <SettingRow
-            icon={<Bell className="w-4 h-4" />}
+            icon={<Bell size={20} />}
             label="Task Assigned"
             description="Notify when a new task is assigned to you."
           >
@@ -263,7 +251,7 @@ export function SettingsPage() {
           </SettingRow>
 
           <SettingRow
-            icon={<Bell className="w-4 h-4" />}
+            icon={<Bell size={20} />}
             label="Deadline Reminders"
             description={`Notify ${settings.deadlineReminderHours}h before task deadline.`}
           >
@@ -275,7 +263,7 @@ export function SettingsPage() {
           </SettingRow>
 
           <SettingRow
-            icon={<Bell className="w-4 h-4" />}
+            icon={<Bell size={20} />}
             label="Screenshot Upload Failures"
             description="Alert when a screenshot fails to upload."
           >
@@ -290,7 +278,7 @@ export function SettingsPage() {
         {/* Updates */}
         <Section title="Updates">
           <SettingRow
-            icon={<RefreshCw className="w-4 h-4" />}
+            icon={<RefreshCw size={20} />}
             label="Automatic Updates"
             description="Download and install updates automatically in the background."
           >
@@ -301,85 +289,89 @@ export function SettingsPage() {
           </SettingRow>
 
           <SettingRow
-            icon={<Info className="w-4 h-4" />}
+            icon={<Info size={20} />}
             label="Check for Updates"
             description={`Current version: v${appVersion}`}
           >
-            <button
+            <Button
+              variant={updateStatus === 'upToDate' ? 'outline' : 'primary'}
               onClick={updateStatus === 'downloaded' ? handleInstallUpdate : handleCheckUpdate}
               disabled={updateStatus === 'checking' || updateStatus === 'available'}
-              className="flex items-center gap-2 px-5 py-2.5 text-xs font-semibold border border-border rounded-xl hover:bg-accent hover:text-foreground transition-all duration-300 hover:shadow-sm hover:-translate-y-0.5 active:scale-95 disabled:opacity-50"
+              className="rounded-full shadow-sm"
             >
-              {updateStatus === 'checking' && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+              {updateStatus === 'checking' && <RefreshCw size={16} className="animate-spin mr-2" />}
+              {updateStatus === 'upToDate' && <CheckCircle2 size={16} className="mr-2 text-emerald-500" />}
               {updateStatus === 'downloaded' ? '⬇ Install Update'
                 : updateStatus === 'available' ? 'Downloading…'
-                : updateStatus === 'upToDate' ? '✓ Up to Date'
+                : updateStatus === 'upToDate' ? 'Up to Date'
                 : 'Check Now'}
-            </button>
+            </Button>
           </SettingRow>
         </Section>
 
         {/* Screenshot Verification */}
-        <Section title="Screenshot Verification">
+        <Section title="Troubleshooting">
           <SettingRow
-            icon={<Camera className="w-4 h-4" />}
+            icon={<Camera size={20} />}
             label="Test Screenshots"
             description="Verify that screenshots are being captured and uploaded to Google Drive properly."
           >
-            <button
+            <Button
+              variant="secondary"
               onClick={async () => {
                 await window.worktrack.screenshots.test();
                 alert('Test screenshot requested! It will capture in the background and upload to Drive.');
               }}
-              className="flex items-center gap-2 px-5 py-2.5 text-xs font-semibold border border-border rounded-xl hover:bg-accent hover:text-foreground transition-all duration-300 hover:shadow-sm hover:-translate-y-0.5 active:scale-95"
+              className="rounded-full"
             >
+              <Camera size={16} className="mr-2" />
               Capture & Upload Test
-            </button>
+            </Button>
           </SettingRow>
         </Section>
 
         {/* Organization Settings — Read Only */}
         <Section title="Organization (Read-Only)">
           <SettingRow
-            icon={<Building2 className="w-4 h-4" />}
+            icon={<Building2 size={20} />}
             label="Organization"
             description="Managed by your administrator."
           >
-            <span className="text-sm font-medium text-foreground">
+            <span className="text-base font-bold text-foreground">
               {organization?.name ?? '—'}
             </span>
           </SettingRow>
 
           <SettingRow
-            icon={<Camera className="w-4 h-4" />}
+            icon={<Camera size={20} />}
             label="Screenshot Interval"
             description="Configured by your organization."
           >
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-foreground">
-                Every {organization?.screenshotInterval ?? 5} minutes
+            <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-lg border border-border/50">
+              <span className="text-sm font-semibold text-foreground">
+                Every {organization?.screenshotInterval ?? 5} min
               </span>
-              <Shield className="w-3.5 h-3.5 text-muted-foreground" />
+              <Shield size={14} className="text-muted-foreground" />
             </div>
           </SettingRow>
 
           <SettingRow
-            icon={<Camera className="w-4 h-4" />}
+            icon={<Monitor size={20} />}
             label="Monitor Capture"
             description="Which displays are captured for screenshots."
           >
-            <span className="text-sm font-medium text-foreground capitalize">
+            <span className="text-sm font-semibold text-foreground capitalize bg-muted/50 px-3 py-1.5 rounded-lg border border-border/50">
               {organization?.screenshotMonitors ?? 'Primary'}
             </span>
           </SettingRow>
         </Section>
 
         {/* Security Info */}
-        <div className="flex items-start gap-3 p-4 rounded-xl bg-green-500/5 border border-green-500/20 text-sm text-green-400">
-          <Shield className="w-5 h-5 shrink-0 mt-0.5" />
+        <div className="flex items-start gap-4 p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+          <Shield size={24} className="shrink-0 mt-0.5" />
           <div>
-            <span className="font-semibold">Secure by Design</span>
-            <p className="text-green-400/70 text-xs mt-0.5">
+            <span className="font-display font-bold uppercase tracking-wider text-sm">Secure by Design</span>
+            <p className="font-medium text-sm mt-1 opacity-90 leading-relaxed">
               All data is encrypted at rest. Screenshots are compressed and uploaded over HTTPS. Tokens are stored encrypted locally.
             </p>
           </div>

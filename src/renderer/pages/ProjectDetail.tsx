@@ -1,37 +1,36 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Loader2, X } from 'lucide-react';
+import { Loader2, X, ChevronLeft, Plus, Pause, Play, Coffee, StopCircle, CheckCircle2, Circle, Calendar, Users, Edit3, Image as ImageIcon, Briefcase, Activity, Clock } from 'lucide-react';
 import { Project, Task, TeamMember, ProjectMember, ScreenshotRecord } from '@shared/types';
 import { useAuthStore } from '../store/authStore';
 import { useTimerStore } from '../store/timerStore';
-import { MaterialIcon } from '../components/ui/MaterialIcon';
 import { ScreenshotImage } from '../components/ScreenshotImage';
+import { Badge, Button, Card } from '../components/ui/primitives';
 import { formatDuration } from '../utils/formatTime';
 import { clsx } from 'clsx';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type FullProject = Project & { members: ProjectMember[]; tasks: Task[] };
 
-const STATUS_BADGE: Record<string, string> = {
-  ACTIVE: 'bg-secondary/10 text-secondary border-secondary/20',
-  COMPLETED: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  ON_HOLD: 'bg-amber-100 text-amber-700 border-amber-200',
-  CANCELLED: 'bg-destructive/10 text-destructive border-destructive/20',
-  ARCHIVED: 'bg-muted text-muted-foreground border-border',
+const STATUS_VARIANT: Record<string, 'default' | 'success' | 'warning' | 'danger' | 'info' | 'secondary'> = {
+  ACTIVE: 'success',
+  COMPLETED: 'secondary',
+  ON_HOLD: 'warning',
+  CANCELLED: 'danger',
+  ARCHIVED: 'default',
 };
 
 function priorityPill(priority: string) {
   const p = priority.toLowerCase();
-  if (p === 'urgent' || p === 'critical') return { cls: 'bg-destructive/10 text-destructive border-destructive/20', icon: 'warning' };
-  if (p === 'high') return { cls: 'bg-orange-100 text-orange-700 border-orange-200', icon: null };
-  if (p === 'medium') return { cls: 'bg-secondary/10 text-secondary border-secondary/20', icon: null };
-  return { cls: 'bg-muted text-muted-foreground border-border', icon: null };
+  if (p === 'urgent' || p === 'critical') return { cls: 'text-destructive border-destructive bg-destructive/10', icon: 'warning' };
+  if (p === 'high') return { cls: 'text-orange-500 border-orange-500 bg-orange-500/10', icon: null };
+  if (p === 'medium') return { cls: 'text-secondary border-secondary bg-secondary/10', icon: null };
+  return { cls: 'text-muted-foreground border-border bg-muted', icon: null };
 }
 
 const fmtDate = (d?: string) => {
   if (!d) return '—';
   const date = new Date(d);
-  // datetime-local values carry a "T" (e.g. 2026-07-10T14:30); older
-  // date-only deadlines don't — only show a time when one was actually set.
   return d.includes('T')
     ? date.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
     : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -70,13 +69,23 @@ export function ProjectDetail() {
   };
 
   if (loading) {
-    return <div className="flex-1 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center bg-background h-full">
+        <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+        <p className="text-sm font-medium text-muted-foreground animate-pulse">Loading project details...</p>
+      </div>
+    );
   }
   if (!project) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-3">
-        <p className="text-muted-foreground text-sm">Project not found or you don't have access.</p>
-        <button onClick={() => navigate('/projects')} className="text-sm text-primary hover:underline">Back to Projects</button>
+      <div className="flex-1 flex flex-col items-center justify-center gap-4 bg-background">
+        <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center border border-border">
+          <Briefcase className="w-8 h-8 text-muted-foreground/50" />
+        </div>
+        <p className="text-muted-foreground font-medium">Project not found or access denied.</p>
+        <Button variant="outline" onClick={() => navigate('/projects')}>
+          <ChevronLeft className="w-4 h-4 mr-2" /> Back to Projects
+        </Button>
       </div>
     );
   }
@@ -95,120 +104,160 @@ export function ProjectDetail() {
     if (res.success) refreshTasks();
   };
 
-  // Recent activity — real, timestamped: reuse the same screenshot captures
-  // already fetched for this project (genuine per-employee activity signal).
   const recentActivity = [...screenshots]
     .sort((a, b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime())
     .slice(0, 5);
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 animate-fade-in pb-24">
-      <button onClick={() => navigate('/projects')} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-        <MaterialIcon name="chevron_left" size={18} /> Projects
+    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 bg-background pb-24 animate-fade-in relative">
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
+      
+      <button onClick={() => navigate('/projects')} className="flex items-center gap-1.5 text-[13px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors relative z-10">
+        <ChevronLeft size={16} /> Back to Projects
       </button>
 
       {/* Header */}
-      <div className="mb-2">
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2 flex-wrap">
-              <h2 className="text-2xl font-display font-bold text-foreground">{project.name}</h2>
-              <span className={clsx('px-3 py-1 rounded-full font-mono text-[11px] uppercase tracking-widest flex items-center gap-1 border', STATUS_BADGE[project.status] ?? STATUS_BADGE.ARCHIVED)}>
-                {project.status.replace('_', ' ')}
-              </span>
-              <span className={clsx('px-3 py-1 rounded-full font-mono text-[11px] uppercase tracking-widest flex items-center gap-1 border', priority.cls)}>
-                {priority.icon && <MaterialIcon name={priority.icon} size={14} />}
-                {project.priority}
-              </span>
+      <div className="relative z-10 flex flex-col xl:flex-row xl:items-start justify-between gap-6">
+        <div>
+          <div className="flex items-center gap-3 mb-3 flex-wrap">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-sm">
+              <Briefcase size={24} className="text-primary" />
             </div>
-            {(project.clientName || project.clientEmail) && (
-              <p className="text-muted-foreground flex items-center gap-2 flex-wrap text-sm">
-                <MaterialIcon name="domain" size={18} />
-                {project.clientEmail ? `Client: ${project.clientName || project.clientEmail}` : project.clientName}
-              </p>
-            )}
+            <h2 className="text-3xl font-display font-bold text-foreground">{project.name}</h2>
+            <Badge variant={STATUS_VARIANT[project.status] ?? 'default'} className="uppercase font-bold tracking-widest text-[10px] ml-2">
+              {project.status.replace('_', ' ')}
+            </Badge>
+            <Badge variant="outline" className={clsx("uppercase font-bold tracking-widest text-[10px] border-border", priority.cls)}>
+              {project.priority}
+            </Badge>
           </div>
-          <div className="flex gap-3">
-            <button className="px-4 py-2 rounded-lg bg-card/40 border border-secondary text-secondary font-medium hover:bg-card/80 transition-all flex items-center gap-2">
-              <MaterialIcon name="edit" size={18} /> Edit Project
-            </button>
-            {canManage && (
-              <button onClick={() => setShowAddTask(true)} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:opacity-90 transition-all shadow-md flex items-center gap-2">
-                <MaterialIcon name="add_task" size={18} /> New Task
-              </button>
-            )}
-          </div>
+          {(project.clientName || project.clientEmail) && (
+            <p className="text-muted-foreground font-medium flex items-center gap-2 text-sm bg-muted/30 px-3 py-1.5 rounded-lg border border-border inline-flex mt-2">
+              <Users size={16} className="text-muted-foreground/70" />
+              Client: <strong className="text-foreground">{project.clientName || project.clientEmail}</strong>
+            </p>
+          )}
         </div>
-
-        {/* Progress */}
-        <div className="glass-panel p-4 rounded-xl">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-foreground">Project Completion</span>
-            <span className="text-sm font-bold text-secondary">{progress}%</span>
-          </div>
-          <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-            <div className="h-full bg-secondary rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
-          </div>
-          <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-            <span>Started: {fmtDate(project.startDate)}</span>
-            <span>Due: {fmtDate(project.deadline)}</span>
-          </div>
+        
+        <div className="flex gap-3 shrink-0">
+          <Button variant="outline" className="h-11 px-4 rounded-xl shadow-sm hover:border-primary/50 text-foreground font-semibold">
+            <Edit3 size={18} className="mr-2 text-muted-foreground" /> Edit
+          </Button>
+          {canManage && (
+            <Button onClick={() => setShowAddTask(true)} className="h-11 px-5 rounded-xl shadow-premium text-sm">
+              <Plus size={18} className="mr-2" /> New Task
+            </Button>
+          )}
         </div>
       </div>
 
+      {/* Stats row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 relative z-10">
+        <Card className="p-6 bg-card hover:border-primary/30 transition-colors">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-display text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Completion</h3>
+            <span className="text-3xl font-display font-bold text-primary">{progress}%</span>
+          </div>
+          <div className="w-full h-2 bg-muted rounded-full overflow-hidden shadow-inner border border-border/50">
+            <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 1 }} className="h-full bg-primary rounded-full shadow-sm" />
+          </div>
+          <p className="text-xs font-medium text-muted-foreground mt-3 text-right">{done} of {tasks.length} tasks done</p>
+        </Card>
+
+        <Card className="p-6 flex flex-col justify-center">
+          <h3 className="font-display text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Timeline</h3>
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Started</p>
+              <p className="text-sm font-semibold text-foreground bg-muted/40 px-2.5 py-1.5 rounded-md inline-block border border-border/50">{fmtDate(project.startDate)}</p>
+            </div>
+            <div className="w-px h-8 bg-border" />
+            <div className="flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Due Date</p>
+              <p className="text-sm font-semibold text-foreground bg-muted/40 px-2.5 py-1.5 rounded-md inline-block border border-border/50">{fmtDate(project.deadline)}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 flex flex-col justify-center">
+          <h3 className="font-display text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Time Tracking</h3>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-display font-bold text-foreground">{project.actualHours}h</p>
+              <p className="text-xs font-medium text-muted-foreground">Logged total</p>
+            </div>
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shadow-inner text-primary">
+              <Clock size={20} />
+            </div>
+          </div>
+        </Card>
+      </div>
+
       {/* Active timer bar */}
-      {timerActive && (
-        <div className="glass-panel rounded-xl p-4 flex items-center gap-4 border-primary/30">
-          <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shrink-0" />
-          <div className="flex-1 min-w-0">
-            <div className="text-xs text-muted-foreground">
-              {timer.status === 'on_break' ? 'On break' : timer.status === 'paused' ? 'Paused' : 'Tracking'}
+      <AnimatePresence>
+        {timerActive && (
+          <motion.div initial={{ opacity: 0, y: -20, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, y: -20, height: 0 }}>
+            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-5 shadow-sm relative overflow-hidden group mt-4">
+              <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-primary group-hover:w-2 transition-all" />
+              <span className="w-3 h-3 rounded-full bg-primary animate-pulse shrink-0 ml-2 shadow-[0_0_10px_rgba(var(--primary),0.8)]" />
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] font-display font-bold uppercase tracking-widest text-primary mb-1">
+                  {timer.status === 'on_break' ? 'ON BREAK' : timer.status === 'paused' ? 'PAUSED' : 'CURRENTLY TRACKING'}
+                </div>
+                <div className="text-base font-bold text-foreground truncate">
+                  {tasks.find((t) => t.id === timer.taskId)?.title ?? 'Active task'}
+                </div>
+              </div>
+              <div className="text-3xl font-mono font-bold text-primary tracking-tight">
+                {formatDuration(timer.status === 'on_break' ? timer.breakSeconds : timer.elapsedSeconds)}
+              </div>
+              <div className="flex items-center gap-2 bg-background p-1.5 rounded-xl border border-border shadow-sm">
+                {timer.status === 'running' && (
+                  <button onClick={() => timer.pauseTimer()} className="w-10 h-10 rounded-lg hover:bg-muted flex items-center justify-center transition-colors" title="Pause"><Pause size={18} className="fill-current" /></button>
+                )}
+                {timer.status === 'paused' && (
+                  <button onClick={() => timer.resumeTimer()} className="w-10 h-10 rounded-lg bg-primary text-primary-foreground hover:opacity-90 flex items-center justify-center transition-colors shadow-sm" title="Resume"><Play size={18} className="fill-current" /></button>
+                )}
+                <button
+                  onClick={() => (timer.status === 'on_break' ? timer.endBreak() : timer.startBreak())}
+                  disabled={timer.status !== 'running' && timer.status !== 'on_break'}
+                  className="w-10 h-10 rounded-lg hover:bg-amber-500/10 hover:text-amber-500 flex items-center justify-center disabled:opacity-40 transition-colors"
+                  title={timer.status === 'on_break' ? 'End break' : 'Break'}
+                >
+                  {timer.status === 'on_break' ? <Play size={18} /> : <Coffee size={18} />}
+                </button>
+                <button onClick={() => timer.stopTimer()} className="w-10 h-10 rounded-lg hover:bg-destructive/10 hover:text-destructive flex items-center justify-center transition-colors" title="Stop">
+                  <StopCircle size={18} />
+                </button>
+              </div>
             </div>
-            <div className="text-sm font-semibold truncate">
-              {tasks.find((t) => t.id === timer.taskId)?.title ?? 'Active task'}
-            </div>
-          </div>
-          <div className="text-2xl font-mono font-bold text-primary">
-            {formatDuration(timer.status === 'on_break' ? timer.breakSeconds : timer.elapsedSeconds)}
-          </div>
-          <div className="flex items-center gap-2">
-            {timer.status === 'running' && (
-              <button onClick={() => timer.pauseTimer()} className="w-9 h-9 rounded-full bg-muted hover:bg-muted/70 flex items-center justify-center" title="Pause"><MaterialIcon name="pause" size={18} /></button>
-            )}
-            {timer.status === 'paused' && (
-              <button onClick={() => timer.resumeTimer()} className="w-9 h-9 rounded-full bg-primary text-primary-foreground hover:opacity-90 flex items-center justify-center" title="Resume"><MaterialIcon name="play_arrow" size={18} /></button>
-            )}
-            <button
-              onClick={() => (timer.status === 'on_break' ? timer.endBreak() : timer.startBreak())}
-              disabled={timer.status !== 'running' && timer.status !== 'on_break'}
-              className="w-9 h-9 rounded-full bg-muted hover:bg-muted/70 flex items-center justify-center disabled:opacity-40"
-              title={timer.status === 'on_break' ? 'End break' : 'Break'}
-            >
-              <MaterialIcon name={timer.status === 'on_break' ? 'play_circle' : 'coffee'} size={18} />
-            </button>
-            <button onClick={() => timer.stopTimer()} className="w-9 h-9 rounded-full bg-muted hover:bg-destructive/20 hover:text-destructive flex items-center justify-center" title="Stop"><MaterialIcon name="stop_circle" size={18} /></button>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {project.description && (
-        <div className="glass-panel rounded-2xl p-6">
-          <h3 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-2">Overview</h3>
-          <p className="text-sm text-foreground/90 leading-relaxed">{project.description}</p>
-        </div>
-      )}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 relative z-10">
+        
+        {/* Left Column: Description & Tasks */}
+        <div className="xl:col-span-2 space-y-8">
+          
+          {project.description && (
+            <Card className="p-7">
+              <h3 className="font-display text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Project Overview</h3>
+              <p className="text-[15px] font-medium text-foreground/90 leading-relaxed">{project.description}</p>
+            </Card>
+          )}
 
-      {/* Bento Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Task List */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="glass-panel rounded-2xl p-6">
-            <div className="flex justify-between items-center mb-6 pb-4 border-b border-border">
-              <h3 className="text-lg font-display font-bold text-foreground">Active Tasks</h3>
+          <Card className="p-7">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-display font-bold text-foreground">Tasks</h3>
+              <Badge variant="secondary" className="font-bold">{tasks.length} total</Badge>
             </div>
 
             {tasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-6 text-center">No tasks yet.</p>
+              <div className="flex flex-col items-center justify-center py-10 bg-muted/20 rounded-xl border border-dashed border-border/60">
+                <CheckCircle2 size={32} className="text-muted-foreground/40 mb-3" />
+                <p className="text-sm font-medium text-muted-foreground">No tasks created yet.</p>
+              </div>
             ) : (
               <div className="space-y-3">
                 {tasks.map((t) => {
@@ -217,49 +266,53 @@ export function ProjectDetail() {
                   const done_ = isDone(t.status);
                   const p = priorityPill(t.priority);
                   return (
-                    <div
+                    <motion.div
+                      layout
                       key={t.id}
                       className={clsx(
-                        'group flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-card/40 border border-border hover:bg-card/80 transition-colors gap-4 relative overflow-hidden',
-                        done_ && 'opacity-70'
+                        'group flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border transition-all duration-300 gap-4 relative overflow-hidden',
+                        done_ ? 'bg-muted/30 border-border/50 opacity-70 grayscale-[0.5]' : tracking ? 'bg-primary/5 border-primary/30 shadow-md scale-[1.01]' : 'bg-card border-border hover:border-primary/40 hover:shadow-sm'
                       )}
                     >
-                      <div className={clsx('absolute left-0 top-0 bottom-0 w-1', done_ ? 'bg-emerald-500' : tracking ? 'bg-primary' : 'bg-secondary')} />
+                      <div className={clsx('absolute left-0 top-0 bottom-0 w-1.5 transition-colors', done_ ? 'bg-secondary/50' : tracking ? 'bg-primary' : 'bg-transparent group-hover:bg-primary/20')} />
+                      
                       <div className="flex items-start gap-4">
                         <button
                           onClick={() => !done_ && mineOrManager && setTaskStatus(t.id, 'DONE')}
                           disabled={done_ || !mineOrManager}
-                          className={clsx('mt-1', done_ ? 'text-emerald-500' : 'text-muted-foreground hover:text-secondary')}
+                          className={clsx('mt-1 transition-colors', done_ ? 'text-secondary' : 'text-muted-foreground hover:text-primary')}
                         >
-                          <MaterialIcon name={done_ ? 'check_circle' : 'radio_button_unchecked'} size={20} fill={done_} />
+                          {done_ ? <CheckCircle2 size={22} className="fill-current text-white" /> : <Circle size={22} />}
                         </button>
+                        
                         <div>
-                          <h4 className={clsx('font-medium text-foreground mb-1', done_ && 'line-through')}>{t.title}</h4>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                          <h4 className={clsx('text-base font-semibold text-foreground mb-1.5 transition-colors', done_ && 'line-through text-muted-foreground')}>{t.title}</h4>
+                          <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground flex-wrap">
                             {t.deadline && (
-                              <span className="flex items-center gap-1 text-secondary">
-                                <MaterialIcon name="calendar_today" size={14} /> {fmtDate(t.deadline)}
+                              <span className="flex items-center gap-1 bg-muted px-2 py-0.5 rounded-md text-foreground">
+                                <Calendar size={12} /> {fmtDate(t.deadline)}
                               </span>
                             )}
-                            <span className={clsx('px-2 py-0.5 rounded-full border font-mono text-[10px] uppercase', p.cls)}>{t.priority.toString().toLowerCase()}</span>
-                            {t.assigneeName && <span>{t.assigneeName}</span>}
+                            <span className={clsx('px-2 py-0.5 rounded-md border font-mono text-[10px] uppercase font-bold tracking-wider', p.cls)}>{t.priority.toString().toLowerCase()}</span>
+                            {t.assigneeName && <span className="bg-muted/50 px-2 py-0.5 rounded-md">{t.assigneeName}</span>}
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 sm:ml-auto shrink-0">
+                      <div className="flex items-center gap-4 sm:ml-auto shrink-0 bg-background/50 p-2 rounded-xl border border-border/50">
                         {t.assigneeName && (
-                          <div className="w-8 h-8 rounded-full border-2 border-card shadow-sm bg-secondary/10 text-secondary flex items-center justify-center text-[11px] font-bold shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 border border-border/50 flex items-center justify-center text-[10px] font-bold text-foreground shadow-inner shrink-0">
                             {initials(t.assigneeName)}
                           </div>
                         )}
+                        
                         {done_ ? (
-                          <span className="px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-medium">Completed</span>
+                          <Badge variant="secondary" className="px-3 py-1 font-bold uppercase tracking-wider text-[10px]">Completed</Badge>
                         ) : canManage ? (
                           <select
                             value={t.status}
                             onChange={(e) => setTaskStatus(t.id, e.target.value)}
-                            className="text-xs bg-secondary/10 text-secondary border-none rounded-lg focus:ring-0 py-1.5 pl-3 pr-8 cursor-pointer appearance-none"
+                            className="text-xs font-bold uppercase tracking-wider bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary py-1.5 pl-3 pr-8 cursor-pointer shadow-sm appearance-none outline-none"
                           >
                             <option value="TODO">To Do</option>
                             <option value="IN_PROGRESS">In Progress</option>
@@ -267,134 +320,129 @@ export function ProjectDetail() {
                             <option value="DONE">Done</option>
                           </select>
                         ) : (
-                          <span className="px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-xs font-medium">{String(t.status).replace('_', ' ')}</span>
+                          <Badge variant="outline" className="px-3 py-1 font-bold uppercase tracking-wider text-[10px]">{String(t.status).replace('_', ' ')}</Badge>
                         )}
+                        
                         {mineOrManager && !done_ && (
                           tracking ? (
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono text-sm font-semibold text-primary mr-1">
-                                {formatDuration(timer.status === 'on_break' ? timer.breakSeconds : timer.elapsedSeconds)}
-                              </span>
-                              {timer.status === 'running' && (
-                                <button onClick={() => timer.pauseTimer()} className="w-9 h-9 rounded-full bg-muted hover:bg-muted/70 flex items-center justify-center" title="Pause"><MaterialIcon name="pause" size={16} /></button>
-                              )}
-                              {timer.status === 'paused' && (
-                                <button onClick={() => timer.resumeTimer()} className="w-9 h-9 rounded-full bg-primary text-primary-foreground hover:opacity-90 flex items-center justify-center" title="Resume"><MaterialIcon name="play_arrow" size={16} /></button>
-                              )}
-                              <button
-                                onClick={() => (timer.status === 'on_break' ? timer.endBreak() : timer.startBreak())}
-                                disabled={timer.status === 'paused'}
-                                className="w-9 h-9 rounded-full bg-muted hover:bg-muted/70 flex items-center justify-center disabled:opacity-40"
-                                title={timer.status === 'on_break' ? 'End break' : 'Take a break'}
-                              >
-                                <MaterialIcon name={timer.status === 'on_break' ? 'play_circle' : 'coffee'} size={16} />
-                              </button>
-                              <button onClick={() => timer.stopTimer()} className="w-9 h-9 rounded-full bg-muted hover:bg-destructive/20 hover:text-destructive flex items-center justify-center" title="Stop">
-                                <MaterialIcon name="stop_circle" size={16} />
-                              </button>
-                            </div>
+                            <Badge variant="default" className="bg-primary text-primary-foreground font-bold tracking-widest text-[10px] uppercase animate-pulse shadow-[0_0_8px_rgba(var(--primary),0.5)]">
+                              Tracking
+                            </Badge>
                           ) : (
-                            <button
+                            <Button
+                              variant="outline"
+                              size="sm"
                               onClick={() => startTask(t.id)}
                               disabled={timerActive}
-                              title={timerActive ? 'Stop the current timer first' : 'Start working'}
-                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-secondary border border-secondary/30 hover:bg-secondary/10 transition-colors text-xs font-medium disabled:opacity-40"
+                              title={timerActive ? 'Stop current timer first' : 'Start working'}
+                              className="h-8 rounded-lg px-3 text-xs"
                             >
-                              <MaterialIcon name="play_arrow" size={16} /> Start
-                            </button>
+                              <Play size={14} className="mr-1.5" /> Start
+                            </Button>
                           )
                         )}
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
             )}
 
             {canManage && (
-              <button
+              <Button
+                variant="outline"
                 onClick={() => setShowAddTask(true)}
-                className="mt-4 w-full py-3 rounded-xl border border-dashed border-border text-muted-foreground hover:bg-card/50 hover:text-foreground transition-colors flex justify-center items-center gap-2"
+                className="mt-5 w-full h-12 rounded-xl border-dashed border-2 hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-foreground font-semibold"
               >
-                <MaterialIcon name="add" size={18} /> Add New Task
-              </button>
+                <Plus size={18} className="mr-2" /> Add New Task
+              </Button>
             )}
-          </div>
-
-          {/* Team */}
-          <div className="glass-panel rounded-2xl p-6">
-            <h3 className="text-lg font-display font-bold text-foreground mb-4 flex items-center gap-2">
-              <MaterialIcon name="groups" size={20} /> Team
-            </h3>
-            {project.members.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No members assigned.</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {project.members.map((m) => (
-                  <div key={m.id} className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full bg-secondary/10 border border-secondary/20 text-sm">
-                    <span className="w-6 h-6 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center text-[10px] font-bold">{initials(m.name)}</span>
-                    <span className="font-medium">{m.name}</span>
-                    <span className="text-xs text-muted-foreground">{m.projectRole}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          </Card>
         </div>
 
-        {/* Right Panel */}
-        <div className="space-y-6">
-          {/* Recent Activity */}
-          <div className="glass-panel rounded-2xl p-6">
-            <h3 className="text-[17px] font-display font-bold text-foreground mb-4">Recent Activity</h3>
-            {recentActivity.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No activity captured yet.</p>
+        {/* Right Column: Team, Activity, Screenshots */}
+        <div className="space-y-8">
+          
+          <Card className="p-7">
+            <h3 className="font-display text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
+              <Users size={16} /> Project Team
+            </h3>
+            {project.members.length === 0 ? (
+              <p className="text-sm font-medium text-muted-foreground">No members assigned.</p>
             ) : (
-              <div className="relative pl-4 border-l border-border space-y-5">
-                {recentActivity.map((s) => (
-                  <div key={s.id} className="relative">
-                    <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-secondary ring-4 ring-card" />
-                    <div className="text-sm">
-                      <p className="text-foreground"><span className="font-medium">{s.employeeName ?? 'A team member'}</span> captured a work screenshot</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{new Date(s.capturedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+              <div className="flex flex-col gap-3">
+                {project.members.map((m) => (
+                  <div key={m.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-muted/50 transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/10 to-primary/30 border border-primary/20 flex items-center justify-center text-xs font-bold text-primary shadow-sm shrink-0">
+                      {initials(m.name)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-foreground text-sm truncate">{m.name}</p>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{m.projectRole}</p>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </div>
+          </Card>
 
-          {/* Screenshots */}
-          <div className="glass-panel rounded-2xl p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-[17px] font-display font-bold text-foreground">Work Screenshots</h3>
+          <Card className="p-7">
+            <h3 className="font-display text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-5 flex items-center gap-2">
+              <Activity size={16} /> Recent Activity
+            </h3>
+            {recentActivity.length === 0 ? (
+              <p className="text-sm font-medium text-muted-foreground bg-muted/30 p-4 rounded-xl border border-border/50">No activity captured yet.</p>
+            ) : (
+              <div className="relative pl-5 border-l border-border/60 space-y-6">
+                {recentActivity.map((s) => (
+                  <div key={s.id} className="relative group">
+                    <div className="absolute -left-[25px] top-1.5 w-3 h-3 rounded-full bg-primary/20 border-2 border-primary group-hover:scale-125 transition-transform" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground leading-snug"><strong className="text-foreground">{s.employeeName ?? 'Team member'}</strong> captured a work screenshot</p>
+                      <p className="text-xs font-mono font-bold text-muted-foreground mt-1.5">{new Date(s.capturedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          <Card className="p-7">
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="font-display text-[11px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <ImageIcon size={16} /> Screenshots
+              </h3>
             </div>
             {screenshots.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-2">No screenshots captured for this project yet.</p>
+              <p className="text-sm font-medium text-muted-foreground bg-muted/30 p-4 rounded-xl border border-border/50">No screenshots captured yet.</p>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
-                {screenshots.slice(0, 6).map((s) => (
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {screenshots.slice(0, 4).map((s) => (
                   <button
                     key={s.id}
                     onClick={() => s.driveFileUrl && window.worktrack.system.openExternal(s.driveFileUrl)}
-                    className="group relative rounded-xl overflow-hidden border border-border aspect-square bg-muted"
+                    className="group relative rounded-xl overflow-hidden border border-border/50 aspect-video bg-muted shadow-sm hover:border-primary/50 hover:shadow-md transition-all"
                     title={`${s.employeeName ?? 'Team'} · ${new Date(s.capturedAt).toLocaleString()}`}
                   >
                     <ScreenshotImage screenshotId={s.id} />
-                    <div className="absolute bottom-0 inset-x-0 bg-black/50 backdrop-blur-sm px-2 py-1 text-[10px] text-white truncate">
-                      {new Date(s.capturedAt).toLocaleDateString()}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
+                      <span className="text-[10px] font-bold text-white uppercase tracking-wider truncate">
+                        {new Date(s.capturedAt).toLocaleDateString()}
+                      </span>
                     </div>
                   </button>
                 ))}
               </div>
             )}
-            <button
+            <Button
+              variant="outline"
               onClick={() => navigate('/screenshots?projectId=' + id)}
-              className="mt-4 w-full py-2.5 rounded-xl border border-dashed border-border text-xs font-medium text-muted-foreground hover:bg-card/50 hover:text-foreground transition-colors"
+              className="w-full text-xs font-bold uppercase tracking-wider"
             >
-              View all in Screenshots →
-            </button>
-          </div>
+              View All Gallery
+            </Button>
+          </Card>
+          
         </div>
       </div>
 
@@ -425,7 +473,6 @@ function AddTaskModal({ projectId, members, onClose, onCreated }: {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Offer all team members as assignees, not just current project members.
     window.worktrack.manager.getTeam().then((res) => {
       if (res.success && res.data) setTeam(res.data.members ?? []);
     });
@@ -448,53 +495,62 @@ function AddTaskModal({ projectId, members, onClose, onCreated }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl animate-fade-in">
-        <div className="flex items-center justify-between p-5 border-b border-border">
-          <h3 className="font-semibold flex items-center gap-2"><MaterialIcon name="add_task" size={18} className="text-primary" /> Add Task</h3>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center"><X className="w-4 h-4 text-muted-foreground" /></button>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
+      <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="relative bg-card border border-border rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+        
+        <div className="flex items-center justify-between p-6 border-b border-border bg-muted/10">
+          <h3 className="text-xl font-display font-bold flex items-center gap-3"><Plus size={24} className="text-primary bg-primary/10 p-1 rounded-lg" /> Create New Task</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-muted flex items-center justify-center transition-colors"><X size={18} className="text-muted-foreground" /></button>
         </div>
-        <div className="p-5 space-y-4">
-          {error && <div className="flex items-center gap-2 text-destructive text-xs bg-destructive/10 border border-destructive/20 rounded-lg p-3">{error}</div>}
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Title *</label>
-            <input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} className="w-full bg-input border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="Design the landing page" />
+        
+        <div className="p-6 space-y-5">
+          {error && <div className="flex items-center gap-2 text-destructive text-sm font-medium bg-destructive/10 border border-destructive/20 rounded-xl p-4">{error}</div>}
+          
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-display font-bold uppercase tracking-widest text-muted-foreground">Task Title <span className="text-destructive">*</span></label>
+            <input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} className="w-full h-12 bg-input border border-border/80 rounded-xl px-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" placeholder="e.g. Design homepage hero section" />
           </div>
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Description</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="w-full bg-input border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none" />
+          
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-display font-bold uppercase tracking-widest text-muted-foreground">Description</label>
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full bg-input border border-border/80 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm resize-none" placeholder="Provide details about the task..." />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Assignee</label>
-              <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)} className="w-full bg-input border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
+          
+          <div className="grid grid-cols-2 gap-5">
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-display font-bold uppercase tracking-widest text-muted-foreground">Assignee</label>
+              <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)} className="w-full h-12 bg-input border border-border/80 rounded-xl px-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm appearance-none">
                 <option value="">Unassigned</option>
                 {options.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Priority</label>
-              <select value={priority} onChange={(e) => setPriority(e.target.value)} className="w-full bg-input border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
+            
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-display font-bold uppercase tracking-widest text-muted-foreground">Priority</label>
+              <select value={priority} onChange={(e) => setPriority(e.target.value)} className="w-full h-12 bg-input border border-border/80 rounded-xl px-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm appearance-none">
                 <option value="LOW">Low</option><option value="MEDIUM">Medium</option><option value="HIGH">High</option><option value="URGENT">Urgent</option>
               </select>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Est. Hours</label>
-              <input type="number" min="0" step="0.5" value={estimatedHours} onChange={(e) => setEstimatedHours(e.target.value)} className="w-full bg-input border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+            
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-display font-bold uppercase tracking-widest text-muted-foreground">Est. Hours</label>
+              <input type="number" min="0" step="0.5" value={estimatedHours} onChange={(e) => setEstimatedHours(e.target.value)} className="w-full h-12 bg-input border border-border/80 rounded-xl px-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Deadline</label>
-              <input type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="w-full bg-input border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+            
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-display font-bold uppercase tracking-widest text-muted-foreground">Deadline</label>
+              <input type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="w-full h-12 bg-input border border-border/80 rounded-xl px-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm text-foreground" />
             </div>
           </div>
         </div>
-        <div className="flex gap-3 p-5 border-t border-border">
-          <button onClick={onClose} className="flex-1 py-2.5 text-sm font-medium border border-border rounded-lg hover:bg-muted transition">Cancel</button>
-          <button onClick={submit} disabled={saving} className="flex-1 py-2.5 text-sm font-semibold bg-primary text-primary-foreground rounded-lg hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create Task'}
-          </button>
+        
+        <div className="flex gap-4 p-6 border-t border-border bg-muted/10">
+          <Button variant="outline" onClick={onClose} className="flex-1 h-12 rounded-xl font-bold">Cancel</Button>
+          <Button onClick={submit} disabled={saving} className="flex-1 h-12 rounded-xl font-bold shadow-[0_4px_14px_0_rgba(var(--primary),0.39)]">
+            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create Task'}
+          </Button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
