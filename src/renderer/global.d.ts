@@ -96,10 +96,11 @@ interface WorktrackAPI {
     rejectRequest: (userId: string) => Promise<IpcResponse>;
     getTasks: () => Promise<IpcResponse<Task[]>>;
     updateOrgSettings: (settings: Record<string, unknown>) => Promise<IpcResponse>;
-    addEmployee: (payload: { name: string; email: string; password: string; departmentId?: string; position?: string }) => Promise<IpcResponse>;
+    addEmployee: (payload: { name: string; email: string; password: string; departmentId?: string; position?: string; role?: string }) => Promise<IpcResponse>;
     getEmployeeTasks: (userId: string) => Promise<IpcResponse<Task[]>>;
     getMembers: () => Promise<IpcResponse<TeamMember[]>>;
     setRole: (userId: string, role: string) => Promise<IpcResponse<TeamMember>>;
+    removeMember: (userId: string) => Promise<IpcResponse>;
   };
   clients: {
     accept: (payload: ClientAcceptPayload) => Promise<IpcResponse<AuthState>>;

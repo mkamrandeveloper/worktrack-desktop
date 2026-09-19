@@ -644,6 +644,10 @@ export class IpcHandler {
       try { this._validateSender(event); return this._ok(await api().patch(`/api/manager/members/${userId}/role`, { role })); }
       catch (err) { return this._err(err); }
     });
+    ipcMain.handle(IPC.MANAGER.REMOVE_MEMBER, async (event, userId: string) => {
+      try { this._validateSender(event); return this._ok(await api().delete(`/api/manager/members/${userId}`)); }
+      catch (err) { return this._err(err); }
+    });
 
     // ── Enterprise: Departments ─────────────────────────────────────────────
     ipcMain.handle(IPC.DEPARTMENTS.LIST, async (event) => {

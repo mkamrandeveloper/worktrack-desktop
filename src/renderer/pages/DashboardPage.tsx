@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTimer } from '../hooks/useTimer';
 import { useAuthStore } from '../store/authStore';
@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, Bell, Clock, TrendingUp, CheckCircle2, Zap, PauseCircle, Timer, 
   Play, Pause, Coffee, StopCircle, MoreHorizontal, LineChart, Calendar, 
-  Plus, Globe, AlertCircle 
+  Plus, Globe, AlertCircle, RotateCcw, X, PlayCircle
 } from 'lucide-react';
 import { Card, Button, Badge } from '../components/ui/primitives';
 
@@ -103,6 +103,46 @@ export function DashboardPage() {
   const handleStartTask = async (taskId: string) => {
     selectTask(taskId);
     await timer.startTimer(taskId);
+  };
+
+  // ── Undo task completion ─────────────────────────────────────────────────
+  const [undoTask, setUndoTask] = useState<{ id: string; title: string; projectId?: string } | null>(null);
+  const undoProgress = useRef(100);
+  const undoInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [, setUndoTick] = useState(0);
+
+  const clearUndo = () => {
+    if (undoInterval.current) { clearInterval(undoInterval.current); undoInterval.current = null; }
+    setUndoTask(null);
+    undoProgress.current = 100;
+  };
+
+  const handleComplete = async () => {
+    // Capture task before stopping (stopping marks it DONE server-side)
+    const taskSnapshot = selectedTask ? { id: selectedTask.id, title: selectedTask.title, projectId: selectedTask.projectId } : null;
+    await timer.stopTimer();
+    if (taskSnapshot) {
+      clearUndo();
+      undoProgress.current = 100;
+      setUndoTask(taskSnapshot);
+      setUndoTick(n => n + 1);
+      undoInterval.current = setInterval(() => {
+        undoProgress.current = Math.max(0, undoProgress.current - 2);
+        setUndoTick(n => n + 1);
+        if (undoProgress.current <= 0) clearUndo();
+      }, 100);
+    }
+  };
+
+  const handleUndo = async () => {
+    if (!undoTask) return;
+    clearUndo();
+    // Revert to IN_PROGRESS and restart timer so the session continues
+    if (undoTask.projectId) {
+      await window.worktrack.projects.updateTask(undoTask.projectId, undoTask.id, { status: 'IN_PROGRESS' });
+    }
+    await handleStartTask(undoTask.id);
+    fetchTasks();
   };
 
   const myOpenTasks = tasks
@@ -336,7 +376,7 @@ export function DashboardPage() {
                     size="lg" 
                     variant="danger" 
                     className="flex-1 rounded-full shadow-md"
-                    onClick={() => timer.stopTimer()}
+                    onClick={handleComplete}
                   >
                     <StopCircle size={18} /> Complete
                   </Button>
@@ -458,7 +498,7 @@ export function DashboardPage() {
                       >
                         {timerOnBreak ? <PlayCircle size={18} /> : <Coffee size={18} />}
                       </button>
-                      <button onClick={() => timer.stopTimer()} className="w-10 h-10 rounded-full bg-card hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 border border-border flex items-center justify-center transition-colors" title="Stop">
+                      <button onClick={handleComplete} className="w-10 h-10 rounded-full bg-card hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 border border-border flex items-center justify-center transition-colors" title="Complete task">
                         <StopCircle size={18} />
                       </button>
                     </div>
@@ -563,6 +603,44 @@ export function DashboardPage() {
           )}
         </Card>
       </div>
+      {/* ── Undo completion toast ─────────────────────────────────────────── */}
+      <AnimatePresence>
+        {undoTask && (
+          <motion.div
+            initial={{ opacity: 0, y: 24, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.96 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4"
+          >
+            <div className="relative bg-card border border-border rounded-2xl shadow-2xl overflow-hidden">
+              <div
+                className="absolute top-0 left-0 h-1 bg-primary rounded-full transition-none"
+                style={{ width: `${undoProgress.current}%` }}
+              />
+              <div className="flex items-center gap-3 px-4 py-3.5">
+                <CheckCircle2 size={18} className="text-secondary shrink-0" />
+                <p className="flex-1 text-sm font-semibold text-foreground truncate">
+                  <span className="text-muted-foreground font-medium">Completed: </span>
+                  {undoTask.title}
+                </p>
+                <button
+                  onClick={handleUndo}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/25 text-xs font-bold uppercase tracking-wider hover:bg-primary/20 transition-colors shrink-0"
+                >
+                  <RotateCcw size={12} /> Undo
+                </button>
+                <button
+                  onClick={clearUndo}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

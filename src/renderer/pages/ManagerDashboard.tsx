@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useTaskStore } from '../store/taskStore';
 import { useTimer } from '../hooks/useTimer';
-import { TeamMember, Task, DashboardAnalytics, LiveStatus, OrgPresenceEvent, OrgTimerActivityEvent } from '@shared/types';
+import { TeamMember, Task, DashboardAnalytics, LiveStatus, OrgPresenceEvent, OrgTimerActivityEvent, LiveEmployee } from '@shared/types';
 import { Badge, Card, Button } from '../components/ui/primitives';
 import { formatDuration, calcProgress, hoursToSeconds, formatDeadlineCountdown } from '../utils/formatTime';
 import { clsx } from 'clsx';
@@ -44,9 +44,10 @@ export function ManagerDashboard() {
     }
   }, [timer.taskId]);
 
-  const [, setCountdownTick] = useState(0);
+  // 1-second tick to drive live elapsed timers in Team Overview
+  const [tick, setTick] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => setCountdownTick((n) => n + 1), 60000);
+    const t = setInterval(() => setTick((n) => n + 1), 1000);
     return () => clearInterval(t);
   }, []);
 
@@ -77,6 +78,8 @@ export function ManagerDashboard() {
   const [runningTimers, setRunningTimers] = useState<Set<string>>(new Set());
   const [recentActivity, setRecentActivity] = useState<{ id: string; label: string; timestamp: string }[]>([]);
   const [liveTaskInfo, setLiveTaskInfo] = useState<Map<string, { status: string; taskTitle: string | null; projectName: string | null }>>(new Map());
+  // Keyed by userId — stores clockInTime + totalWorkSeconds for elapsed timer computation
+  const [liveEmployeeData, setLiveEmployeeData] = useState<Map<string, Pick<LiveEmployee, 'clockInTime' | 'totalWorkSeconds' | 'totalBreakSeconds' | 'displayStatus'>>>(new Map());
 
   const pushActivity = (label: string, timestamp: string) => {
     setRecentActivity((prev) => [{ id: `${timestamp}-${Math.random()}`, label, timestamp }, ...prev].slice(0, 8));
@@ -91,6 +94,7 @@ export function ManagerDashboard() {
         const statusMap = new Map<string, string>();
         const running = new Set<string>();
         const taskInfo = new Map<string, { status: string; taskTitle: string | null; projectName: string | null }>();
+        const empData = new Map<string, Pick<LiveEmployee, 'clockInTime' | 'totalWorkSeconds' | 'totalBreakSeconds' | 'displayStatus'>>();
         for (const emp of r.data) {
           statusMap.set(emp.id, emp.displayStatus);
           if (emp.displayStatus === 'active' && emp.currentTask) running.add(emp.id);
@@ -99,10 +103,17 @@ export function ManagerDashboard() {
             taskTitle: emp.currentTask ?? null,
             projectName: emp.currentProject ?? null,
           });
+          empData.set(emp.id, {
+            clockInTime: emp.clockInTime,
+            totalWorkSeconds: emp.totalWorkSeconds,
+            totalBreakSeconds: emp.totalBreakSeconds,
+            displayStatus: emp.displayStatus,
+          });
         }
         setOnlineStatus(statusMap);
         setRunningTimers(running);
         setLiveTaskInfo(taskInfo);
+        setLiveEmployeeData(empData);
       }
     });
   }, []);
@@ -672,35 +683,103 @@ export function ManagerDashboard() {
             {members.map(member => {
               const memberTasks = tasks.filter(t => t.assigneeId === member.id);
               const live = liveTaskInfo.get(member.id);
+              const empData = liveEmployeeData.get(member.id);
               const attendanceStatus = onlineStatus.get(member.id);
               const isOut = !attendanceStatus || attendanceStatus === 'clocked_out' || attendanceStatus === 'offline';
-              const liveBadge = live?.status === 'running'
-                ? { cls: 'text-emerald-700 bg-emerald-100 border-emerald-200', icon: <Zap size={12}/>, label: 'Working' }
-                : live?.status === 'paused'
-                ? { cls: 'text-amber-700 bg-amber-100 border-amber-200', icon: <Pause size={12}/>, label: 'Paused' }
-                : live?.status === 'on_break'
-                ? { cls: 'text-amber-700 bg-amber-100 border-amber-200', icon: <Coffee size={12}/>, label: 'On Break' }
+              const isOnBreak = live?.status === 'on_break' || attendanceStatus === 'on_break';
+              const isWorking = live?.status === 'running' || attendanceStatus === 'active';
+              const isPaused = live?.status === 'paused';
+
+              // Compute live elapsed time: server-recorded seconds + delta since clock-in
+              // `tick` drives 1-second re-renders so the timer updates every second
+              void tick;
+              let elapsedSeconds = 0;
+              if (empData?.clockInTime && !isOut) {
+                const serverSecs = empData.totalWorkSeconds || 0;
+                const clockInMs = new Date(empData.clockInTime).getTime();
+                const nowMs = Date.now();
+                // Cap the live delta so it doesn't double-count if server already recorded it
+                const liveExtra = Math.max(0, Math.floor((nowMs - clockInMs) / 1000) - serverSecs);
+                elapsedSeconds = serverSecs + liveExtra;
+              } else if (empData) {
+                elapsedSeconds = empData.totalWorkSeconds || 0;
+              }
+              // Format as HH:MM:SS
+              const hh = Math.floor(elapsedSeconds / 3600).toString().padStart(2, '0');
+              const mm = Math.floor((elapsedSeconds % 3600) / 60).toString().padStart(2, '0');
+              const ss = (elapsedSeconds % 60).toString().padStart(2, '0');
+              const elapsedLabel = `${hh}:${mm}:${ss}`;
+
+              const liveBadge = isWorking
+                ? { cls: 'text-emerald-700 bg-emerald-500/10 border-emerald-500/30 dark:text-emerald-400', icon: <Zap size={12}/>, label: 'Working' }
+                : isPaused
+                ? { cls: 'text-amber-700 bg-amber-500/10 border-amber-500/30 dark:text-amber-400', icon: <Pause size={12}/>, label: 'Paused' }
+                : isOnBreak
+                ? { cls: 'text-amber-700 bg-amber-500/10 border-amber-500/30 dark:text-amber-400', icon: <Coffee size={12}/>, label: 'On Break' }
                 : isOut
                 ? { cls: 'text-muted-foreground bg-muted border-border', icon: <LogOut size={12}/>, label: 'Out' }
-                : { cls: 'text-sky-700 bg-sky-100 border-sky-200', icon: <LogIn size={12}/>, label: 'In' };
+                : { cls: 'text-sky-700 bg-sky-500/10 border-sky-500/30 dark:text-sky-400', icon: <LogIn size={12}/>, label: 'In' };
+
               return (
                 <div key={member.id} className="flex flex-col border-b border-border/50 last:border-0 hover:bg-card/40 transition-colors">
                   <div className="flex flex-wrap items-center gap-4 px-7 py-5">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-secondary/10 border border-primary/20 flex items-center justify-center text-lg font-bold text-primary flex-shrink-0 shadow-sm">
-                      {member.name.charAt(0).toUpperCase()}
+                    {/* Avatar with pulse for active employees */}
+                    <div className="relative shrink-0">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-secondary/10 border border-primary/20 flex items-center justify-center text-lg font-bold text-primary shadow-sm">
+                        {member.name.charAt(0).toUpperCase()}
+                      </div>
+                      {/* Active pulse ring */}
+                      {(isWorking || isOnBreak) && (
+                        <span className={clsx(
+                          'absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-card flex items-center justify-center',
+                          isOnBreak ? 'bg-amber-500' : 'bg-emerald-500'
+                        )}>
+                          {isOnBreak
+                            ? <Coffee size={8} className="text-white" />
+                            : <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
+                        </span>
+                      )}
                     </div>
+
                     <div className="flex-1 min-w-0">
                       <p className="text-base font-semibold text-foreground">{member.name}</p>
                       <p className="text-sm font-medium text-muted-foreground truncate">
-                        {live?.taskTitle ? <span className="text-foreground">{live.taskTitle}{live.projectName ? <span className="text-muted-foreground"> · {live.projectName}</span> : ''}</span> : member.email}
+                        {live?.taskTitle
+                          ? <span className="text-foreground">{live.taskTitle}{live.projectName ? <span className="text-muted-foreground"> · {live.projectName}</span> : ''}</span>
+                          : member.email}
                       </p>
                     </div>
-                    <div className="flex items-center gap-4 text-sm font-medium text-muted-foreground">
+
+                    <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground">
                       <span className="bg-muted px-2.5 py-1 rounded-md">{memberTasks.length} task{memberTasks.length !== 1 ? 's' : ''}</span>
+
+                      {/* ON BREAK pill — pulsing amber */}
+                      {isOnBreak && (
+                        <span className="flex items-center gap-1.5 border rounded-md px-3 py-1 font-bold text-[11px] uppercase tracking-wider shadow-sm animate-pulse bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400">
+                          <Coffee size={12} /> On Break
+                        </span>
+                      )}
+
+                      {/* Status badge */}
                       <span className={clsx('flex items-center gap-1.5 border rounded-md px-3 py-1 font-bold text-[11px] uppercase tracking-wider shadow-sm', liveBadge.cls)}>
                         {liveBadge.icon} {liveBadge.label}
                       </span>
+
+                      {/* Live elapsed timer — shown for active or on-break employees */}
+                      {(isWorking || isOnBreak || isPaused) && empData?.clockInTime && (
+                        <div className={clsx(
+                          'flex items-center gap-1.5 px-3 py-1 rounded-md border font-mono text-sm font-bold shadow-inner',
+                          isOnBreak
+                            ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400'
+                            : 'bg-primary/8 border-primary/25 text-primary'
+                        )}>
+                          {/* suppress tick dep lint — tick is intentionally used to force re-renders */}
+                          <Clock size={13} className="shrink-0 opacity-70" />
+                          <span>{elapsedLabel}</span>
+                        </div>
+                      )}
                     </div>
+
                     <Button
                       variant="ghost"
                       size="icon"

@@ -1,24 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, AlertCircle, UserPlus, Copy, CheckCircle2, Building2, Briefcase } from 'lucide-react';
-import { Department } from '@shared/types';
+import { X, Loader2, AlertCircle, UserPlus, Copy, CheckCircle2, Building2, Briefcase, ShieldCheck, Shield, User } from 'lucide-react';
+import { Department, UserRole } from '@shared/types';
 
 interface AddEmployeeResult {
-  employee: { id: string; name: string; email: string };
+  employee: { id: string; name: string; email: string; role: string };
   credentials: { email: string; password: string };
 }
 
 interface Props {
   onClose: () => void;
   onSuccess: (result: AddEmployeeResult) => void;
+  /** The role of the person opening this modal, used to scope the role picker. */
+  callerRole: UserRole;
 }
 
-export function AddEmployeeModal({ onClose, onSuccess }: Props) {
+// Which roles each caller may assign
+const ASSIGNABLE_ROLES: Record<string, { value: string; label: string; description: string; icon: React.ReactNode }[]> = {
+  OWNER: [
+    { value: 'ADMIN',    label: 'Admin',    description: 'Can manage team, projects & settings', icon: <ShieldCheck size={15} className="text-rose-500" /> },
+    { value: 'MANAGER',  label: 'Manager',  description: 'Can oversee team & assign tasks',       icon: <Shield size={15} className="text-primary" /> },
+    { value: 'EMPLOYEE', label: 'Employee', description: 'Standard team member',                   icon: <User size={15} className="text-muted-foreground" /> },
+  ],
+  ADMIN: [
+    { value: 'MANAGER',  label: 'Manager',  description: 'Can oversee team & assign tasks',       icon: <Shield size={15} className="text-primary" /> },
+    { value: 'EMPLOYEE', label: 'Employee', description: 'Standard team member',                   icon: <User size={15} className="text-muted-foreground" /> },
+  ],
+  MANAGER: [
+    { value: 'EMPLOYEE', label: 'Employee', description: 'Standard team member',                   icon: <User size={15} className="text-muted-foreground" /> },
+  ],
+};
+
+export function AddEmployeeModal({ onClose, onSuccess, callerRole }: Props) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [departmentId, setDepartmentId] = useState('');
   const [position, setPosition] = useState('');
-  
+
+  const availableRoles = ASSIGNABLE_ROLES[callerRole] ?? ASSIGNABLE_ROLES.MANAGER;
+  const [role, setRole] = useState(availableRoles[0]?.value ?? 'EMPLOYEE');
+
   const [departments, setDepartments] = useState<Department[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +47,6 @@ export function AddEmployeeModal({ onClose, onSuccess }: Props) {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    // Load departments for the dropdown
     window.worktrack.departments.list().then(res => {
       if (res.success && res.data) setDepartments(res.data);
     });
@@ -35,24 +55,28 @@ export function AddEmployeeModal({ onClose, onSuccess }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !password) { setError('Name, email and password are required.'); return; }
+
+    // Client-side role guard — prevents any attempt to assign a role above the caller's level
+    const allowedValues = availableRoles.map((r) => r.value);
+    if (!allowedValues.includes(role)) {
+      setError(`You don't have permission to add members with the "${role}" role. You can only add: ${allowedValues.join(', ')}.`);
+      return;
+    }
+
     setError(null);
     setIsLoading(true);
-    const payload = { name, email, password, departmentId, position };
+    const payload = { name, email, password, departmentId, position, role };
     const res = await window.worktrack.manager.addEmployee(payload);
     setIsLoading(false);
     if (res.success && res.data) {
       setResult(res.data as AddEmployeeResult);
     } else {
-      setError(res.error ?? 'Failed to add employee.');
+      setError(res.error ?? 'Failed to add member.');
     }
   };
 
   const copyCredentials = () => {
     if (!result) return;
-    // Was a hardcoded "http://localhost:3001" — meaningless to an employee
-    // on their own machine. They log in via the desktop app itself, not a
-    // URL, so point at where to download it instead (same link the
-    // welcome email's button uses).
     const text = `WorkTrack Login Credentials\nEmail: ${result.credentials.email}\nPassword: ${result.credentials.password}\nDownload WorkTrack Desktop: https://github.com/mkamrandeveloper/worktrack-desktop/releases/latest`;
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -84,15 +108,62 @@ export function AddEmployeeModal({ onClose, onSuccess }: Props) {
                 {error}
               </div>
             )}
-            
+
             <div className="space-y-4">
+              {/* Role Picker — hidden for Manager (only one option) */}
+              {availableRoles.length > 1 && (
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-2">Role *</label>
+                  <div className="grid gap-2">
+                    {availableRoles.map((r) => (
+                      <button
+                        key={r.value}
+                        type="button"
+                        onClick={() => setRole(r.value)}
+                        className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
+                          role === r.value
+                            ? 'border-primary/60 bg-primary/5 ring-1 ring-primary/30'
+                            : 'border-border bg-card hover:bg-muted/50'
+                        }`}
+                      >
+                        <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
+                          role === r.value ? 'bg-primary/10 border-primary/30' : 'bg-muted border-border'
+                        }`}>
+                          {r.icon}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-semibold ${role === r.value ? 'text-primary' : 'text-foreground'}`}>{r.label}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{r.description}</p>
+                        </div>
+                        {role === r.value && (
+                          <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Manager sees a static role badge instead */}
+              {availableRoles.length === 1 && (
+                <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/30">
+                  <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border bg-muted border-border">
+                    <User size={15} className="text-muted-foreground" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Employee</p>
+                    <p className="text-xs text-muted-foreground">Standard team member</p>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-medium text-muted-foreground mb-1.5">Full Name *</label>
                 <input id="inp-emp-add-name" value={name} onChange={e => setName(e.target.value)}
                   className="w-full bg-input border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition"
                   placeholder="Jane Smith" required />
               </div>
-              
+
               <div>
                 <label className="block text-xs font-medium text-muted-foreground mb-1.5">Work Email *</label>
                 <input id="inp-emp-add-email" type="email" value={email} onChange={e => setEmail(e.target.value)}
@@ -129,8 +200,8 @@ export function AddEmployeeModal({ onClose, onSuccess }: Props) {
                 <label className="block text-xs font-medium text-muted-foreground mb-1.5">Temporary Password *</label>
                 <input id="inp-emp-add-password" type="text" value={password} onChange={e => setPassword(e.target.value)}
                   className="w-full bg-input border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition font-mono"
-                  placeholder="Set a password for the employee" required />
-                <p className="text-[11px] text-muted-foreground mt-1.5">The employee will be emailed these credentials automatically.</p>
+                  placeholder="Set a temporary password" required />
+                <p className="text-[11px] text-muted-foreground mt-1.5">The member will be emailed these credentials automatically.</p>
               </div>
             </div>
 
@@ -151,7 +222,9 @@ export function AddEmployeeModal({ onClose, onSuccess }: Props) {
               <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-foreground">{result.employee.name} added successfully!</p>
-                <p className="text-xs text-muted-foreground mt-0.5">They will receive an email with login instructions.</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Added as <span className="font-semibold capitalize">{result.employee.role?.toLowerCase()}</span> — they will receive an email with login instructions.
+                </p>
               </div>
             </div>
             <div className="bg-muted rounded-xl p-4 space-y-2">

@@ -97,6 +97,7 @@ export const IPC = {
     GET_EMPLOYEE_TASKS: 'manager:get-employee-tasks',
     GET_MEMBERS: 'manager:get-members',
     SET_ROLE: 'manager:set-role',
+    REMOVE_MEMBER: 'manager:remove-member',
   },
 
   // ── Clients ──────────────────────────────────────────────────────────────────

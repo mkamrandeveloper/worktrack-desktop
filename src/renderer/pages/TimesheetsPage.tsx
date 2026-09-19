@@ -1,24 +1,32 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Calendar, ChevronLeft, ChevronRight, Clock, Coffee, Monitor, TrendingUp,
-  X, Loader2, LogIn, LogOut, PlayCircle, StopCircle, Award, LayoutGrid, CalendarDays
+  ChevronLeft, ChevronRight, Clock, Coffee, Monitor, TrendingUp,
+  X, Loader2, LogIn, LogOut, PlayCircle, StopCircle, Award, CalendarDays,
+  ChevronDown, Users, Eye,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, Legend,
 } from 'recharts';
-import { WeeklyTimesheet, MonthlyTimesheet, DailyTimesheet } from '@shared/types';
+import { WeeklyTimesheet, MonthlyTimesheet, DailyTimesheet, TeamMember } from '@shared/types';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, Button, Badge, Separator } from '../components/ui/primitives';
+import { Card, Button, Badge } from '../components/ui/primitives';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import { useAuthStore } from '../store/authStore';
 
 type View = 'daily' | 'weekly' | 'monthly';
 
 const CHART_COLORS = { work: '#10b981', breakC: '#f59e0b', overtime: '#ef4444', idle: '#64748b' };
 
-const fmtHours = (v: number) => `${v.toFixed(1)}h`;
+const fmtHours = (v: number) => {
+  const totalMins = Math.round(v * 60);
+  const h = Math.floor(totalMins / 60);
+  const m = totalMins % 60;
+  if (h === 0) return m > 0 ? `${m}m` : '0h';
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+};
 const fmtClock = (iso?: string | null) => (iso ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—');
 const productivityOf = (work: number, idle: number) => (work > 0 ? Math.max(0, Math.min(100, Math.round(((work - idle) / work) * 100))) : 0);
 
@@ -30,9 +38,132 @@ function startOfWeek(d: Date) {
 }
 const toISODate = (d: Date) => d.toISOString().split('T')[0];
 
+// ── Employee Picker Dropdown ─────────────────────────────────────────────────
+interface EmployeePickerProps {
+  members: TeamMember[];
+  selectedId: string | null;
+  selfId: string;
+  selfName: string;
+  onChange: (id: string | null, name: string) => void;
+}
+
+function EmployeePicker({ members, selectedId, selfId, selfName, onChange }: EmployeePickerProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  const selectedName = selectedId
+    ? (members.find((m) => m.id === selectedId)?.name ?? 'Unknown')
+    : selfName;
+
+  const allOptions: { id: string | null; name: string; label: string }[] = [
+    { id: null, name: selfName, label: 'My Timesheet' },
+    ...members
+      .filter((m) => m.id !== selfId)
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((m) => ({ id: m.id, name: m.name, label: m.name })),
+  ];
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={clsx(
+          'flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all duration-200 shadow-sm min-w-[200px] justify-between',
+          open
+            ? 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20'
+            : 'bg-card text-foreground border-border hover:border-primary/50 hover:bg-card/80',
+        )}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <Users size={15} className="shrink-0 opacity-70" />
+          <span className="truncate">{selectedId ? selectedName : 'My Timesheet'}</span>
+        </div>
+        <ChevronDown size={14} className={clsx('shrink-0 transition-transform duration-200', open && 'rotate-180')} />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.96 }}
+            transition={{ duration: 0.15 }}
+            className="absolute top-full mt-2 right-0 z-50 w-64 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden"
+          >
+            <div className="p-2 max-h-72 overflow-y-auto custom-scrollbar">
+              {allOptions.map((opt) => (
+                <button
+                  key={opt.id ?? '__self__'}
+                  onClick={() => { onChange(opt.id, opt.name); setOpen(false); }}
+                  className={clsx(
+                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-left transition-colors',
+                    (selectedId === opt.id)
+                      ? 'bg-primary/10 text-primary font-semibold'
+                      : 'text-foreground hover:bg-muted/60 font-medium',
+                  )}
+                >
+                  <span className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0 border border-primary/20">
+                    {opt.name.charAt(0).toUpperCase()}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="truncate">{opt.label}</div>
+                    {opt.id === null && <div className="text-[10px] text-muted-foreground font-normal">You</div>}
+                  </div>
+                  {selectedId === opt.id && <span className="ml-auto text-primary text-xs">✓</span>}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ── Viewing Banner ───────────────────────────────────────────────────────────
+function ViewingBanner({ name, onClear }: { name: string; onClear: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className="flex items-center gap-3 px-6 py-3 bg-primary/8 border-b border-primary/20"
+    >
+      <Eye size={15} className="text-primary shrink-0" />
+      <span className="text-sm font-semibold text-primary">
+        Viewing timesheet for <span className="font-bold">{name}</span>
+      </span>
+      <button
+        onClick={onClear}
+        className="ml-auto flex items-center gap-1.5 text-xs text-primary/70 hover:text-primary font-semibold px-2.5 py-1 rounded-lg hover:bg-primary/10 transition-colors"
+      >
+        <X size={12} /> Back to mine
+      </button>
+    </motion.div>
+  );
+}
+
+// ── Main Page ────────────────────────────────────────────────────────────────
 export function TimesheetsPage() {
+  const { user, isManagerOrAbove } = useAuthStore();
+  const isManager = isManagerOrAbove();
+
   const [view, setView] = useState<View>('weekly');
   const [loading, setLoading] = useState(true);
+
+  // Employee picker state (managers only)
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserName, setSelectedUserName] = useState<string>('');
 
   const [dailyDate, setDailyDate] = useState(() => toISODate(new Date()));
   const [dailyData, setDailyData] = useState<DailyTimesheet | null>(null);
@@ -45,25 +176,37 @@ export function TimesheetsPage() {
 
   const [detailDate, setDetailDate] = useState<string | null>(null);
 
+  // Fetch org members on mount (manager+ only)
+  useEffect(() => {
+    if (!isManager) return;
+    window.worktrack.manager.getMembers().then((res) => {
+      if (res.success && res.data) setMembers(res.data);
+    });
+  }, [isManager]);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      const uidParam = selectedUserId ? { userId: selectedUserId } : {};
       if (view === 'daily') {
-        const res = await window.worktrack.timesheets.daily({ date: dailyDate });
+        const res = await window.worktrack.timesheets.daily({ date: dailyDate, ...uidParam });
         if (res.success && res.data) setDailyData(res.data);
+        else setDailyData(null);
       } else if (view === 'weekly') {
-        const res = await window.worktrack.timesheets.weekly({ weekStart: toISODate(weekStart) });
+        const res = await window.worktrack.timesheets.weekly({ weekStart: toISODate(weekStart), ...uidParam });
         if (res.success && res.data) setWeeklyData(res.data);
+        else setWeeklyData(null);
       } else {
-        const res = await window.worktrack.timesheets.monthly(monthCursor);
+        const res = await window.worktrack.timesheets.monthly({ ...monthCursor, ...uidParam });
         if (res.success && res.data) setMonthlyData(res.data);
+        else setMonthlyData(null);
       }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [view, dailyDate, weekStart, monthCursor]);
+  }, [view, dailyDate, weekStart, monthCursor, selectedUserId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -83,22 +226,58 @@ export function TimesheetsPage() {
     setMonthCursor({ year, month });
   };
 
+  const handleEmployeeChange = (id: string | null, name: string) => {
+    setSelectedUserId(id);
+    setSelectedUserName(name);
+  };
+
+  const clearSelection = () => {
+    setSelectedUserId(null);
+    setSelectedUserName('');
+  };
+
   return (
     <div className="flex flex-col h-full bg-background">
-      <header className="flex-none px-8 py-6 border-b border-border/50 bg-background/80 backdrop-blur-md sticky top-0 z-10 flex items-center justify-between">
+      <header className="flex-none px-8 py-6 border-b border-border/50 bg-background/80 backdrop-blur-md sticky top-0 z-10 flex items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">Timesheets</h1>
-          <p className="text-sm font-medium text-muted-foreground mt-1">Review your logged hours, breaks, and attendance history.</p>
+          <p className="text-sm font-medium text-muted-foreground mt-1">
+            {selectedUserId
+              ? `Reviewing logged hours for ${selectedUserName}`
+              : 'Review your logged hours, breaks, and attendance history.'}
+          </p>
         </div>
-        <div className="flex items-center gap-1 bg-card/60 p-1.5 rounded-xl border border-border/50 shadow-sm">
-          {(['daily', 'weekly', 'monthly'] as View[]).map((v) => (
-            <button key={v} onClick={() => setView(v)}
-              className={clsx('px-5 py-2 text-sm font-bold tracking-wide uppercase rounded-lg transition-all duration-300', view === v ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}>
-              {v}
-            </button>
-          ))}
+
+        <div className="flex items-center gap-3">
+          {/* Employee Picker — managers only */}
+          {isManager && (
+            <EmployeePicker
+              members={members}
+              selectedId={selectedUserId}
+              selfId={user?.id ?? ''}
+              selfName={user?.name ?? 'Me'}
+              onChange={handleEmployeeChange}
+            />
+          )}
+
+          {/* View toggle */}
+          <div className="flex items-center gap-1 bg-card/60 p-1.5 rounded-xl border border-border/50 shadow-sm">
+            {(['daily', 'weekly', 'monthly'] as View[]).map((v) => (
+              <button key={v} onClick={() => setView(v)}
+                className={clsx('px-5 py-2 text-sm font-bold tracking-wide uppercase rounded-lg transition-all duration-300', view === v ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}>
+                {v}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
+
+      {/* Viewing-as banner */}
+      <AnimatePresence>
+        {isManager && selectedUserId && (
+          <ViewingBanner name={selectedUserName} onClear={clearSelection} />
+        )}
+      </AnimatePresence>
 
       <div className="flex-1 overflow-y-auto p-8 pb-24 animate-fade-in">
         <div className="max-w-[1400px] mx-auto space-y-8">
@@ -127,7 +306,14 @@ export function TimesheetsPage() {
       </div>
 
       <AnimatePresence>
-        {detailDate && <DayDetailModal date={detailDate} onClose={() => setDetailDate(null)} />}
+        {detailDate && (
+          <DayDetailModal
+            date={detailDate}
+            userId={selectedUserId ?? undefined}
+            employeeName={selectedUserId ? selectedUserName : undefined}
+            onClose={() => setDetailDate(null)}
+          />
+        )}
       </AnimatePresence>
     </div>
   );
@@ -497,10 +683,10 @@ function MonthlyView({ cursor, data, loading, onPrev, onNext, onSelectDay }: {
           <div className="grid grid-cols-7 gap-3">
             {leadingBlanks.map((_, i) => <div key={`b${i}`} />)}
             {days.map((d) => (
-              <motion.button 
+              <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                key={d.date} 
+                key={d.date}
                 onClick={() => onSelectDay(d.date)}
                 className={clsx('aspect-square rounded-xl border p-2 flex flex-col items-center justify-center transition-colors shadow-sm', statusColor[d.status] ?? statusColor.absent)}
               >
@@ -516,19 +702,26 @@ function MonthlyView({ cursor, data, loading, onPrev, onNext, onSelectDay }: {
 }
 
 // ── Day Detail Modal ─────────────────────────────────────────────────────────
-function DayDetailModal({ date, onClose }: { date: string; onClose: () => void }) {
+function DayDetailModal({ date, userId, employeeName, onClose }: {
+  date: string;
+  userId?: string;
+  employeeName?: string;
+  onClose: () => void;
+}) {
   const [data, setData] = useState<DailyTimesheet | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    window.worktrack.timesheets.daily({ date }).then((res) => {
+    const params: { date: string; userId?: string } = { date };
+    if (userId) params.userId = userId;
+    window.worktrack.timesheets.daily(params).then((res) => {
       if (!cancelled && res.success && res.data) setData(res.data);
       if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
-  }, [date]);
+  }, [date, userId]);
 
   const work = data?.workHours ?? 0, idle = data?.idleHours ?? 0;
   const productivity = productivityOf(work, idle);
@@ -536,16 +729,25 @@ function DayDetailModal({ date, onClose }: { date: string; onClose: () => void }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95, y: 20 }} 
-        animate={{ opacity: 1, scale: 1, y: 0 }} 
-        exit={{ opacity: 0, scale: 0.95, y: 20 }} 
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
         className="relative bg-card border border-border rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
       >
         <div className="flex items-center justify-between p-6 border-b border-border bg-muted/20">
           <div>
-            <h3 className="font-display font-bold text-xl text-foreground">{new Date(date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</h3>
-            <p className="text-sm font-medium text-muted-foreground mt-1">Detailed daily timeline</p>
+            <h3 className="font-display font-bold text-xl text-foreground">
+              {new Date(date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+            </h3>
+            <p className="text-sm font-medium text-muted-foreground mt-1">
+              {employeeName ? (
+                <span className="flex items-center gap-1.5">
+                  <Eye size={13} className="text-primary" />
+                  <span>Viewing <span className="font-semibold text-primary">{employeeName}</span>'s timeline</span>
+                </span>
+              ) : 'Detailed daily timeline'}
+            </p>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full"><X size={20} /></Button>
         </div>

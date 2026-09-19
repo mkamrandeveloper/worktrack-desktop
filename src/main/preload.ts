@@ -145,7 +145,7 @@ const api = {
       invoke<Task[]>(IPC.MANAGER.GET_TASKS),
     updateOrgSettings: (settings: Record<string, unknown>) =>
       invoke(IPC.MANAGER.UPDATE_ORG_SETTINGS, settings),
-    addEmployee: (payload: { name: string; email: string; password: string; departmentId?: string; position?: string }) =>
+    addEmployee: (payload: { name: string; email: string; password: string; departmentId?: string; position?: string; role?: string }) =>
       invoke(IPC.MANAGER.ADD_EMPLOYEE, payload),
     getEmployeeTasks: (userId: string) =>
       invoke<Task[]>(IPC.MANAGER.GET_EMPLOYEE_TASKS, userId),
@@ -153,6 +153,8 @@ const api = {
       invoke<TeamMember[]>(IPC.MANAGER.GET_MEMBERS),
     setRole: (userId: string, role: string) =>
       invoke<TeamMember>(IPC.MANAGER.SET_ROLE, { userId, role }),
+    removeMember: (userId: string) =>
+      invoke(IPC.MANAGER.REMOVE_MEMBER, userId),
   },
 
   // ── Clients ───────────────────────────────────────────────────────────────────
