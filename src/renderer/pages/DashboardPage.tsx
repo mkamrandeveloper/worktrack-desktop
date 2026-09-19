@@ -226,7 +226,7 @@ export function DashboardPage() {
             <div className="text-3xl font-display font-bold text-foreground tracking-tight">{loading ? '—' : `${analytics?.totalWorkingHours ?? 0}h`}</div>
             <div className="text-sm text-primary font-medium flex items-center gap-1.5 mt-2">
               <TrendingUp size={14} />
-              <span>this {period.replace('ly', '')}</span>
+              <span>this {{ daily: 'day', weekly: 'week', monthly: 'month' }[period]}</span>
             </div>
           </div>
         </Card>
@@ -273,7 +273,7 @@ export function DashboardPage() {
           </div>
           <div>
             <div className="text-3xl font-display font-bold text-foreground tracking-tight">{loading ? '—' : idleLabel}</div>
-            <div className="text-sm text-muted-foreground mt-2">This {period.replace('ly', '')}</div>
+            <div className="text-sm text-muted-foreground mt-2">This {{ daily: 'day', weekly: 'week', monthly: 'month' }[period]}</div>
           </div>
         </Card>
       </div>
@@ -425,7 +425,7 @@ export function DashboardPage() {
           </div>
           <div className="mt-auto border-t border-border/50 pt-5 flex items-center justify-between">
             <div>
-              <div className="font-display text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Total this {period.replace('ly', '')}</div>
+              <div className="font-display text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Total this {{ daily: 'day', weekly: 'week', monthly: 'month' }[period]}</div>
               <div className="font-display font-bold text-xl text-foreground">{analytics?.totalWorkingHours ?? 0} hrs</div>
             </div>
             <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary border border-secondary/20 shadow-inner">

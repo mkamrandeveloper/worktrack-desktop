@@ -292,31 +292,37 @@ export function TeamManagement() {
                 const canRemoveThis = !isSelf && !isOwner && canRemove.includes(member.role as string);
 
                 return (
-                  <div key={member.id} className="group flex flex-wrap items-center justify-between gap-3 px-7 py-5 bg-card hover:bg-muted/30 transition-colors">
+                  <div key={member.id} className="flex flex-wrap items-center justify-between gap-4 px-7 py-5 bg-card hover:bg-muted/20 transition-colors">
                     {/* Avatar + name */}
                     <div className="flex items-center gap-4 min-w-0">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20 flex items-center justify-center text-lg font-bold text-primary shadow-sm shrink-0">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 border-2 border-primary/20 flex items-center justify-center text-lg font-bold text-primary shadow-sm shrink-0">
                         {member.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-base font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                        <p className="text-base font-semibold text-foreground truncate">
                           {member.name} {isSelf && <span className="text-xs text-muted-foreground font-normal">(you)</span>}
                         </p>
-                        <p className="text-sm font-medium text-muted-foreground truncate">{member.email}</p>
+                        <p className="text-sm text-muted-foreground truncate">{member.email}</p>
                       </div>
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-3 shrink-0">
-                      {/* Role badge / change dropdown */}
+                    <div className="flex items-center gap-2 shrink-0 flex-wrap">
+
+                      {/* Role badge / change dropdown — uses fixed positioning to escape overflow clipping */}
                       <div className="relative">
                         <button
                           disabled={!canChangeThisRole || roleChanging === member.id}
-                          onClick={(e) => { e.stopPropagation(); setRoleMenuOpen(roleMenuOpen === member.id ? null : member.id); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRoleMenuOpen(roleMenuOpen === member.id ? null : member.id);
+                          }}
                           className={clsx(
-                            'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-bold uppercase tracking-wider transition-all',
+                            'flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[11px] font-bold uppercase tracking-wider transition-all select-none',
                             ROLE_COLOR[member.role] ?? ROLE_COLOR.EMPLOYEE,
-                            canChangeThisRole && !roleChanging ? 'hover:shadow-sm cursor-pointer hover:brightness-95' : 'cursor-default opacity-90'
+                            canChangeThisRole && !roleChanging
+                              ? 'hover:shadow-md cursor-pointer hover:scale-105'
+                              : 'cursor-default'
                           )}
                         >
                           {roleChanging === member.id
@@ -326,29 +332,38 @@ export function TeamManagement() {
                           {canChangeThisRole && !roleChanging && <ChevronDown size={11} className="ml-0.5 opacity-60" />}
                         </button>
 
-                        {/* Role dropdown */}
+                        {/* Dropdown — fixed z-[9999] so it escapes any overflow/clip context */}
                         <AnimatePresence>
                           {roleMenuOpen === member.id && (
                             <motion.div
-                              initial={{ opacity: 0, y: 4, scale: 0.97 }}
+                              initial={{ opacity: 0, y: 6, scale: 0.95 }}
                               animate={{ opacity: 1, y: 0, scale: 1 }}
-                              exit={{ opacity: 0, y: 4, scale: 0.97 }}
-                              transition={{ duration: 0.12 }}
+                              exit={{ opacity: 0, y: 4, scale: 0.95 }}
+                              transition={{ duration: 0.15, ease: 'easeOut' }}
                               onClick={(e) => e.stopPropagation()}
-                              className="absolute right-0 top-full mt-1.5 z-30 bg-card border border-border rounded-xl shadow-xl min-w-[160px] py-1 overflow-hidden"
+                              className="absolute right-0 top-full mt-2 z-[9999] bg-card border border-border/80 rounded-2xl shadow-2xl shadow-black/10 min-w-[180px] py-2 overflow-hidden backdrop-blur-sm"
+                              style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.18), 0 1px 0 rgba(255,255,255,0.05)' }}
                             >
+                              <p className="px-4 pt-1 pb-2.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-b border-border/50 mb-1">
+                                Change Role
+                              </p>
                               {canAssign.map((r) => (
                                 <button
                                   key={r}
                                   onClick={() => handleRoleChange(member, r)}
                                   className={clsx(
-                                    'w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm font-medium text-left transition-colors hover:bg-muted/60',
-                                    member.role === r ? 'text-primary font-semibold bg-primary/5' : 'text-foreground'
+                                    'w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-left transition-all',
+                                    member.role === r
+                                      ? 'text-primary font-semibold bg-primary/8'
+                                      : 'text-foreground hover:bg-muted/60 hover:pl-5'
                                   )}
                                 >
-                                  <span className="w-4 flex justify-center">{ROLE_ICON[r]}</span>
-                                  {ROLE_LABEL[r]}
-                                  {member.role === r && <CheckCircle2 size={13} className="ml-auto text-primary" />}
+                                  <span className={clsx(
+                                    'w-6 h-6 rounded-full flex items-center justify-center shrink-0',
+                                    ROLE_COLOR[r]
+                                  )}>{ROLE_ICON[r]}</span>
+                                  <span className="flex-1">{ROLE_LABEL[r]}</span>
+                                  {member.role === r && <CheckCircle2 size={14} className="text-primary" />}
                                 </button>
                               ))}
                             </motion.div>
@@ -356,28 +371,34 @@ export function TeamManagement() {
                         </AnimatePresence>
                       </div>
 
-                      <Badge variant="success" className="font-display text-[10px] uppercase tracking-wider py-1 px-3">
-                        <CheckCircle2 size={12} className="mr-1.5" /> Active
-                      </Badge>
+                      {/* Active badge */}
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-[10px] font-bold uppercase tracking-wider">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Active
+                      </span>
 
+                      {/* Drive button */}
                       <Button variant="ghost" size="sm" id={`btn-open-drive-${member.id}`}
                         onClick={() => openDrive(member.driveFolderUrl)}
-                        className="text-muted-foreground hover:text-foreground hover:bg-background border border-transparent hover:border-border hover:shadow-sm transition-all">
-                        <ExternalLink size={14} className="mr-1.5" /> Drive
+                        className="text-muted-foreground hover:text-foreground hover:bg-muted border border-border/50 rounded-lg h-8 px-3 text-xs font-medium">
+                        <ExternalLink size={13} className="mr-1.5" /> Drive
                       </Button>
 
-                      {/* Remove button */}
+                      {/* Remove button — always visible when allowed */}
                       {canRemoveThis && (
-                        <Button
-                          variant="ghost" size="icon"
+                        <button
                           id={`btn-remove-${member.id}`}
                           onClick={() => setRemoveTarget(member)}
-                          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 border border-transparent hover:border-destructive/20 transition-all rounded-lg"
+                          className="flex items-center gap-1.5 px-3 py-1.5 h-8 rounded-lg text-xs font-semibold text-destructive bg-destructive/8 border border-destructive/20 hover:bg-destructive hover:text-white hover:border-destructive transition-all"
                           title={`Remove ${member.name}`}
                         >
-                          <Trash2 size={16} />
-                        </Button>
+                          <Trash2 size={13} /> Remove
+                        </button>
                       )}
+                    </div>
+                  </div>
+                );
+              })}
                     </div>
                   </div>
                 );

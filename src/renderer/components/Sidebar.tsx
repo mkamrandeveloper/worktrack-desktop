@@ -155,10 +155,10 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Role Badge */}
-      <div className="px-6 pb-4 shrink-0">
+      {/* Role Badge — centered */}
+      <div className="px-6 pb-4 shrink-0 flex justify-center">
         <div className={clsx(
-          'inline-flex items-center justify-center rounded-md px-2.5 py-1 text-[11px] font-bold tracking-wide uppercase border',
+          'flex items-center justify-center rounded-full px-4 py-1 text-[11px] font-bold tracking-widest uppercase border shadow-sm',
           roleBadge.color
         )}>
           {roleBadge.label}
