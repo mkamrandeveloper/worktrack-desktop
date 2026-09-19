@@ -51,6 +51,18 @@ export function ProjectDetail() {
   const [loading, setLoading] = useState(true);
   const [showAddTask, setShowAddTask] = useState(false);
 
+  // ── Undo task completion (hooks must be before any early return) ────────────
+  const [undoTask, setUndoTask] = useState<{ id: string; title: string; prev: string } | null>(null);
+  const undoProgress = useRef(100);
+  const undoTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [, setUndoTick] = useState(0);
+
+  const clearUndo = () => {
+    if (undoTimer.current) { clearInterval(undoTimer.current); undoTimer.current = null; }
+    setUndoTask(null);
+    undoProgress.current = 100;
+  };
+
   const load = useCallback(async () => {
     const [detail, shots] = await Promise.all([
       window.worktrack.projects.get(id),
@@ -97,18 +109,6 @@ export function ProjectDetail() {
   const priority = priorityPill(project.priority);
 
   const timerActive = timer.status !== 'idle' && timer.status !== 'stopped';
-
-  // ── Undo task completion ────────────────────────────────────────────────────
-  const [undoTask, setUndoTask] = useState<{ id: string; title: string; prev: string } | null>(null);
-  const undoProgress = useRef(100);
-  const undoTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [, setUndoTick] = useState(0);
-
-  const clearUndo = () => {
-    if (undoTimer.current) { clearInterval(undoTimer.current); undoTimer.current = null; }
-    setUndoTask(null);
-    undoProgress.current = 100;
-  };
 
   const startTask = async (taskId: string) => { await timer.startTimer(taskId); };
 
