@@ -8,6 +8,7 @@ import { useAuthStore } from '../store/authStore';
 import { Theme, Language } from '@shared/types';
 import { clsx } from 'clsx';
 import { Card, Button } from '../components/ui/primitives';
+import { ScreenshotIntervalControl, DEFAULT_SCREENSHOT_INTERVAL } from '../components/ScreenshotIntervalControl';
 import { motion } from 'framer-motion';
 
 // ── Small Components ──────────────────────────────────────────────────────────
@@ -92,7 +93,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export function SettingsPage() {
   const { settings, loadSettings, updateSettings, toggleStartup } = useSettingsStore();
-  const { organization } = useAuthStore();
+  const { organization, isManagerOrAbove } = useAuthStore();
   const [appVersion, setAppVersion] = useState<string>('--');
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'available' | 'downloaded' | 'upToDate'>('idle');
 
@@ -112,7 +113,7 @@ export function SettingsPage() {
       unsubUpdate();
       unsubDownloaded();
     };
-  }, []);
+  }, [loadSettings]);
 
   const handleThemeChange = async (theme: Theme) => {
     await updateSettings({ theme });
@@ -121,7 +122,7 @@ export function SettingsPage() {
     else if (theme === 'light') root.classList.remove('dark');
     else {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      prefersDark ? root.classList.add('dark') : root.classList.remove('dark');
+      root.classList.toggle('dark', prefersDark);
     }
   };
 
@@ -342,18 +343,34 @@ export function SettingsPage() {
             </span>
           </SettingRow>
 
-          <SettingRow
-            icon={<Camera size={20} />}
-            label="Screenshot Interval"
-            description="Configured by your organization."
-          >
-            <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-lg border border-border/50">
-              <span className="text-sm font-semibold text-foreground">
-                Every {organization?.screenshotInterval ?? 5} min
-              </span>
-              <Shield size={14} className="text-muted-foreground" />
+          {isManagerOrAbove() ? (
+            // Owner / Admin / Manager set the interval for the whole organization.
+            <div className="py-5">
+              <div className="flex items-start gap-4 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20 shadow-inner">
+                  <Camera size={20} />
+                </div>
+                <div>
+                  <div className="text-base font-semibold text-foreground">Screenshot Interval</div>
+                  <div className="text-sm font-medium text-muted-foreground mt-0.5 max-w-[400px]">How often screenshots are captured for everyone in your organization.</div>
+                </div>
+              </div>
+              <ScreenshotIntervalControl />
             </div>
-          </SettingRow>
+          ) : (
+            <SettingRow
+              icon={<Camera size={20} />}
+              label="Screenshot Interval"
+              description="Configured by your organization."
+            >
+              <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-lg border border-border/50">
+                <span className="text-sm font-semibold text-foreground">
+                  Every {organization?.screenshotInterval ?? DEFAULT_SCREENSHOT_INTERVAL} min
+                </span>
+                <Shield size={14} className="text-muted-foreground" />
+              </div>
+            </SettingRow>
+          )}
 
           <SettingRow
             icon={<Monitor size={20} />}

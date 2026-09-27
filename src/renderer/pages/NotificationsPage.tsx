@@ -5,6 +5,13 @@ import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../components/ui/primitives';
 
+/** e.g. "Sep 27, 2026, 5:14 PM" — or "—" if the timestamp is missing/unparseable. */
+function fmtNotificationTime(iso?: string | null): string {
+  const d = iso ? new Date(iso) : null;
+  if (!d || Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
 export function NotificationsPage() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,7 +168,7 @@ function NotificationItem({ notification, onRead, onDelete }: { notification: Ap
             {notification.title}
           </h4>
           <span className="text-[11px] font-bold font-mono uppercase tracking-wider text-muted-foreground whitespace-nowrap bg-muted/50 px-2 py-1 rounded-md">
-            {new Date(notification.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            {fmtNotificationTime(notification.createdAt)}
           </span>
         </div>
         <p className="text-sm font-medium text-muted-foreground leading-relaxed">

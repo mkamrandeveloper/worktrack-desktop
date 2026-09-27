@@ -64,7 +64,7 @@ const iconMap: Record<string, keyof typeof LucideIcons> = {
 
 export function MaterialIcon({ name, size = 20, className, fill }: MaterialIconProps) {
   const IconName = iconMap[name] || 'HelpCircle';
-  const IconComponent = LucideIcons[IconName] as React.FC<any>;
+  const IconComponent = (LucideIcons as unknown as Record<string, React.ComponentType<LucideIcons.LucideProps> | undefined>)[IconName];
 
   if (!IconComponent) {
     return <LucideIcons.HelpCircle size={size} className={className} />;

@@ -1,17 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, Building2, Users, ArrowRight, Loader2, AlertCircle, CheckCircle2, ChevronRight, Search } from 'lucide-react';
+import { Activity, Building2, Users, ArrowRight, Loader2, AlertCircle, CheckCircle2, ChevronRight } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
 
 type Flow = 'choose' | 'create-org' | 'join-org' | 'join-success';
-
-interface OrgOption {
-  id: string;
-  name: string;
-  teamSize: number;
-}
 
 const TEAM_SIZES = [
   { label: '1–5 people', value: 5 },
@@ -40,24 +34,7 @@ export function SignupPage() {
   const [empName, setEmpName] = useState('');
   const [empEmail, setEmpEmail] = useState('');
   const [empPassword, setEmpPassword] = useState('');
-  const [orgSearch, setOrgSearch] = useState('');
-  const [orgs, setOrgs] = useState<OrgOption[]>([]);
-  const [selectedOrg, setSelectedOrg] = useState<OrgOption | null>(null);
-  const [orgsLoading, setOrgsLoading] = useState(false);
-
-  useEffect(() => {
-    if (flow === 'join-org') {
-      setOrgsLoading(true);
-      window.worktrack.auth.listOrgs().then((res) => {
-        if (res.success && res.data) setOrgs(res.data);
-        setOrgsLoading(false);
-      }).catch(() => setOrgsLoading(false));
-    }
-  }, [flow]);
-
-  const filteredOrgs = orgs.filter(o =>
-    o.name.toLowerCase().includes(orgSearch.toLowerCase())
-  );
+  const [joinOrgName, setJoinOrgName] = useState('');
 
   const handleCreateOrg = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,13 +55,13 @@ export function SignupPage() {
 
   const handleJoinOrg = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!empName || !empEmail || !empPassword || !selectedOrg) {
-      setError('Please fill in all fields and select an organization.');
+    if (!empName || !empEmail || !empPassword || !joinOrgName.trim()) {
+      setError('Please fill in all fields, including your organization name.');
       return;
     }
     setError(null);
     setIsLoading(true);
-    const { ok, error: err } = await signupJoinOrg({ name: empName, email: empEmail, password: empPassword, organizationId: selectedOrg.id });
+    const { ok, error: err } = await signupJoinOrg({ name: empName, email: empEmail, password: empPassword, organizationName: joinOrgName.trim() });
     setIsLoading(false);
     if (ok) {
       setFlow('join-success');
@@ -266,7 +243,7 @@ export function SignupPage() {
                 <ChevronRight className="w-4 h-4 rotate-180" /> Back
               </button>
               <h2 className="text-3xl font-display font-bold text-foreground mb-2">Join organization</h2>
-              <p className="text-muted-foreground font-medium text-base mb-8">Select your organization and send a join request.</p>
+              <p className="text-muted-foreground font-medium text-base mb-8">Enter your organization's name and send a join request.</p>
               
               <AnimatePresence>
                 {error && (
@@ -298,37 +275,17 @@ export function SignupPage() {
                     className="w-full h-12 px-4 rounded-xl border bg-card text-foreground font-medium placeholder:text-muted-foreground/60 text-base focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm group-hover:border-violet-500/50"
                     placeholder="••••••••" />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-display font-bold uppercase tracking-widest text-muted-foreground">Select Organization</label>
-                  <div className="relative mb-3 group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input value={orgSearch} onChange={e => setOrgSearch(e.target.value)}
+                <div className="space-y-1.5 group">
+                  <label className="text-[11px] font-display font-bold uppercase tracking-widest text-muted-foreground">Organization Name</label>
+                  <div className="relative">
+                    <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input id="inp-join-org-name" value={joinOrgName} onChange={e => setJoinOrgName(e.target.value)}
                       className="w-full h-12 pl-11 pr-4 rounded-xl border bg-card text-foreground font-medium placeholder:text-muted-foreground/60 text-base focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm group-hover:border-violet-500/50"
-                      placeholder="Search organization..." />
+                      placeholder="Exact name, e.g. Acme Inc" />
                   </div>
-                  <div className="max-h-48 overflow-y-auto space-y-1.5 rounded-xl border border-border bg-card/60 p-1.5 shadow-inner custom-scrollbar">
-                    {orgsLoading && <div className="text-center py-8 text-sm font-medium text-muted-foreground">Loading organizations…</div>}
-                    {!orgsLoading && filteredOrgs.length === 0 && (
-                      <div className="text-center py-8 text-sm font-medium text-muted-foreground">No organizations found.</div>
-                    )}
-                    {filteredOrgs.map(org => (
-                      <button key={org.id} type="button" onClick={() => setSelectedOrg(org)}
-                        className={clsx(
-                          "w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm transition-all",
-                          selectedOrg?.id === org.id ? 'bg-violet-500 text-white shadow-md' : 'text-foreground hover:bg-muted font-medium'
-                        )}>
-                        <span className="font-bold">{org.name}</span>
-                        <span className={clsx("text-xs font-bold", selectedOrg?.id === org.id ? "text-violet-200" : "text-muted-foreground")}>{org.teamSize} members</span>
-                      </button>
-                    ))}
-                  </div>
-                  {selectedOrg && (
-                    <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-bold text-violet-500 mt-2 flex items-center gap-1.5">
-                      <CheckCircle2 size={14} /> Selected: {selectedOrg.name}
-                    </motion.p>
-                  )}
+                  <p className="text-xs font-medium text-muted-foreground">Ask your manager for the exact organization name.</p>
                 </div>
-                <button id="btn-submit-join-org" type="submit" disabled={isLoading || !selectedOrg}
+                <button id="btn-submit-join-org" type="submit" disabled={isLoading || !joinOrgName.trim()}
                   className="w-full h-14 bg-violet-600 text-white rounded-xl text-base font-bold flex items-center justify-center gap-2 hover:bg-violet-500 active:scale-[0.98] transition-all disabled:opacity-60 shadow-[0_4px_14px_0_rgba(124,58,237,0.39)] hover:shadow-[0_6px_20px_rgba(124,58,237,0.23)] mt-6">
                   {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><span>Send Request</span><ArrowRight size={18} /></>}
                 </button>
@@ -344,7 +301,7 @@ export function SignupPage() {
               </div>
               <h2 className="text-3xl font-display font-bold text-foreground mb-3">Request Sent!</h2>
               <p className="text-muted-foreground font-medium text-base leading-relaxed mb-10">
-                Your join request has been sent to <strong className="text-foreground">{selectedOrg?.name}</strong>'s manager.
+                Your join request has been sent to <strong className="text-foreground">{joinOrgName.trim()}</strong>'s manager.
                 Once approved, you can log in with your credentials.
               </p>
               <button id="btn-go-login" onClick={() => navigate('/login')}

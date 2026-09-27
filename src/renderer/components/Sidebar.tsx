@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { clsx } from 'clsx';
@@ -27,6 +27,18 @@ function ClockWidget() {
   };
 
   useEffect(() => { refresh(); }, []);
+
+  // Starting a timer clocks the user in automatically (main process does it
+  // before the timer starts) — re-read the clock state on every new session.
+  const lastSessionId = useRef<string | null>(null);
+  useEffect(() => {
+    return window.worktrack.timer.onStateChanged((state) => {
+      if (state.status === 'running' && state.sessionId && state.sessionId !== lastSessionId.current) {
+        lastSessionId.current = state.sessionId;
+        refresh();
+      }
+    });
+  }, []);
 
   const isClockedIn = !!clockInTime && (!clockOutTime || new Date(clockOutTime) < new Date(clockInTime));
 

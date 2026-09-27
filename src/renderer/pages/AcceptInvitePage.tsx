@@ -123,6 +123,7 @@ export function AcceptInvitePage() {
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+            <p className="text-xs font-medium text-muted-foreground">Already have a client account? Enter your existing password.</p>
           </div>
 
           <AnimatePresence>

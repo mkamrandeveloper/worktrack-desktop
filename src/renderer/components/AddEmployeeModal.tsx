@@ -5,6 +5,8 @@ import { Department, UserRole } from '@shared/types';
 interface AddEmployeeResult {
   employee: { id: string; name: string; email: string; role: string };
   credentials: { email: string; password: string };
+  /** 'sending' = email on its way (a notification follows if it fails); 'not_configured' = share manually. */
+  emailStatus?: 'sending' | 'not_configured';
 }
 
 interface Props {
@@ -223,10 +225,19 @@ export function AddEmployeeModal({ onClose, onSuccess, callerRole }: Props) {
               <div>
                 <p className="text-sm font-semibold text-foreground">{result.employee.name} added successfully!</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Added as <span className="font-semibold capitalize">{result.employee.role?.toLowerCase()}</span> — they will receive an email with login instructions.
+                  Added as <span className="font-semibold capitalize">{result.employee.role?.toLowerCase()}</span>.
+                  {result.emailStatus !== 'not_configured' && <> Login credentials are being emailed to {result.credentials.email} — you'll get a notification if delivery fails.</>}
                 </p>
               </div>
             </div>
+            {result.emailStatus === 'not_configured' && (
+              <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
+                <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-foreground">
+                  Automatic email isn't set up on the server, so no email was sent. Copy the credentials below and share them with {result.employee.name} directly.
+                </p>
+              </div>
+            )}
             <div className="bg-muted rounded-xl p-4 space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Login Credentials</p>
               <div className="flex justify-between items-center">

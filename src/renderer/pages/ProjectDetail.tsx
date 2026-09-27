@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Loader2, X, ChevronLeft, Plus, Pause, Play, Coffee, StopCircle, CheckCircle2, Circle, Calendar, Users, Edit3, Image as ImageIcon, Briefcase, Activity, Clock, RotateCcw } from 'lucide-react';
+import { Loader2, X, ChevronLeft, Plus, Pause, Play, Coffee, StopCircle, CheckCircle2, Circle, Calendar, Users, Edit3, Image as ImageIcon, Briefcase, Activity, Clock, RotateCcw, AlertCircle } from 'lucide-react';
 import { Project, Task, TeamMember, ProjectMember, ScreenshotRecord } from '@shared/types';
 import { useAuthStore } from '../store/authStore';
 import { useTimerStore } from '../store/timerStore';
@@ -50,6 +50,7 @@ export function ProjectDetail() {
   const [screenshots, setScreenshots] = useState<ScreenshotRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddTask, setShowAddTask] = useState(false);
+  const [taskError, setTaskError] = useState<string | null>(null);
 
   // ── Undo task completion (hooks must be before any early return) ────────────
   const [undoTask, setUndoTask] = useState<{ id: string; title: string; prev: string } | null>(null);
@@ -74,11 +75,6 @@ export function ProjectDetail() {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
-
-  const refreshTasks = async () => {
-    const res = await window.worktrack.projects.getTasks(id);
-    if (res.success && res.data) setProject((p) => (p ? { ...p, tasks: res.data as Task[] } : p));
-  };
 
   if (loading) {
     return (
@@ -113,30 +109,36 @@ export function ProjectDetail() {
   const startTask = async (taskId: string) => { await timer.startTimer(taskId); };
 
   const setTaskStatus = async (taskId: string, status: string, prevStatus?: string) => {
+    setTaskError(null);
     const res = await window.worktrack.projects.updateTask(id, taskId, { status });
-    if (res.success) {
-      refreshTasks();
-      // Show undo toast when marking done
-      if ((status === 'DONE' || status === 'completed') && prevStatus) {
-        const task = project?.tasks?.find(t => t.id === taskId);
-        clearUndo();
-        undoProgress.current = 100;
-        setUndoTask({ id: taskId, title: task?.title ?? 'Task', prev: prevStatus });
+    if (!res.success) {
+      setTaskError(res.error ?? 'Could not update the task. Please try again.');
+      return;
+    }
+    // Reload the whole project: finishing (or reopening) a task can change
+    // the project's own status, not just the task list.
+    load();
+    // Show undo toast when marking done
+    if ((status === 'DONE' || status === 'completed') && prevStatus) {
+      const task = project?.tasks?.find(t => t.id === taskId);
+      clearUndo();
+      undoProgress.current = 100;
+      setUndoTask({ id: taskId, title: task?.title ?? 'Task', prev: prevStatus });
+      setUndoTick(n => n + 1);
+      undoTimer.current = setInterval(() => {
+        undoProgress.current = Math.max(0, undoProgress.current - 2);
         setUndoTick(n => n + 1);
-        undoTimer.current = setInterval(() => {
-          undoProgress.current = Math.max(0, undoProgress.current - 2);
-          setUndoTick(n => n + 1);
-          if (undoProgress.current <= 0) clearUndo();
-        }, 100);
-      }
+        if (undoProgress.current <= 0) clearUndo();
+      }, 100);
     }
   };
 
   const handleUndo = async () => {
     if (!undoTask) return;
     clearUndo();
-    await window.worktrack.projects.updateTask(id, undoTask.id, { status: undoTask.prev });
-    refreshTasks();
+    const res = await window.worktrack.projects.updateTask(id, undoTask.id, { status: undoTask.prev });
+    if (!res.success) setTaskError(res.error ?? 'Could not undo. Please try again.');
+    load();
   };
 
   const recentActivity = [...screenshots]
@@ -287,6 +289,12 @@ export function ProjectDetail() {
               <h3 className="text-xl font-display font-bold text-foreground">Tasks</h3>
               <Badge variant="secondary" className="font-bold">{tasks.length} total</Badge>
             </div>
+
+            {taskError && (
+              <div className="flex items-center gap-2 text-destructive text-sm font-medium bg-destructive/10 border border-destructive/20 rounded-xl p-4 mb-4">
+                <AlertCircle size={16} className="shrink-0" /> {taskError}
+              </div>
+            )}
 
             {tasks.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 bg-muted/20 rounded-xl border border-dashed border-border/60">
@@ -502,7 +510,7 @@ export function ProjectDetail() {
           projectId={id}
           members={project.members}
           onClose={() => setShowAddTask(false)}
-          onCreated={() => { setShowAddTask(false); refreshTasks(); }}
+          onCreated={() => { setShowAddTask(false); load(); }}
         />
       )}
       {/* ── Undo completion toast ─────────────────────────────────────────── */}

@@ -4,7 +4,7 @@ import { useTimer } from '../hooks/useTimer';
 import { useAuthStore } from '../store/authStore';
 import { useTaskStore } from '../store/taskStore';
 import { DashboardAnalytics, Project, TimelineEvent } from '@shared/types';
-import { formatDuration, calcProgress, hoursToSeconds, formatDeadlineCountdown } from '../utils/formatTime';
+import { formatDuration, formatDeadlineCountdown } from '../utils/formatTime';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -13,6 +13,7 @@ import {
   Plus, Globe, AlertCircle, RotateCcw, X, PlayCircle
 } from 'lucide-react';
 import { Card, Button, Badge } from '../components/ui/primitives';
+import { TimerRing } from '../components/ui/TimerRing';
 
 const ICON_COLORS: { bg: string; text: string }[] = [
   { bg: 'bg-indigo-500/10', text: 'text-indigo-500' },
@@ -43,11 +44,13 @@ export function DashboardPage() {
   const { tasks, selectedTaskId, fetchTasks, selectTask } = useTaskStore();
   const timer = useTimer();
 
+  // Follow the timer when its task changes. Read the selection from the store
+  // directly so picking a different task while tracking doesn't snap back.
   useEffect(() => {
-    if (timer.taskId && timer.taskId !== selectedTaskId) {
+    if (timer.taskId && timer.taskId !== useTaskStore.getState().selectedTaskId) {
       selectTask(timer.taskId);
     }
-  }, [timer.taskId]);
+  }, [timer.taskId, selectTask]);
 
   const [, setCountdownTick] = useState(0);
   useEffect(() => {
@@ -71,7 +74,7 @@ export function DashboardPage() {
 
   useEffect(() => {
     fetchTasks();
-  }, []);
+  }, [fetchTasks]);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -117,10 +120,24 @@ export function DashboardPage() {
     undoProgress.current = 100;
   };
 
+  const [completeError, setCompleteError] = useState<string | null>(null);
+
   const handleComplete = async () => {
-    // Capture task before stopping (stopping marks it DONE server-side)
-    const taskSnapshot = selectedTask ? { id: selectedTask.id, title: selectedTask.title, projectId: selectedTask.projectId } : null;
+    setCompleteError(null);
+    // Complete the task the timer is tracking (fall back to the selected one).
+    const target = tasks.find((t) => t.id === timer.taskId) ?? selectedTask;
+    const taskSnapshot = target ? { id: target.id, title: target.title, projectId: target.projectId } : null;
+    // Stop first so the session's hours are logged against the task.
     await timer.stopTimer();
+    if (taskSnapshot?.projectId) {
+      const res = await window.worktrack.projects.updateTask(taskSnapshot.projectId, taskSnapshot.id, { status: 'DONE' });
+      if (!res.success) {
+        setCompleteError(res.error ?? 'Timer stopped, but the task could not be marked complete.');
+        fetchTasks();
+        return;
+      }
+    }
+    fetchTasks();
     if (taskSnapshot) {
       clearUndo();
       undoProgress.current = 100;
@@ -149,10 +166,6 @@ export function DashboardPage() {
     .filter((t) => t.status !== 'DONE' && t.status !== 'completed')
     .sort((a, b) => (a.deadline && b.deadline ? a.deadline.localeCompare(b.deadline) : a.deadline ? -1 : b.deadline ? 1 : 0));
 
-  const ringTarget = hoursToSeconds(selectedTask?.estimatedHours || 8);
-  const ringProgress = calcProgress(timer.elapsedSeconds, ringTarget);
-  const circumference = 283;
-  const ringOffset = circumference - (ringProgress / 100) * circumference;
   const timerRunning = timer.status === 'running';
   const timerOnBreak = timer.status === 'on_break';
   const timerPaused = timer.status === 'paused';
@@ -287,30 +300,14 @@ export function DashboardPage() {
           <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-secondary/10 rounded-full blur-3xl pointer-events-none opacity-50" />
 
           {/* Ring */}
-          <div className="relative w-56 h-56 md:w-64 md:h-64 shrink-0 z-10">
-            <svg className="w-full h-full circular-progress drop-shadow-xl" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" fill="none" r="45" stroke="hsl(var(--border))" strokeWidth="2.5" />
-              <circle
-                cx="50" cy="50" fill="none" r="45"
-                stroke={timerOnBreak ? '#f59e0b' : 'hsl(var(--primary))'}
-                strokeDasharray={circumference}
-                strokeDashoffset={timerActive ? ringOffset : circumference}
-                strokeLinecap="round" strokeWidth="3.5"
-                className="transition-all duration-1000 ease-in-out"
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
-              <span className="font-display text-[11px] font-bold uppercase tracking-[0.2em] text-secondary mb-2">
-                {timerOnBreak ? 'ON BREAK' : timerPaused ? 'PAUSED' : timerRunning ? 'RECORDING' : 'READY'}
-              </span>
-              <span className="text-4xl md:text-5xl font-mono font-bold text-foreground tracking-tight drop-shadow-sm">
-                {formatDuration(timerOnBreak ? timer.breakSeconds : timer.elapsedSeconds)}
-              </span>
-              <span className="text-xs font-medium text-muted-foreground mt-2 max-w-full truncate px-4">
-                {selectedTask?.title ?? 'No task selected'}
-              </span>
-            </div>
-          </div>
+          <TimerRing
+            status={timer.status}
+            workSeconds={timer.elapsedSeconds}
+            breakSeconds={timer.breakSeconds}
+            estimatedHours={selectedTask?.estimatedHours}
+            taskTitle={selectedTask?.title}
+            className="z-10"
+          />
 
           {/* Details & Controls */}
           <div className="flex flex-col items-center md:items-start text-center md:text-left z-10 w-full max-w-sm">
@@ -383,6 +380,11 @@ export function DashboardPage() {
                 </>
               )}
             </div>
+            {completeError && (
+              <p className="flex items-center gap-2 text-sm font-medium text-destructive mt-4">
+                <AlertCircle size={14} className="shrink-0" /> {completeError}
+              </p>
+            )}
           </div>
         </Card>
 
@@ -449,7 +451,7 @@ export function DashboardPage() {
               const tracking = timerActive && timer.taskId === t.id;
               
               // Map legacy priorities to new Badge variants
-              const variantMap: Record<string, any> = {
+              const variantMap: Record<string, React.ComponentProps<typeof Badge>['variant']> = {
                 URGENT: 'danger',
                 HIGH: 'warning',
                 MEDIUM: 'info',

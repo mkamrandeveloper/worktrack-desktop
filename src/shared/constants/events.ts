@@ -43,7 +43,6 @@ export const API_ENDPOINTS = {
     ME: '/api/auth/me',
     SIGNUP_CREATE_ORG: '/api/auth/signup/create-org',
     SIGNUP_JOIN_ORG: '/api/auth/signup/join-org',
-    LIST_ORGS: '/api/auth/orgs',
   },
   TASKS: {
     LIST: '/api/tasks/assigned',
@@ -74,7 +73,7 @@ export const API_ENDPOINTS = {
     GET_TASKS: '/api/manager/tasks',
     ADD_EMPLOYEE: '/api/manager/employees',
     GET_EMPLOYEE_TASKS: (userId: string) => `/api/manager/employees/${userId}/tasks`,
-    UPDATE_ORG_SETTINGS: '/api/manager/org-settings',
+    ORG_SETTINGS: '/api/manager/org-settings',
   },
   DRIVE: {
     STATUS: '/api/drive/status',

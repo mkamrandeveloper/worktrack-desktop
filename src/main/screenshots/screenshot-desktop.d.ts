@@ -11,5 +11,14 @@ declare module 'screenshot-desktop' {
 
   function screenshot(options?: ScreenshotOptions): Promise<Buffer>;
 
+  namespace screenshot {
+    interface Display {
+      id: number | string;
+      name?: string;
+      primary?: boolean;
+    }
+    function listDisplays(): Promise<Display[]>;
+  }
+
   export = screenshot;
 }

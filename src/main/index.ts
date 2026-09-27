@@ -84,8 +84,8 @@ const notificationService = new NotificationService();
 const trayManager = new TrayManager({
   onOpenDashboard: () => mainWindow?.show(),
   onStartTimer: () => log.info('Tray: start timer (no active task selected)'),
-  onPauseTimer: () => timerEngine.pause(),
-  onResumeTimer: () => timerEngine.resume(),
+  onPauseTimer: () => handleTimerPause(),
+  onResumeTimer: () => handleTimerResume(),
   onStartBreak: () => handleBreakStart(),
   onEndBreak: () => handleBreakEnd(),
   onStopTimer: () => handleTimerStop(),
@@ -109,11 +109,27 @@ const driveService = new DriveService();
 // Configured with safe defaults; updateConfig() below applies the real
 // per-org settings once a session (restored or freshly logged in) exists.
 const screenshotService = new ScreenshotService(screenshotQueue, {
-  screenshotInterval: 1,
+  screenshotInterval: 5,
   screenshotMonitors: 'primary',
 });
 
 // ── Timer Orchestration ───────────────────────────────────────────────────────
+
+/**
+ * Auto clock-in on task start. The backend answers 400 "Already clocked in"
+ * when today's clock-in exists, so this is safe on every start. Offline, the
+ * clock-in is queued and replayed on reconnect; it never blocks the timer.
+ */
+async function ensureClockedIn(): Promise<void> {
+  try {
+    await getApiService().post('/api/timelogs/clock-in');
+  } catch (err) {
+    const isNetworkError = !(err as { response?: unknown }).response;
+    if (isNetworkError) {
+      offlineQueue.enqueue({ url: '/api/timelogs/clock-in', method: 'POST' });
+    }
+  }
+}
 
 async function handleTimerStart(taskId: string): Promise<void> {
   // Clients are read-only viewers and must never start time tracking.
@@ -121,6 +137,9 @@ async function handleTimerStart(taskId: string): Promise<void> {
     throw new Error('Clients cannot start time tracking');
   }
   const { sessionId } = await taskService.startSession(taskId);
+  // Clock in before the timer starts ticking, so by the time the UI sees the
+  // timer running, the Clock In button can already show "Clocked in".
+  await ensureClockedIn();
   timerEngine.start(taskId, sessionId);
 
   const user = authService.getUser();
@@ -131,11 +150,6 @@ async function handleTimerStart(taskId: string): Promise<void> {
     const timerState = timerEngine.getState();
     activityMonitor.onTimerStatusChanged('running');
     screenshotService?.onTimerStateChanged(timerState, user.id);
-
-    // Auto clock-in on the first task start of the day. The backend already
-    // no-ops (400 "Already clocked in") if a clock-in exists for today, so
-    // this is safe to call unconditionally on every task start.
-    getApiService().post('/api/timelogs/clock-in').catch(() => {});
   }
 
   // Emit socket event
@@ -412,6 +426,8 @@ app.on('ready', async () => {
         screenshotInterval: event.screenshotInterval,
         screenshotMonitors: event.captureMonitors,
       });
+      // Keep every page's view of the org (Settings, dashboard) in sync.
+      authService.updateOrganization({ screenshotInterval: event.screenshotInterval });
     },
     onNotification: (notification) => {
       notificationService.show(notification);

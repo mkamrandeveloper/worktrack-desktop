@@ -58,7 +58,7 @@ export class ScreenshotService extends EventEmitter {
   // `undefined` in every real session prior to that fix.
   private static _safeInterval(minutes: unknown): number {
     const n = Number(minutes);
-    return Number.isFinite(n) && n > 0 ? n : 1;
+    return Number.isFinite(n) && n > 0 ? n : 5; // default: every 5 minutes
   }
 
   updateConfig(org: Partial<Pick<Organization, 'screenshotInterval' | 'screenshotMonitors'>>): void {
@@ -126,9 +126,9 @@ export class ScreenshotService extends EventEmitter {
     this.isCapturing = true;
     
     try {
-      const displays = await (screenshot as any).listDisplays();
+      const displays = await screenshot.listDisplays();
       const captures = this.config.captureMonitors === 'primary'
-        ? displays.filter((d: any) => d.primary)
+        ? displays.filter((d) => d.primary)
         : displays;
 
       // Fallback if none flagged as primary
@@ -147,7 +147,7 @@ export class ScreenshotService extends EventEmitter {
   }
 
   private async _captureDisplay(
-    displayId: number,
+    displayId: number | string,
     monitorIndex: number,
     monitorCount: number,
     capturedAt: string,
@@ -231,9 +231,9 @@ export class ScreenshotService extends EventEmitter {
     this.isCapturing = true;
 
     try {
-      const displays = await (screenshot as any).listDisplays();
+      const displays = await screenshot.listDisplays();
       const captures = this.config.captureMonitors === 'primary'
-        ? displays.filter((d: any) => d.primary)
+        ? displays.filter((d) => d.primary)
         : displays;
 
       const targetDisplays = captures.length > 0 ? captures : [displays[0]];

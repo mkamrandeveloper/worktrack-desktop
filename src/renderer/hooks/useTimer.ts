@@ -9,24 +9,25 @@ import { TimerState } from '@shared/types';
  */
 export function useTimer() {
   const store = useTimerStore();
+  const setTimerState = useTimerStore((s) => s.setTimerState);
 
   useEffect(() => {
     // Load initial timer state
     window.worktrack.timer.getState().then((result) => {
       if (result.success && result.data) {
-        store.setTimerState(result.data as TimerState);
+        setTimerState(result.data as TimerState);
       }
     });
 
     // Subscribe to real-time state changes from the main process ticker
     const unsubscribe = window.worktrack.timer.onStateChanged((state: TimerState) => {
-      store.setTimerState(state);
+      setTimerState(state);
     });
 
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [setTimerState]);
 
   return store;
 }

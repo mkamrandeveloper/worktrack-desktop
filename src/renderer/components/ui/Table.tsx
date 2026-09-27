@@ -1,6 +1,7 @@
 import React from 'react';
 import { clsx } from 'clsx';
 import { motion } from 'framer-motion';
+import type { MotionConflictingProps } from './primitives';
 
 export function Table({ className, ...props }: React.HTMLAttributes<HTMLTableElement>) {
   return (
@@ -24,7 +25,7 @@ export function TableFooter({ className, ...props }: React.HTMLAttributes<HTMLTa
   );
 }
 
-export function TableRow({ className, ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
+export function TableRow({ className, ...props }: Omit<React.HTMLAttributes<HTMLTableRowElement>, MotionConflictingProps>) {
   return (
     <motion.tr
       initial={{ opacity: 0, y: 10 }}

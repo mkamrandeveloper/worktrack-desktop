@@ -65,7 +65,9 @@ export class SyncService extends EventEmitter {
     log.info(`Connecting to WebSocket: ${wsUrl}`);
 
     this.socket = io(wsUrl, {
-      auth: { token: this.tokenProvider() },
+      // A function (not a snapshot) so every reconnect sends the current,
+      // possibly refreshed, access token — the server rejects stale ones.
+      auth: (cb) => cb({ token: this.tokenProvider() }),
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
@@ -128,6 +130,15 @@ export class SyncService extends EventEmitter {
     this.socket.on(SOCKET_EVENTS.ON.CONNECT_ERROR, (err: Error) => {
       log.error('WebSocket connection error', { message: err.message });
       this._setStatus('error');
+      // Rejections from the server's auth middleware (e.g. an expired token)
+      // leave the socket inactive — socket.io won't retry those on its own.
+      // Retry shortly; TokenManager refreshes the token in the meantime.
+      const socket = this.socket;
+      if (socket && !socket.active) {
+        setTimeout(() => {
+          if (this.socket === socket && !socket.connected) socket.connect();
+        }, 15_000);
+      }
     });
 
     this.socket.on(SOCKET_EVENTS.ON.TASK_ASSIGNED, (payload: TaskAssignedEvent) => {

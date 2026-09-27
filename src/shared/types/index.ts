@@ -39,7 +39,8 @@ export interface SignupJoinOrgPayload {
   name: string;
   email: string;
   password: string;
-  organizationId: string;
+  /** The organization's exact name, as shared by a manager. */
+  organizationName: string;
 }
 
 export interface ClientAcceptPayload {
@@ -296,6 +297,19 @@ export interface LiveEmployee {
   currentProject?: string;
 }
 
+/** An employee's task timer as their own desktop app shows it (seconds as of fetch). */
+export interface LiveTimer {
+  userId: string;
+  sessionId: string;
+  taskId: string;
+  taskTitle: string | null;
+  projectName: string | null;
+  estimatedHours: number;
+  status: 'running' | 'paused' | 'on_break' | 'stopped';
+  workSeconds: number;
+  breakSeconds: number;
+}
+
 export interface TimelineEvent {
   timestamp: string;
   type: string;
@@ -526,6 +540,12 @@ export interface SyncEvent<T = unknown> {
 
 export interface TaskAssignedEvent {
   task: Task;
+}
+
+/** Org-wide settings managed by Owner / Admin / Manager. */
+export interface OrgSettings {
+  screenshotInterval: number;
+  teamSize: number;
 }
 
 export interface IntervalChangedEvent {

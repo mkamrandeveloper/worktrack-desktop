@@ -1,4 +1,4 @@
-import { app, session } from 'electron';
+import { app, session, shell } from 'electron';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -70,7 +70,6 @@ export class SecurityManager {
 
       // Block new windows — all links must open in the default browser
       contents.setWindowOpenHandler(({ url }) => {
-        const { shell } = require('electron');
         shell.openExternal(url).catch((err: Error) => {
           log.error('Failed to open external URL', { url, error: err.message });
         });

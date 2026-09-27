@@ -67,7 +67,7 @@ export function LoginPage() {
               { label: 'Screenshot Sync', desc: 'Compressed uploads to Google Drive.' },
               { label: 'Offline Support', desc: 'Data queued and synced on reconnect.' },
               { label: 'Cross Platform', desc: 'Windows, macOS, and Linux.' },
-            ].map((feat, i) => (
+            ].map((feat) => (
               <motion.div whileHover={{ y: -5 }} key={feat.label} className="bg-white/5 backdrop-blur-md rounded-2xl p-5 border border-white/10 transition-all">
                 <div className="text-sm font-display font-bold text-white mb-2 uppercase tracking-wider">{feat.label}</div>
                 <div className="text-sm text-zinc-400 font-medium">{feat.desc}</div>
@@ -77,7 +77,7 @@ export function LoginPage() {
         </div>
 
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.4 }} className="text-sm font-mono font-bold text-zinc-500 z-10 uppercase tracking-widest mt-10">
-          v{import.meta.env.VITE_APP_VERSION ?? '1.0.0'} • Enterprise Grade Security
+          v{import.meta.env.VITE_APP_VERSION} • Enterprise Grade Security
         </motion.p>
       </div>
 

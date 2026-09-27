@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useTaskStore } from '../store/taskStore';
 import { useTimer } from '../hooks/useTimer';
-import { TeamMember, Task, DashboardAnalytics, LiveStatus, OrgPresenceEvent, OrgTimerActivityEvent, LiveEmployee } from '@shared/types';
+import { TeamMember, Task, DashboardAnalytics, LiveStatus, OrgPresenceEvent, OrgTimerActivityEvent, LiveTimer } from '@shared/types';
 import { Badge, Card, Button } from '../components/ui/primitives';
+import { TimerRing } from '../components/ui/TimerRing';
+import { ScreenshotIntervalControl, DEFAULT_SCREENSHOT_INTERVAL } from '../components/ScreenshotIntervalControl';
 import { formatDuration, calcProgress, hoursToSeconds, formatDeadlineCountdown } from '../utils/formatTime';
 import { clsx } from 'clsx';
 import { motion } from 'framer-motion';
@@ -13,10 +15,6 @@ import {
   Users, AlertCircle, Timer, Play, Pause, PlayCircle, StopCircle, CheckCircle2, 
   ListTodo, CheckCircle, Calendar, Activity, Briefcase, History, FolderOpen
 } from 'lucide-react';
-
-interface OrgSettings {
-  screenshotInterval: number;
-}
 
 const PRIORITY_PILL: Record<string, string> = {
   URGENT: 'bg-destructive/10 text-destructive border-destructive/20',
@@ -38,11 +36,13 @@ export function ManagerDashboard() {
   const { tasks: allTasks, selectedTaskId, fetchTasks, selectTask } = useTaskStore();
   const timer = useTimer();
 
+  // Follow the timer when its task changes. Read the selection from the store
+  // directly so picking a different task while tracking doesn't snap back.
   useEffect(() => {
-    if (timer.taskId && timer.taskId !== selectedTaskId) {
+    if (timer.taskId && timer.taskId !== useTaskStore.getState().selectedTaskId) {
       selectTask(timer.taskId);
     }
-  }, [timer.taskId]);
+  }, [timer.taskId, selectTask]);
 
   // 1-second tick to drive live elapsed timers in Team Overview
   const [tick, setTick] = useState(0);
@@ -53,10 +53,7 @@ export function ManagerDashboard() {
 
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [settings] = useState<OrgSettings>({ screenshotInterval: 1 });
-  const [newInterval, setNewInterval] = useState('1');
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const screenshotInterval = organization?.screenshotInterval ?? DEFAULT_SCREENSHOT_INTERVAL;
   const [driveConnected, setDriveConnected] = useState(false);
 
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
@@ -75,11 +72,25 @@ export function ManagerDashboard() {
   // ── Live Pulse (real-time) ──────────────────────────────────────────────────
   const [activeProjectsCount, setActiveProjectsCount] = useState(0);
   const [onlineStatus, setOnlineStatus] = useState<Map<string, string>>(new Map());
-  const [runningTimers, setRunningTimers] = useState<Set<string>>(new Set());
   const [recentActivity, setRecentActivity] = useState<{ id: string; label: string; timestamp: string }[]>([]);
   const [liveTaskInfo, setLiveTaskInfo] = useState<Map<string, { status: string; taskTitle: string | null; projectName: string | null }>>(new Map());
-  // Keyed by userId — stores clockInTime + totalWorkSeconds for elapsed timer computation
-  const [liveEmployeeData, setLiveEmployeeData] = useState<Map<string, Pick<LiveEmployee, 'clockInTime' | 'totalWorkSeconds' | 'totalBreakSeconds' | 'displayStatus'>>>(new Map());
+  // Each employee's task timer (keyed by userId), as of `timersFetchedAt`.
+  // Refetched on every org:timer event and every 30s; ticked locally between.
+  const [timers, setTimers] = useState<Map<string, LiveTimer>>(new Map());
+  const timersFetchedAt = useRef(Date.now());
+  const loadTimers = useCallback(async () => {
+    const r = await window.worktrack.attendance.timers();
+    if (r.success && r.data) {
+      timersFetchedAt.current = Date.now();
+      setTimers(new Map(r.data.map((t) => [t.userId, t])));
+    }
+  }, []);
+  useEffect(() => {
+    loadTimers();
+    const resync = setInterval(loadTimers, 30_000);
+    return () => clearInterval(resync);
+  }, [loadTimers]);
+  const runningTimerCount = Array.from(timers.values()).filter((t) => t.status === 'running').length;
 
   const pushActivity = (label: string, timestamp: string) => {
     setRecentActivity((prev) => [{ id: `${timestamp}-${Math.random()}`, label, timestamp }, ...prev].slice(0, 8));
@@ -92,28 +103,17 @@ export function ManagerDashboard() {
     window.worktrack.attendance.live().then((r) => {
       if (r.success && r.data) {
         const statusMap = new Map<string, string>();
-        const running = new Set<string>();
         const taskInfo = new Map<string, { status: string; taskTitle: string | null; projectName: string | null }>();
-        const empData = new Map<string, Pick<LiveEmployee, 'clockInTime' | 'totalWorkSeconds' | 'totalBreakSeconds' | 'displayStatus'>>();
         for (const emp of r.data) {
           statusMap.set(emp.id, emp.displayStatus);
-          if (emp.displayStatus === 'active' && emp.currentTask) running.add(emp.id);
           taskInfo.set(emp.id, {
             status: emp.currentTask ? emp.displayStatus : 'idle',
             taskTitle: emp.currentTask ?? null,
             projectName: emp.currentProject ?? null,
           });
-          empData.set(emp.id, {
-            clockInTime: emp.clockInTime,
-            totalWorkSeconds: emp.totalWorkSeconds,
-            totalBreakSeconds: emp.totalBreakSeconds,
-            displayStatus: emp.displayStatus,
-          });
         }
         setOnlineStatus(statusMap);
-        setRunningTimers(running);
         setLiveTaskInfo(taskInfo);
-        setLiveEmployeeData(empData);
       }
     });
   }, []);
@@ -134,12 +134,9 @@ export function ManagerDashboard() {
     });
 
     const unsubTimer = window.worktrack.sync.onTimerActivity((evt: OrgTimerActivityEvent) => {
-      setRunningTimers((prev) => {
-        const next = new Set(prev);
-        if (evt.status === 'running') next.add(evt.userId);
-        else next.delete(evt.userId);
-        return next;
-      });
+      // Pull the exact server-side timer the moment an employee starts,
+      // pauses, takes a break or stops.
+      loadTimers();
       setLiveTaskInfo((prev) => {
         const next = new Map(prev);
         next.set(evt.userId, evt.status === 'stopped'
@@ -152,13 +149,13 @@ export function ManagerDashboard() {
     });
 
     return () => { unsubPresence(); unsubTimer(); };
-  }, [members]);
+  }, [members, loadTimers]);
 
   const onlineCount = Array.from(onlineStatus.values()).filter((s) => s !== 'offline' && s !== 'clocked_out').length;
 
   useEffect(() => {
     fetchTasks();
-  }, []);
+  }, [fetchTasks]);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -187,13 +184,6 @@ export function ManagerDashboard() {
     });
   }, []);
 
-  const handleSaveInterval = async () => {
-    setSaving(true);
-    await window.worktrack.manager.updateOrgSettings({ screenshotInterval: parseInt(newInterval) || 1 });
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
 
   const pendingTasks = tasks.filter(t => t.status === 'TODO' || t.status === 'pending').length;
   const activeTasks = tasks.filter(t => t.status === 'IN_PROGRESS' || t.status === 'in_progress').length;
@@ -282,7 +272,7 @@ export function ManagerDashboard() {
               </div>
               <div>
                 <div className="text-3xl font-display font-bold text-foreground">{analytics.totalWorkingHours}h</div>
-                <div className="text-xs font-semibold text-primary flex items-center gap-1.5 mt-2"><TrendingUp size={14} /><span>this {period.replace('ly', '')}</span></div>
+                <div className="text-xs font-semibold text-primary flex items-center gap-1.5 mt-2"><TrendingUp size={14} /><span>this {{ daily: 'day', weekly: 'week', monthly: 'month' }[period]}</span></div>
               </div>
             </Card>
 
@@ -369,7 +359,7 @@ export function ManagerDashboard() {
                 <h3 className="font-display text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-5">Manager Quick-Access</h3>
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-muted-foreground font-medium text-sm flex items-center gap-2"><Camera size={16} /> Screenshots</span>
-                  <span className="font-medium text-foreground text-sm bg-muted/50 px-2 py-1 rounded-md">{settings.screenshotInterval} min intv</span>
+                  <span className="font-medium text-foreground text-sm bg-muted/50 px-2 py-1 rounded-md">{screenshotInterval} min intv</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground font-medium text-sm flex items-center gap-2"><Users size={16} /> Team Size</span>
@@ -562,7 +552,7 @@ export function ManagerDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-3 lg:col-span-2 gap-5">
           {[
             { label: 'Active Projects', value: activeProjectsCount, icon: <Briefcase size={24} />, color: 'text-secondary', bg: 'bg-secondary/10' },
-            { label: 'Running Timers', value: runningTimers.size, icon: <PlayCircle size={24} />, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+            { label: 'Running Timers', value: runningTimerCount, icon: <PlayCircle size={24} />, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
             { label: 'Employees Online', value: onlineCount, icon: <Users size={24} />, color: 'text-primary', bg: 'bg-primary/10' },
           ].map((stat) => (
             <Card key={stat.label} className="p-6 flex flex-col items-start gap-4">
@@ -610,31 +600,10 @@ export function ManagerDashboard() {
           <p className="text-sm font-medium text-muted-foreground mb-6 leading-relaxed">
             Set the global interval for taking screenshots of <strong className="text-foreground">all team members</strong>. Screenshots are automatically uploaded to each member's Google Drive folder.
           </p>
-          <div className="flex items-end gap-4 bg-muted/30 p-5 rounded-2xl border border-border/50">
-            <div className="flex-1">
-              <label className="block font-display font-bold text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Interval (minutes)</label>
-              <input
-                id="inp-screenshot-interval"
-                type="number"
-                min="1"
-                max="60"
-                value={newInterval}
-                onChange={e => setNewInterval(e.target.value)}
-                className="w-full bg-card border border-border rounded-xl px-4 py-2.5 text-base font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition shadow-sm"
-              />
-            </div>
-            <Button
-              id="btn-save-interval"
-              onClick={handleSaveInterval}
-              disabled={saving}
-              className="px-6 py-2.5 h-[46px]"
-            >
-              {saving ? <Activity size={18} className="animate-spin" /> : saved ? <><CheckCircle2 size={18} className="mr-1.5" /> Saved</> : 'Save'}
-            </Button>
-          </div>
+          <ScreenshotIntervalControl />
           <p className="text-sm font-semibold text-muted-foreground mt-4 flex items-center gap-2 px-2">
             <Clock size={16} />
-            Current interval: <span className="bg-muted px-2 py-0.5 rounded text-foreground">{settings.screenshotInterval} min</span>
+            Current interval: <span className="bg-muted px-2 py-0.5 rounded text-foreground">{screenshotInterval} min</span>
           </p>
         </Card>
 
@@ -683,32 +652,24 @@ export function ManagerDashboard() {
             {members.map(member => {
               const memberTasks = tasks.filter(t => t.assigneeId === member.id);
               const live = liveTaskInfo.get(member.id);
-              const empData = liveEmployeeData.get(member.id);
               const attendanceStatus = onlineStatus.get(member.id);
               const isOut = !attendanceStatus || attendanceStatus === 'clocked_out' || attendanceStatus === 'offline';
-              const isOnBreak = live?.status === 'on_break' || attendanceStatus === 'on_break';
-              const isWorking = live?.status === 'running' || attendanceStatus === 'active';
-              const isPaused = live?.status === 'paused';
 
-              // Compute live elapsed time: server-recorded seconds + delta since clock-in
-              // `tick` drives 1-second re-renders so the timer updates every second
+              // The employee's task timer, identical to what their own app shows:
+              // server seconds as of the last fetch plus the time since, for
+              // whichever clock is currently moving. `tick` re-renders every second.
               void tick;
-              let elapsedSeconds = 0;
-              if (empData?.clockInTime && !isOut) {
-                const serverSecs = empData.totalWorkSeconds || 0;
-                const clockInMs = new Date(empData.clockInTime).getTime();
-                const nowMs = Date.now();
-                // Cap the live delta so it doesn't double-count if server already recorded it
-                const liveExtra = Math.max(0, Math.floor((nowMs - clockInMs) / 1000) - serverSecs);
-                elapsedSeconds = serverSecs + liveExtra;
-              } else if (empData) {
-                elapsedSeconds = empData.totalWorkSeconds || 0;
-              }
-              // Format as HH:MM:SS
-              const hh = Math.floor(elapsedSeconds / 3600).toString().padStart(2, '0');
-              const mm = Math.floor((elapsedSeconds % 3600) / 60).toString().padStart(2, '0');
-              const ss = (elapsedSeconds % 60).toString().padStart(2, '0');
-              const elapsedLabel = `${hh}:${mm}:${ss}`;
+              const memberTimer = timers.get(member.id);
+              const timerStatus = memberTimer?.status ?? 'idle';
+              const sinceFetch = Math.max(0, Math.floor((Date.now() - timersFetchedAt.current) / 1000));
+              const workSeconds = (memberTimer?.workSeconds ?? 0) + (timerStatus === 'running' ? sinceFetch : 0);
+              const breakSeconds = (memberTimer?.breakSeconds ?? 0) + (timerStatus === 'on_break' ? sinceFetch : 0);
+              const isWorking = timerStatus === 'running';
+              const isPaused = timerStatus === 'paused';
+              const isOnBreak = timerStatus === 'on_break';
+              const timerOpen = isWorking || isPaused || isOnBreak;
+              const currentTaskTitle = timerOpen ? memberTimer?.taskTitle : live?.taskTitle;
+              const currentProjectName = timerOpen ? memberTimer?.projectName : live?.projectName;
 
               const liveBadge = isWorking
                 ? { cls: 'text-emerald-700 bg-emerald-500/10 border-emerald-500/30 dark:text-emerald-400', icon: <Zap size={12}/>, label: 'Working' }
@@ -744,8 +705,8 @@ export function ManagerDashboard() {
                     <div className="flex-1 min-w-0">
                       <p className="text-base font-semibold text-foreground">{member.name}</p>
                       <p className="text-sm font-medium text-muted-foreground truncate">
-                        {live?.taskTitle
-                          ? <span className="text-foreground">{live.taskTitle}{live.projectName ? <span className="text-muted-foreground"> · {live.projectName}</span> : ''}</span>
+                        {currentTaskTitle
+                          ? <span className="text-foreground">{currentTaskTitle}{currentProjectName ? <span className="text-muted-foreground"> · {currentProjectName}</span> : ''}</span>
                           : member.email}
                       </p>
                     </div>
@@ -764,21 +725,17 @@ export function ManagerDashboard() {
                       <span className={clsx('flex items-center gap-1.5 border rounded-md px-3 py-1 font-bold text-[11px] uppercase tracking-wider shadow-sm', liveBadge.cls)}>
                         {liveBadge.icon} {liveBadge.label}
                       </span>
-
-                      {/* Live elapsed timer — shown for active or on-break employees */}
-                      {(isWorking || isOnBreak || isPaused) && empData?.clockInTime && (
-                        <div className={clsx(
-                          'flex items-center gap-1.5 px-3 py-1 rounded-md border font-mono text-sm font-bold shadow-inner',
-                          isOnBreak
-                            ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400'
-                            : 'bg-primary/8 border-primary/25 text-primary'
-                        )}>
-                          {/* suppress tick dep lint — tick is intentionally used to force re-renders */}
-                          <Clock size={13} className="shrink-0 opacity-70" />
-                          <span>{elapsedLabel}</span>
-                        </div>
-                      )}
                     </div>
+
+                    {/* Live task timer — mirrors the employee's own dashboard ring */}
+                    <TimerRing
+                      size="sm"
+                      status={timerStatus}
+                      workSeconds={workSeconds}
+                      breakSeconds={breakSeconds}
+                      estimatedHours={memberTimer?.estimatedHours}
+                      taskTitle={memberTimer?.taskTitle}
+                    />
 
                     <Button
                       variant="ghost"
@@ -815,11 +772,11 @@ export function ManagerDashboard() {
                                 <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider mb-1.5">
                                   <span className="text-muted-foreground">Rem:</span>
                                   <span className="text-foreground">
-                                    {(task as any).remainingHours !== undefined ? `${(task as any).remainingHours}h` : `${task.estimatedHours}h`}
+                                    {task.remainingHours !== undefined ? `${task.remainingHours}h` : `${task.estimatedHours}h`}
                                   </span>
                                 </div>
                                 <div className="h-2 w-full bg-muted rounded-full overflow-hidden shadow-inner border border-border/50">
-                                  <div className="h-full bg-primary rounded-full shadow-sm" style={{ width: `${(task as any).progressPercent || 0}%` }} />
+                                  <div className="h-full bg-primary rounded-full shadow-sm" style={{ width: `${task.progressPercent || 0}%` }} />
                                 </div>
                               </div>
                             </div>

@@ -8,7 +8,6 @@ export const IPC = {
     LOGIN: 'auth:login',
     SIGNUP_CREATE_ORG: 'auth:signup-create-org',
     SIGNUP_JOIN_ORG: 'auth:signup-join-org',
-    LIST_ORGS: 'auth:list-orgs',
     LOGOUT: 'auth:logout',
     GET_STATE: 'auth:get-state',
     REFRESH_TOKEN: 'auth:refresh-token',
@@ -92,6 +91,7 @@ export const IPC = {
     APPROVE_REQUEST: 'manager:approve-request',
     REJECT_REQUEST: 'manager:reject-request',
     GET_TASKS: 'manager:get-tasks',
+    GET_ORG_SETTINGS: 'manager:get-org-settings',
     UPDATE_ORG_SETTINGS: 'manager:update-org-settings',
     ADD_EMPLOYEE: 'manager:add-employee',
     GET_EMPLOYEE_TASKS: 'manager:get-employee-tasks',
@@ -155,6 +155,7 @@ export const IPC = {
   // ── Attendance ───────────────────────────────────────────────────────────────
   ATTENDANCE: {
     LIVE: 'attendance:live',
+    TIMERS: 'attendance:timers',
     HISTORY: 'attendance:history',
     SUMMARY: 'attendance:summary',
   },

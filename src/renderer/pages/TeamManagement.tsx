@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Users, CheckCircle2, Clock, Loader2, AlertCircle, Plus,
   ExternalLink, UserCheck, XCircle, FolderOpen, RefreshCw,
@@ -8,7 +9,7 @@ import { TeamMember, UserRole } from '@shared/types';
 import { AddEmployeeModal } from '../components/AddEmployeeModal';
 import { useAuthStore } from '../store/authStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, Button, Badge } from '../components/ui/primitives';
+import { Card, Button } from '../components/ui/primitives';
 import { clsx } from 'clsx';
 
 // ── Role helpers ──────────────────────────────────────────────────────────────
@@ -97,8 +98,39 @@ export function TeamManagement() {
   const [showAddEmployee, setShowAddEmployee] = useState(false);
   const [actionPending, setActionPending] = useState<string | null>(null);
 
-  // Role-change popover open for which userId
+  // Role-change popover: which userId it's open for, and where (viewport coords).
+  // Rendered in a portal with fixed positioning so the card's overflow can't clip it.
   const [roleMenuOpen, setRoleMenuOpen] = useState<string | null>(null);
+  const [roleMenuPos, setRoleMenuPos] = useState<{ top?: number; bottom?: number; right: number } | null>(null);
+
+  const openRoleMenu = (memberId: string, trigger: HTMLElement) => {
+    if (roleMenuOpen === memberId) { setRoleMenuOpen(null); return; }
+    const rect = trigger.getBoundingClientRect();
+    const GAP = 8;
+    const menuHeight = 56 + canAssign.length * 44; // header + one row per role
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUp = spaceBelow < menuHeight + GAP && rect.top > spaceBelow;
+    setRoleMenuPos({
+      right: window.innerWidth - rect.right,
+      ...(openUp ? { bottom: window.innerHeight - rect.top + GAP } : { top: rect.bottom + GAP }),
+    });
+    setRoleMenuOpen(memberId);
+  };
+
+  // A fixed-position menu would drift from its button — close it on scroll/resize/Escape.
+  useEffect(() => {
+    if (!roleMenuOpen) return;
+    const close = () => setRoleMenuOpen(null);
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [roleMenuOpen]);
   const [roleChanging, setRoleChanging] = useState<string | null>(null);
 
   // Remove-confirm dialog
@@ -108,13 +140,18 @@ export function TeamManagement() {
   const loadTeam = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const result = await window.worktrack.manager.getTeam();
+    // getTeam lists employees only; getMembers has every staff role, so members
+    // promoted to Manager/Admin stay on this page and can be changed back.
+    const [team, staff] = await Promise.all([
+      window.worktrack.manager.getTeam(),
+      window.worktrack.manager.getMembers(),
+    ]);
     setLoading(false);
-    if (result.success && result.data) {
-      setMembers(result.data.members);
-      setRequests(result.data.requests);
+    if (team.success && team.data && staff.success && staff.data) {
+      setMembers(staff.data.filter((m) => m.status === 'ACTIVE'));
+      setRequests(team.data.requests);
     } else {
-      setError(result.error ?? 'Failed to load team.');
+      setError(team.error ?? staff.error ?? 'Failed to load team.');
     }
   }, []);
 
@@ -315,7 +352,7 @@ export function TeamManagement() {
                           disabled={!canChangeThisRole || roleChanging === member.id}
                           onClick={(e) => {
                             e.stopPropagation();
-                            setRoleMenuOpen(roleMenuOpen === member.id ? null : member.id);
+                            openRoleMenu(member.id, e.currentTarget);
                           }}
                           className={clsx(
                             'flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[11px] font-bold uppercase tracking-wider transition-all select-none',
@@ -332,17 +369,18 @@ export function TeamManagement() {
                           {canChangeThisRole && !roleChanging && <ChevronDown size={11} className="ml-0.5 opacity-60" />}
                         </button>
 
-                        {/* Dropdown — fixed z-[9999] so it escapes any overflow/clip context */}
+                        {/* Dropdown — portalled to <body> with fixed coords so no overflow context clips it */}
+                        {createPortal(
                         <AnimatePresence>
-                          {roleMenuOpen === member.id && (
+                          {roleMenuOpen === member.id && roleMenuPos && (
                             <motion.div
-                              initial={{ opacity: 0, y: 6, scale: 0.95 }}
+                              initial={{ opacity: 0, y: roleMenuPos.bottom !== undefined ? -6 : 6, scale: 0.95 }}
                               animate={{ opacity: 1, y: 0, scale: 1 }}
-                              exit={{ opacity: 0, y: 4, scale: 0.95 }}
+                              exit={{ opacity: 0, scale: 0.95 }}
                               transition={{ duration: 0.15, ease: 'easeOut' }}
                               onClick={(e) => e.stopPropagation()}
-                              className="absolute right-0 top-full mt-2 z-[9999] bg-card border border-border/80 rounded-2xl shadow-2xl shadow-black/10 min-w-[180px] py-2 overflow-hidden backdrop-blur-sm"
-                              style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.18), 0 1px 0 rgba(255,255,255,0.05)' }}
+                              className="fixed z-[9999] bg-card border border-border/80 rounded-2xl shadow-2xl shadow-black/10 min-w-[180px] py-2 overflow-hidden backdrop-blur-sm"
+                              style={{ ...roleMenuPos, boxShadow: '0 8px 32px rgba(0,0,0,0.18), 0 1px 0 rgba(255,255,255,0.05)' }}
                             >
                               <p className="px-4 pt-1 pb-2.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-b border-border/50 mb-1">
                                 Change Role
@@ -368,7 +406,8 @@ export function TeamManagement() {
                               ))}
                             </motion.div>
                           )}
-                        </AnimatePresence>
+                        </AnimatePresence>,
+                        document.body)}
                       </div>
 
                       {/* Active badge */}

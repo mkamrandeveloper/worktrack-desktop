@@ -1,6 +1,6 @@
 {
   "name": "worktrack-desktop",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "WorkTrack Desktop Agent — Employee productivity and time tracking companion",
   "main": "dist/main/index.js",
   "homepage": ".",
@@ -22,8 +22,8 @@
     "package:mac": "npm run build && electron-builder --mac --publish=never",
     "package:linux": "npm run build && electron-builder --linux --publish=never",
     "type-check": "tsc --noEmit && tsc -p tsconfig.main.json --noEmit",
-    "lint": "eslint src --ext .ts,.tsx --max-warnings 0",
-    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "lint": "eslint src --max-warnings 0",
+    "lint:fix": "eslint src --fix",
     "clean": "rimraf dist out"
   },
   "dependencies": {
@@ -61,6 +61,7 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@types/node": "^22.10.2",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
@@ -75,6 +76,7 @@
     "eslint": "^9.17.0",
     "eslint-plugin-react": "^7.37.3",
     "eslint-plugin-react-hooks": "^5.1.0",
+    "globals": "^14.0.0",
     "postcss": "^8.4.49",
     "rimraf": "^6.0.1",
     "tailwindcss": "^3.4.17",

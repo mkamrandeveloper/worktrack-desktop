@@ -19,6 +19,8 @@ import type {
   DailyTimesheet,
   WeeklyTimesheet,
   LiveEmployee,
+  LiveTimer,
+  OrgSettings,
   AppNotification,
   CreateProjectPayload,
   ClientAcceptPayload,
@@ -53,8 +55,6 @@ const api = {
       invoke<AuthState>(IPC.AUTH.SIGNUP_CREATE_ORG, payload),
     signupJoinOrg: (payload: SignupJoinOrgPayload) =>
       invoke(IPC.AUTH.SIGNUP_JOIN_ORG, payload),
-    listOrgs: () =>
-      invoke<{ id: string; name: string; teamSize: number }[]>(IPC.AUTH.LIST_ORGS),
     logout: () => invoke(IPC.AUTH.LOGOUT),
     getState: () => invoke<AuthState>(IPC.AUTH.GET_STATE),
     onStateChanged: (cb: EventCallback<AuthState>) =>
@@ -143,8 +143,10 @@ const api = {
       invoke(IPC.MANAGER.REJECT_REQUEST, userId),
     getTasks: () =>
       invoke<Task[]>(IPC.MANAGER.GET_TASKS),
-    updateOrgSettings: (settings: Record<string, unknown>) =>
-      invoke(IPC.MANAGER.UPDATE_ORG_SETTINGS, settings),
+    getOrgSettings: () =>
+      invoke<OrgSettings>(IPC.MANAGER.GET_ORG_SETTINGS),
+    updateOrgSettings: (settings: Partial<OrgSettings>) =>
+      invoke<OrgSettings>(IPC.MANAGER.UPDATE_ORG_SETTINGS, settings),
     addEmployee: (payload: { name: string; email: string; password: string; departmentId?: string; position?: string; role?: string }) =>
       invoke(IPC.MANAGER.ADD_EMPLOYEE, payload),
     getEmployeeTasks: (userId: string) =>
@@ -229,6 +231,7 @@ const api = {
   // ── Attendance ───────────────────────────────────────────────────────────────
   attendance: {
     live: () => invoke<LiveEmployee[]>(IPC.ATTENDANCE.LIVE),
+    timers: () => invoke<LiveTimer[]>(IPC.ATTENDANCE.TIMERS),
     history: (params?: { from?: string; to?: string; userId?: string }) => invoke(IPC.ATTENDANCE.HISTORY, params),
     summary: () => invoke(IPC.ATTENDANCE.SUMMARY),
   },

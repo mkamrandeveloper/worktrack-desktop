@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { LiveEmployee } from '@shared/types';
 import { Search, Filter, Activity, Clock, Coffee, MonitorOff, UserCheck } from 'lucide-react';
-import { Badge, Button } from '../components/ui/primitives';
+import { Button } from '../components/ui/primitives';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -143,11 +143,8 @@ function StatCard({ icon, label, value, subvalue, bg }: { icon: React.ReactNode,
 function EmployeeLiveCard({ employee }: { employee: LiveEmployee }) {
   const isWorking = ['active', 'working', 'overtime', 'idle'].includes(employee.displayStatus);
   const isBreak = employee.displayStatus === 'on_break';
-  const isOffline = ['offline', 'clocked_out'].includes(employee.displayStatus);
 
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-  
-  const statusColor = isWorking ? 'success' : isBreak ? 'warning' : 'default';
 
   return (
     <motion.div 

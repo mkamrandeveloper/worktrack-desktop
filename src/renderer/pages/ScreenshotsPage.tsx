@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { ScreenshotRecord, TeamMember, ScreenshotBreakInterval } from '@shared/types';
 import { formatDuration } from '../utils/formatTime';
-import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ImageOff, Image as ImageIcon, Coffee, User, Briefcase, Calendar,
@@ -64,7 +63,7 @@ function ScreenshotThumb({ record, imageCache, onLoaded, onOpen, showEmployee }:
       }
     });
     return () => { alive = false; };
-  }, [record.id, cached]);
+  }, [record.id, cached, onLoaded]);
 
   const src = cached ?? imageCache.get(record.id);
 
@@ -192,10 +191,10 @@ export function ScreenshotsPage() {
     });
   }, [employeeId, date, allDates, isManager, isClient]);
 
-  const onImageLoaded = (id: string, dataUrl: string) => {
+  const onImageLoaded = useCallback((id: string, dataUrl: string) => {
     imageCache.set(id, dataUrl);
     forceRerender((n) => n + 1);
-  };
+  }, [imageCache]);
 
   const groups = records.reduce<Record<string, DayItem[]>>((acc, r) => {
     const key = dayKey(r.capturedAt);
@@ -214,14 +213,15 @@ export function ScreenshotsPage() {
   const lightboxRecord = lightboxIndex !== null ? records[lightboxIndex] : null;
   const showEmployeeBadge = isManager && !employeeId;
 
+  const lightboxId = lightboxRecord?.id;
   useEffect(() => {
-    if (!lightboxRecord || imageCache.has(lightboxRecord.id)) return;
+    if (!lightboxId || imageCache.has(lightboxId)) return;
     let alive = true;
-    window.worktrack.screenshots.getImage(lightboxRecord.id).then((res) => {
-      if (alive && res.success && res.data) onImageLoaded(lightboxRecord.id, res.data.dataUrl);
+    window.worktrack.screenshots.getImage(lightboxId).then((res) => {
+      if (alive && res.success && res.data) onImageLoaded(lightboxId, res.data.dataUrl);
     });
     return () => { alive = false; };
-  }, [lightboxRecord?.id]);
+  }, [lightboxId, imageCache, onImageLoaded]);
 
   return (
     <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 animate-fade-in pb-24 bg-background">

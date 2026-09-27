@@ -21,8 +21,10 @@ import {
   SignupJoinOrgPayload,
   ClientAcceptPayload,
   ScreenshotListFilters,
+  OrgSettings,
 } from '../../shared/types';
 import { createLogger } from '../logger/Logger';
+import { getApiService } from '../services/ApiService';
 import Store from 'electron-store';
 
 const log = createLogger('IpcHandler');
@@ -141,16 +143,6 @@ export class IpcHandler {
         this._validateSender(event);
         await this.services.auth.signupJoinOrg(payload);
         return this._ok();
-      } catch (err) {
-        return this._err(err);
-      }
-    });
-
-    ipcMain.handle(IPC.AUTH.LIST_ORGS, async (event) => {
-      try {
-        this._validateSender(event);
-        const orgs = await this.services.auth.listOrgs();
-        return this._ok(orgs);
       } catch (err) {
         return this._err(err);
       }
@@ -288,7 +280,7 @@ export class IpcHandler {
   // ── Screenshots ───────────────────────────────────────────────────────────────
 
   private _registerScreenshotHandlers(): void {
-    const api = () => (this.services as any).apiService || require('../services/ApiService').getApiService();
+    const api = getApiService;
 
     ipcMain.handle(IPC.SCREENSHOTS.LIST, async (event, filters?: ScreenshotListFilters) => {
       try {
@@ -530,11 +522,25 @@ export class IpcHandler {
       }
     });
 
-    ipcMain.handle(IPC.MANAGER.UPDATE_ORG_SETTINGS, async (event, settings: Record<string, unknown>) => {
+    ipcMain.handle(IPC.MANAGER.GET_ORG_SETTINGS, async (event) => {
       try {
         this._validateSender(event);
-        await this.services.manager.updateOrgSettings(settings);
-        return this._ok();
+        const settings = await this.services.manager.getOrgSettings();
+        this.services.auth.updateOrganization({ screenshotInterval: settings.screenshotInterval });
+        return this._ok(settings);
+      } catch (err) {
+        return this._err(err);
+      }
+    });
+
+    ipcMain.handle(IPC.MANAGER.UPDATE_ORG_SETTINGS, async (event, settings: Partial<OrgSettings>) => {
+      try {
+        this._validateSender(event);
+        const updated = await this.services.manager.updateOrgSettings(settings);
+        // Apply locally right away; other apps get it via the org socket event.
+        this.services.auth.updateOrganization({ screenshotInterval: updated.screenshotInterval });
+        this.services.screenshots.updateConfig({ screenshotInterval: updated.screenshotInterval });
+        return this._ok(updated);
       } catch (err) {
         return this._err(err);
       }
@@ -582,7 +588,7 @@ export class IpcHandler {
     });
 
     // ── Enterprise: Projects ────────────────────────────────────────────────
-    const api = () => (this.services as any).apiService || require('../services/ApiService').getApiService();
+    const api = getApiService;
 
     ipcMain.handle(IPC.PROJECTS.LIST, async (event) => {
       try { this._validateSender(event); return this._ok(await api().get('/api/projects')); }
@@ -730,6 +736,10 @@ export class IpcHandler {
     // ── Enterprise: Attendance ──────────────────────────────────────────────
     ipcMain.handle(IPC.ATTENDANCE.LIVE, async (event) => {
       try { this._validateSender(event); return this._ok(await api().get('/api/attendance/live')); }
+      catch (err) { return this._err(err); }
+    });
+    ipcMain.handle(IPC.ATTENDANCE.TIMERS, async (event) => {
+      try { this._validateSender(event); return this._ok(await api().get('/api/attendance/timers')); }
       catch (err) { return this._err(err); }
     });
     ipcMain.handle(IPC.ATTENDANCE.HISTORY, async (event, params: unknown) => {

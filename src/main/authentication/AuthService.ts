@@ -165,11 +165,6 @@ export class AuthService {
     log.info(`Join request sent for: ${payload.email}`);
   }
 
-  async listOrgs(): Promise<{ id: string; name: string; teamSize: number }[]> {
-    const api = getApiService();
-    return api.get<{ id: string; name: string; teamSize: number }[]>(API_ENDPOINTS.AUTH.LIST_ORGS);
-  }
-
   async logout(): Promise<void> {
     try {
       const api = getApiService();
@@ -194,6 +189,14 @@ export class AuthService {
 
   getOrganization(): Organization | null {
     return this.state.organization;
+  }
+
+  /** Applies an org settings change (e.g. screenshot interval) and tells every window. */
+  updateOrganization(patch: Partial<Organization>): void {
+    if (!this.state.organization) return;
+    this.state = { ...this.state, organization: { ...this.state.organization, ...patch } };
+    this.cache.set('organization', this.state.organization);
+    this._broadcastState();
   }
 
   isAuthenticated(): boolean {

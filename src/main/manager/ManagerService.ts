@@ -1,6 +1,6 @@
 import { getApiService } from '../services/ApiService';
 import { API_ENDPOINTS } from '../../shared/constants/events';
-import { TeamMember, Task } from '../../shared/types';
+import { TeamMember, Task, OrgSettings } from '../../shared/types';
 import { createLogger } from '../logger/Logger';
 
 const log = createLogger('ManagerService');
@@ -41,9 +41,15 @@ export class ManagerService {
     return api.post(API_ENDPOINTS.MANAGER.ADD_EMPLOYEE, payload);
   }
 
-  async updateOrgSettings(settings: Record<string, unknown>): Promise<void> {
+  async getOrgSettings(): Promise<OrgSettings> {
     const api = getApiService();
-    await api.post(API_ENDPOINTS.MANAGER.UPDATE_ORG_SETTINGS, settings);
-    log.info('Updated org settings');
+    return api.get<OrgSettings>(API_ENDPOINTS.MANAGER.ORG_SETTINGS);
+  }
+
+  async updateOrgSettings(settings: Partial<OrgSettings>): Promise<OrgSettings> {
+    const api = getApiService();
+    const updated = await api.post<OrgSettings>(API_ENDPOINTS.MANAGER.ORG_SETTINGS, settings);
+    log.info('Updated org settings', updated);
+    return updated;
   }
 }

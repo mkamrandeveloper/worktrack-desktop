@@ -2,9 +2,12 @@ import React from 'react';
 import { clsx } from 'clsx';
 import { motion, HTMLMotionProps } from 'framer-motion';
 
+// HTML drag/animation handlers have different signatures on motion elements.
+export type MotionConflictingProps = 'onDrag' | 'onDragStart' | 'onDragEnd' | 'onAnimationStart';
+
 // --- Button ---
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, MotionConflictingProps> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline' | 'glass';
   size?: 'sm' | 'md' | 'lg' | 'icon';
   isLoading?: boolean;
@@ -59,13 +62,14 @@ Button.displayName = 'Button';
 
 interface BadgeProps {
   children: React.ReactNode;
-  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'outline';
+  variant?: 'default' | 'secondary' | 'success' | 'warning' | 'danger' | 'info' | 'outline';
   className?: string;
 }
 
 export function Badge({ children, variant = 'default', className }: BadgeProps) {
   const variants = {
     default: 'bg-secondary text-secondary-foreground',
+    secondary: 'bg-muted text-muted-foreground border border-border/60',
     success: 'bg-green-500/15 text-green-500 dark:text-green-400 border border-green-500/30',
     warning: 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border border-yellow-500/30',
     danger: 'bg-red-500/15 text-red-500 dark:text-red-400 border border-red-500/30',

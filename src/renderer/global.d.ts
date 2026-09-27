@@ -19,6 +19,8 @@ import type {
   DailyTimesheet,
   WeeklyTimesheet,
   LiveEmployee,
+  LiveTimer,
+  OrgSettings,
   AppNotification,
   CreateProjectPayload,
   DashboardAnalytics,
@@ -42,7 +44,6 @@ interface WorktrackAPI {
     login: (credentials: LoginCredentials) => Promise<IpcResponse<AuthState>>;
     signupCreateOrg: (payload: SignupCreateOrgPayload) => Promise<IpcResponse<AuthState>>;
     signupJoinOrg: (payload: SignupJoinOrgPayload) => Promise<IpcResponse>;
-    listOrgs: () => Promise<IpcResponse<{ id: string; name: string; teamSize: number }[]>>;
     logout: () => Promise<IpcResponse>;
     getState: () => Promise<IpcResponse<AuthState>>;
     onStateChanged: (cb: EventCallback<AuthState>) => EventUnsubscribe;
@@ -95,7 +96,8 @@ interface WorktrackAPI {
     approveRequest: (userId: string) => Promise<IpcResponse>;
     rejectRequest: (userId: string) => Promise<IpcResponse>;
     getTasks: () => Promise<IpcResponse<Task[]>>;
-    updateOrgSettings: (settings: Record<string, unknown>) => Promise<IpcResponse>;
+    getOrgSettings: () => Promise<IpcResponse<OrgSettings>>;
+    updateOrgSettings: (settings: Partial<OrgSettings>) => Promise<IpcResponse<OrgSettings>>;
     addEmployee: (payload: { name: string; email: string; password: string; departmentId?: string; position?: string; role?: string }) => Promise<IpcResponse>;
     getEmployeeTasks: (userId: string) => Promise<IpcResponse<Task[]>>;
     getMembers: () => Promise<IpcResponse<TeamMember[]>>;
@@ -144,6 +146,7 @@ interface WorktrackAPI {
   };
   attendance: {
     live: () => Promise<IpcResponse<LiveEmployee[]>>;
+    timers: () => Promise<IpcResponse<LiveTimer[]>>;
     history: (params?: { from?: string; to?: string; userId?: string }) => Promise<IpcResponse>;
     summary: () => Promise<IpcResponse>;
   };

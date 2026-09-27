@@ -134,7 +134,7 @@ export function App() {
     });
 
     return () => unsubAuth();
-  }, []);
+  }, [loadSettings, setAuthState]);
 
   useEffect(() => {
     const root = document.documentElement;
