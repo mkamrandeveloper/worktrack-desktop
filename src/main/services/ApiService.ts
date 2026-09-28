@@ -20,6 +20,41 @@ const NO_REFRESH_RETRY_URLS = [
   '/api/clients/accept',
 ];
 
+/**
+ * True for failures worth retrying later: no response at all (offline, DNS,
+ * connection reset, timeout) or the hosting proxy/server being temporarily
+ * unavailable. 4xx and genuine 500s are real answers — retrying won't help.
+ */
+export function isTransientError(err: unknown): boolean {
+  const e = err as { response?: { status?: number } };
+  if (!e?.response) return true;
+  return [429, 502, 503, 504].includes(e.response.status ?? 0);
+}
+
+const MAX_RETRIES = 3;
+const RETRY_DELAYS_MS = [600, 1500, 3500];
+const IDEMPOTENT = ['get', 'head', 'options', 'put', 'delete'];
+
+/**
+ * Whether a failed request may be sent again automatically. Reads are always
+ * safe. Writes (POST/PATCH) are only resent when the failure proves the
+ * server never processed them — the proxy answered 502/503 (not routed) or
+ * the connection was refused — never after a timeout, where the first
+ * attempt may already have taken effect.
+ */
+function shouldRetry(err: unknown, config: RetryableConfig): boolean {
+  if (config.noRetry || (config.__retryCount ?? 0) >= MAX_RETRIES) return false;
+  if (!isTransientError(err)) return false;
+  const method = (config.method ?? 'get').toLowerCase();
+  if (IDEMPOTENT.includes(method)) return true;
+  const e = err as { response?: { status?: number }; code?: string };
+  const status = e.response?.status;
+  return status === 502 || status === 503 || status === 429
+    || ['ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN'].includes(e.code ?? '');
+}
+
+type RetryableConfig = InternalAxiosRequestConfig & { _retry?: boolean; __retryCount?: number; noRetry?: boolean };
+
 export type TokenProvider = () => string | null;
 export type RefreshHandler = () => Promise<string | null>;
 
@@ -125,11 +160,26 @@ export class ApiService {
           }
         }
 
+        // Hosting hiccups (e.g. the proxy dropping requests) are retried with
+        // short, growing, jittered waits before the caller ever sees an error.
+        const config = error.config as RetryableConfig | undefined;
+        if (config && shouldRetry(error, config)) {
+          config.__retryCount = (config.__retryCount ?? 0) + 1;
+          const retryAfterSec = Number(error.response?.headers?.['retry-after']);
+          const base = Number.isFinite(retryAfterSec) && retryAfterSec > 0
+            ? Math.min(retryAfterSec * 1000, 5000)
+            : RETRY_DELAYS_MS[config.__retryCount - 1];
+          const delay = base + Math.floor(Math.random() * 250);
+          log.warn(`Transient ${error.response?.status ?? error.code ?? 'network'} on ${config.url} — retry ${config.__retryCount}/${MAX_RETRIES} in ${delay}ms`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          return this.client(config);
+        }
+
         const status = error.response?.status;
         const url = error.config?.url;
         log.error(`HTTP error ${status ?? 'network'} on ${url}`, {
           message: error.message,
-          data: error.response?.data,
+          data: typeof error.response?.data === 'string' ? error.response.data.slice(0, 200) : error.response?.data,
         });
 
         return Promise.reject(error);

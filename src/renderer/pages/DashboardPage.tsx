@@ -72,16 +72,30 @@ export function DashboardPage() {
     return new Date(t.deadline).toDateString() === today && t.status !== 'DONE' && t.status !== 'completed';
   }).length;
 
+  // Quiet background refresh: a failed load (e.g. a hosting hiccup) keeps the
+  // last good data on screen and simply tries again on the next tick.
+  const [refreshTick, setRefreshTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setRefreshTick((n) => n + 1), 60_000);
+    return () => clearInterval(t);
+  }, []);
+  const analyticsPeriodLoaded = useRef<string | null>(null);
+
   useEffect(() => {
     fetchTasks();
-  }, [fetchTasks]);
+  }, [fetchTasks, refreshTick]);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
+      // Placeholder only for a new period; background refreshes swap in place.
+      const isNewPeriod = analyticsPeriodLoaded.current !== period;
       try {
-        setLoading(true);
+        if (isNewPeriod) setLoading(true);
         const res = await window.worktrack.dashboard.getPersonalAnalytics(period);
-        if (res.success && res.data) setAnalytics(res.data);
+        if (res.success && res.data) {
+          setAnalytics(res.data);
+          analyticsPeriodLoaded.current = period;
+        }
       } catch (err) {
         console.error('Failed to fetch analytics', err);
       } finally {
@@ -89,7 +103,7 @@ export function DashboardPage() {
       }
     };
     fetchAnalytics();
-  }, [period]);
+  }, [period, refreshTick]);
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -101,7 +115,7 @@ export function DashboardPage() {
         setActiveProjects(res.data.filter((p) => p.status === 'ACTIVE').slice(0, 3));
       }
     });
-  }, []);
+  }, [refreshTick]);
 
   const handleStartTask = async (taskId: string) => {
     selectTask(taskId);
@@ -236,7 +250,7 @@ export function DashboardPage() {
             </span>
           </div>
           <div>
-            <div className="text-3xl font-display font-bold text-foreground tracking-tight">{loading ? '—' : `${analytics?.totalWorkingHours ?? 0}h`}</div>
+            <div className="text-3xl font-display font-bold text-foreground tracking-tight">{loading || analyticsPeriodLoaded.current !== period ? '—' : `${analytics?.totalWorkingHours ?? 0}h`}</div>
             <div className="text-sm text-primary font-medium flex items-center gap-1.5 mt-2">
               <TrendingUp size={14} />
               <span>this {{ daily: 'day', weekly: 'week', monthly: 'month' }[period]}</span>
@@ -265,7 +279,7 @@ export function DashboardPage() {
             </span>
           </div>
           <div>
-            <div className="text-3xl font-display font-bold text-foreground tracking-tight">{loading ? '—' : `${analytics?.productivityScore ?? 0}%`}</div>
+            <div className="text-3xl font-display font-bold text-foreground tracking-tight">{loading || analyticsPeriodLoaded.current !== period ? '—' : `${analytics?.productivityScore ?? 0}%`}</div>
             <div className="w-full bg-muted/50 rounded-full h-1.5 mt-3 overflow-hidden">
               <motion.div 
                 initial={{ width: 0 }}
@@ -285,7 +299,7 @@ export function DashboardPage() {
             </span>
           </div>
           <div>
-            <div className="text-3xl font-display font-bold text-foreground tracking-tight">{loading ? '—' : idleLabel}</div>
+            <div className="text-3xl font-display font-bold text-foreground tracking-tight">{loading || analyticsPeriodLoaded.current !== period ? '—' : idleLabel}</div>
             <div className="text-sm text-muted-foreground mt-2">This {{ daily: 'day', weekly: 'week', monthly: 'month' }[period]}</div>
           </div>
         </Card>

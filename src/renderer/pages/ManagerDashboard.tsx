@@ -59,6 +59,15 @@ export function ManagerDashboard() {
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
   const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const analyticsPeriodLoaded = useRef<string | null>(null);
+
+  // Quiet background refresh: a failed load (e.g. a hosting hiccup) keeps the
+  // last good data on screen and simply tries again on the next tick.
+  const [refreshTick, setRefreshTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setRefreshTick((n) => n + 1), 60_000);
+    return () => clearInterval(t);
+  }, []);
 
   const selectedTask = allTasks.find((t) => t.id === selectedTaskId) ?? null;
 
@@ -116,7 +125,7 @@ export function ManagerDashboard() {
         setLiveTaskInfo(taskInfo);
       }
     });
-  }, []);
+  }, [refreshTick]);
 
   useEffect(() => {
     const nameFor = (userId: string) => members.find((m) => m.id === userId)?.name ?? 'Someone';
@@ -155,14 +164,19 @@ export function ManagerDashboard() {
 
   useEffect(() => {
     fetchTasks();
-  }, [fetchTasks]);
+  }, [fetchTasks, refreshTick]);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
+      // Spinner only for a new period; background refreshes swap data in place.
+      const isNewPeriod = analyticsPeriodLoaded.current !== period;
       try {
-        setAnalyticsLoading(true);
+        if (isNewPeriod) setAnalyticsLoading(true);
         const res = await window.worktrack.dashboard.getPersonalAnalytics(period);
-        if (res.success && res.data) setAnalytics(res.data);
+        if (res.success && res.data) {
+          setAnalytics(res.data);
+          analyticsPeriodLoaded.current = period;
+        }
       } catch (err) {
         console.error('Failed to fetch analytics', err);
       } finally {
@@ -170,7 +184,7 @@ export function ManagerDashboard() {
       }
     };
     fetchAnalytics();
-  }, [period]);
+  }, [period, refreshTick]);
 
   useEffect(() => {
     window.worktrack.manager.getTeam().then(r => {
@@ -182,7 +196,7 @@ export function ManagerDashboard() {
     window.worktrack.drive.isConnected().then(r => {
       if (r.success && r.data) setDriveConnected(r.data.connected);
     });
-  }, []);
+  }, [refreshTick]);
 
 
   const pendingTasks = tasks.filter(t => t.status === 'TODO' || t.status === 'pending').length;

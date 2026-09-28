@@ -4,10 +4,16 @@ import { app } from 'electron';
 import Store from 'electron-store';
 import { ScreenshotMetadata } from '../../shared/types';
 import { createLogger } from '../logger/Logger';
-import { getApiService } from '../services/ApiService';
+import { getApiService, isTransientError } from '../services/ApiService';
 import { API_ENDPOINTS } from '../../shared/constants/events';
 
 const log = createLogger('ScreenshotQueue');
+
+// Uploads the server rejects (bad file, etc.) get 3 tries. Outage-type
+// failures don't count: those screenshots wait — up to a week — for the
+// server to be reachable again instead of being thrown away.
+const MAX_REJECTIONS = 3;
+const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 interface QueueStore {
   items: ScreenshotMetadata[];
@@ -16,7 +22,8 @@ interface QueueStore {
 /**
  * Persistent offline queue for screenshots.
  * Screenshots are queued on capture and flushed when internet is available.
- * Implements retry with exponential back-off (max 3 retries).
+ * Outage-type failures are retried indefinitely (up to a week); uploads the
+ * server rejects are dropped after 3 attempts.
  */
 export class ScreenshotQueue {
   private store: Store<QueueStore>;
@@ -58,25 +65,36 @@ export class ScreenshotQueue {
    * Attempts to upload all pending screenshots.
    * Safe to call repeatedly — skips if already flushing.
    */
-  async flush(): Promise<{ uploaded: number; failed: number }> {
+  /**
+   * @returns uploaded — sent this flush; failed — attempts that didn't succeed
+   * (will retry); lost — screenshots given up on for good this flush.
+   */
+  async flush(): Promise<{ uploaded: number; failed: number; lost: number }> {
     if (this.isFlushingNow) {
       log.debug('Flush already in progress — skipping');
-      return { uploaded: 0, failed: 0 };
+      return { uploaded: 0, failed: 0, lost: 0 };
     }
 
     this.isFlushingNow = true;
     let uploaded = 0;
     let failed = 0;
+    let lost = 0;
+    let serverUnreachable = false;
 
-    const items = this.store.get('items').filter((i) => i.uploadStatus !== 'uploaded');
+    const items = this.store.get('items').filter((i) => i.uploadStatus !== 'uploaded' && i.uploadStatus !== 'failed');
 
+    try {
     for (const item of items) {
-      if (item.retryCount >= 3) {
-        log.warn(`Screenshot ${item.id} exceeded max retries — marking failed`);
+      const tooOld = Date.now() - new Date(item.capturedAt).getTime() > MAX_AGE_MS;
+      if (item.retryCount >= MAX_REJECTIONS || tooOld) {
+        log.warn(`Screenshot ${item.id} ${tooOld ? 'older than a week' : 'rejected by the server repeatedly'} — giving up`);
         this._updateItem(item.id, { uploadStatus: 'failed' });
-        failed++;
+        this._deleteLocalFile(item.localPath);
+        lost++;
         continue;
       }
+      // Server unreachable — leave the rest queued for the next flush.
+      if (serverUnreachable) { failed++; continue; }
 
       try {
         this._updateItem(item.id, { uploadStatus: 'uploading' });
@@ -88,29 +106,34 @@ export class ScreenshotQueue {
         uploaded++;
         log.info(`Screenshot uploaded: ${item.id} → server id ${remoteUrl}`);
       } catch (err) {
+        const transient = isTransientError(err) && !(err as { permanent?: boolean }).permanent;
+        if (transient) serverUnreachable = true;
         this._updateItem(item.id, {
           uploadStatus: 'pending',
-          retryCount: item.retryCount + 1,
+          // Outages don't count toward giving up — only real rejections do.
+          retryCount: transient ? item.retryCount : item.retryCount + 1,
         });
         failed++;
-        log.warn(`Screenshot upload failed (attempt ${item.retryCount + 1}): ${item.id}`, {
+        log.warn(`Screenshot upload ${transient ? 'postponed (server unreachable)' : 'rejected'}: ${item.id}`, {
           error: (err as Error).message,
         });
       }
     }
+    } finally {
+      // Remove finished items to keep the store small
+      const remaining = this.store.get('items').filter((i) => i.uploadStatus !== 'uploaded' && i.uploadStatus !== 'failed');
+      this.store.set('items', remaining);
+      this.isFlushingNow = false;
+    }
 
-    // Remove uploaded items to keep store small
-    const remaining = this.store.get('items').filter((i) => i.uploadStatus !== 'uploaded');
-    this.store.set('items', remaining);
-
-    this.isFlushingNow = false;
-    log.info(`Queue flush complete — uploaded: ${uploaded}, failed: ${failed}`);
-    return { uploaded, failed };
+    log.info(`Queue flush complete — uploaded: ${uploaded}, pending: ${failed}, lost: ${lost}`);
+    return { uploaded, failed, lost };
   }
 
   private async _upload(item: ScreenshotMetadata): Promise<string> {
     if (!fs.existsSync(item.localPath)) {
-      throw new Error(`Local screenshot file not found: ${item.localPath}`);
+      // Nothing to upload — retrying can never succeed.
+      throw Object.assign(new Error(`Local screenshot file not found: ${item.localPath}`), { permanent: true });
     }
 
     const fileBuffer = fs.readFileSync(item.localPath);

@@ -415,8 +415,10 @@ app.on('ready', async () => {
   const flushScreenshots = () => {
     if (!net.isOnline()) return;
     screenshotQueue.flush()
-      .then(({ failed }) => {
-        if (failed > 0) notificationService.screenshotUploadFailed(failed);
+      // Pending uploads retry quietly in the background (e.g. during a hosting
+      // outage); only warn when a screenshot is given up on for good.
+      .then(({ lost }) => {
+        if (lost > 0) notificationService.screenshotUploadFailed(lost);
       })
       .catch((err) => log.error('Screenshot queue flush error', { error: err.message }));
   };

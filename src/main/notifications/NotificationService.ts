@@ -59,10 +59,10 @@ export class NotificationService {
     this.show({
       id: `screenshot-failed-${Date.now()}`,
       type: 'warning',
-      title: 'Screenshot Upload Failed',
+      title: 'Screenshot could not be uploaded',
       message: failedCount === 1
-        ? '1 screenshot failed to upload. Will retry automatically.'
-        : `${failedCount} screenshots failed to upload. Will retry automatically.`,
+        ? '1 screenshot could not be uploaded and was discarded.'
+        : `${failedCount} screenshots could not be uploaded and were discarded.`,
     });
   }
 
