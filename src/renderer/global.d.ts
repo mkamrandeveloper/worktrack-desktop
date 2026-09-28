@@ -130,6 +130,8 @@ interface WorktrackAPI {
     create: (payload: { name: string; description?: string }) => Promise<IpcResponse<Department>>;
     update: (id: string, payload: { name?: string; description?: string }) => Promise<IpcResponse<Department>>;
     delete: (id: string) => Promise<IpcResponse>;
+    addMember: (id: string, userId: string) => Promise<IpcResponse<Department>>;
+    removeMember: (id: string, userId: string) => Promise<IpcResponse<Department>>;
   };
   timelogs: {
     clockIn: () => Promise<IpcResponse>;

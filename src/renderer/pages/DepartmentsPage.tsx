@@ -1,10 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Department } from '@shared/types';
+import { Department, TeamMember } from '@shared/types';
 import { useAuthStore } from '../store/authStore';
-import { Plus, Building2, Search, MoreVertical, Users, Trash2 } from 'lucide-react';
+import { Plus, Building2, Search, MoreVertical, Users, Trash2, UserPlus, X, Loader2 } from 'lucide-react';
 import { CreateDepartmentModal } from '../components/CreateDepartmentModal';
 import { Button } from '../components/ui/primitives';
 import { motion, AnimatePresence } from 'framer-motion';
+import { clsx } from 'clsx';
+import { celebrate } from '../utils/celebrate';
+
+const ROLE_BADGE: Record<string, string> = {
+  OWNER: 'bg-rose-500/10 text-rose-600 border-rose-500/30',
+  ADMIN: 'bg-purple-500/10 text-purple-600 border-purple-500/30',
+  MANAGER: 'bg-primary/10 text-primary border-primary/30',
+  EMPLOYEE: 'bg-muted text-muted-foreground border-border',
+};
 
 export function DepartmentsPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -12,17 +21,27 @@ export function DepartmentsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [search, setSearch] = useState('');
   const { isManagerOrAbove } = useAuthStore();
+  const canManage = isManagerOrAbove();
+  // Active staff who can be placed in a department (managers+ only).
+  const [staff, setStaff] = useState<TeamMember[]>([]);
 
   useEffect(() => {
     loadDepartments();
   }, []);
 
+  useEffect(() => {
+    if (!canManage) return;
+    window.worktrack.manager.getMembers().then((res) => {
+      if (res.success && res.data) setStaff(res.data.filter((m) => m.status === 'ACTIVE'));
+    });
+  }, [canManage]);
+
   const filteredDepartments = departments.filter(d =>
     d.name.toLowerCase().includes(search.trim().toLowerCase())
   );
 
-  async function loadDepartments() {
-    setLoading(true);
+  async function loadDepartments(showSpinner = true) {
+    if (showSpinner) setLoading(true);
     try {
       const res = await window.worktrack.departments.list();
       if (res.success && res.data) {
@@ -117,7 +136,16 @@ export function DepartmentsPage() {
                 >
                   <AnimatePresence>
                     {filteredDepartments.map(dept => (
-                      <DepartmentCard key={dept.id} department={dept} canManage={isManagerOrAbove()} onDeleted={handleDeleted} />
+                      <DepartmentCard
+                        key={dept.id}
+                        department={dept}
+                        canManage={canManage}
+                        staff={staff}
+                        departments={departments}
+                        onDeleted={handleDeleted}
+                        // Adding can move someone out of another department, so refresh every card.
+                        onMembersChanged={() => loadDepartments(false)}
+                      />
                     ))}
                   </AnimatePresence>
                 </motion.div>
@@ -141,12 +169,54 @@ export function DepartmentsPage() {
   );
 }
 
-function DepartmentCard({ department, canManage, onDeleted }: { department: Department; canManage: boolean; onDeleted: (id: string) => void }) {
+interface DepartmentCardProps {
+  department: Department;
+  canManage: boolean;
+  staff: TeamMember[];
+  departments: Department[];
+  onDeleted: (id: string) => void;
+  onMembersChanged: () => void;
+}
+
+function DepartmentCard({ department, canManage, staff, departments, onDeleted, onMembersChanged }: DepartmentCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [busyUserId, setBusyUserId] = useState<string | null>(null);
+  const [memberError, setMemberError] = useState<string | null>(null);
+
+  const members = department.members ?? [];
+  const memberIds = new Set(members.map((m) => m.id));
+  const candidates = staff.filter((m) => !memberIds.has(m.id));
+  const departmentNameOf = (id?: string) => departments.find((d) => d.id === id)?.name;
+
+  async function handleAdd() {
+    if (!selectedUserId) return;
+    setMemberError(null);
+    setBusyUserId(selectedUserId);
+    const res = await window.worktrack.departments.addMember(department.id, selectedUserId);
+    setBusyUserId(null);
+    if (!res.success) { setMemberError(res.error ?? 'Could not add this member.'); return; }
+    const added = staff.find((m) => m.id === selectedUserId);
+    celebrate(`${added?.name ?? 'Member'} added successfully`, `Now in ${department.name}`);
+    setSelectedUserId('');
+    setAdding(false);
+    onMembersChanged();
+  }
+
+  async function handleRemove(userId: string) {
+    setMemberError(null);
+    setBusyUserId(userId);
+    const res = await window.worktrack.departments.removeMember(department.id, userId);
+    setBusyUserId(null);
+    if (!res.success) { setMemberError(res.error ?? 'Could not remove this member.'); return; }
+    onMembersChanged();
+  }
 
   async function handleDelete() {
-    if (!window.confirm(`Delete "${department.name}"? This cannot be undone.`)) return;
+    const note = members.length ? ` Its ${members.length} member${members.length === 1 ? '' : 's'} will stay in the organization without a department.` : '';
+    if (!window.confirm(`Delete "${department.name}"? This cannot be undone.${note}`)) return;
     setDeleting(true);
     const res = await window.worktrack.departments.delete(department.id);
     setDeleting(false);
@@ -206,11 +276,82 @@ function DepartmentCard({ department, canManage, onDeleted }: { department: Depa
         {department.description || 'No description provided.'}
       </p>
 
-      <div className="mt-auto bg-muted/30 px-4 py-3 rounded-xl border border-border/50 flex items-center gap-3 text-sm font-bold text-muted-foreground">
-        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-          <Users size={16} />
+      <div className="mt-auto bg-muted/30 rounded-xl border border-border/50">
+        <div className="px-4 py-3 flex items-center gap-3 text-sm font-bold text-muted-foreground">
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+            <Users size={16} />
+          </div>
+          <span className="text-foreground">{members.length}</span>
+          <span className="text-xs uppercase tracking-wider">{members.length === 1 ? 'Member' : 'Members'}</span>
+          {canManage && !adding && (
+            <button
+              onClick={() => { setAdding(true); setMemberError(null); }}
+              disabled={candidates.length === 0}
+              title={candidates.length === 0 ? 'Everyone is already in this department' : 'Add a member'}
+              className="ml-auto flex items-center gap-1.5 text-xs font-bold text-primary hover:bg-primary/10 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
+            >
+              <UserPlus size={14} /> Add
+            </button>
+          )}
         </div>
-        <span className="text-foreground">{department.memberCount || 0}</span> <span className="text-xs uppercase tracking-wider">Members</span>
+
+        {adding && (
+          <div className="px-4 pb-3 flex items-center gap-2">
+            <select
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+              className="flex-1 min-w-0 h-9 bg-card border border-border rounded-lg px-2 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+              autoFocus
+            >
+              <option value="">Choose a team member…</option>
+              {candidates.map((m) => {
+                const current = departmentNameOf(m.departmentId);
+                return (
+                  <option key={m.id} value={m.id}>
+                    {m.name} · {m.role.charAt(0) + m.role.slice(1).toLowerCase()}{current ? ` (moves from ${current})` : ''}
+                  </option>
+                );
+              })}
+            </select>
+            <Button size="sm" onClick={handleAdd} disabled={!selectedUserId || busyUserId !== null} className="h-9">
+              {busyUserId === selectedUserId && selectedUserId ? <Loader2 size={14} className="animate-spin" /> : 'Add'}
+            </Button>
+            <button onClick={() => { setAdding(false); setSelectedUserId(''); }} className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted" title="Cancel">
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
+        {memberError && <p className="px-4 pb-3 text-xs font-medium text-destructive">{memberError}</p>}
+
+        {members.length > 0 && (
+          <ul className="border-t border-border/50 divide-y divide-border/40 max-h-56 overflow-y-auto custom-scrollbar">
+            {members.map((m) => (
+              <li key={m.id} className="group/member flex items-center gap-3 px-4 py-2.5">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/25 to-primary/10 border border-primary/20 flex items-center justify-center text-[11px] font-bold text-primary shrink-0">
+                  {m.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-foreground truncate">{m.name}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">{m.email}</p>
+                </div>
+                <span className={clsx('px-2 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wider shrink-0', ROLE_BADGE[m.role] ?? ROLE_BADGE.EMPLOYEE)}>
+                  {m.role.toLowerCase()}
+                </span>
+                {canManage && (
+                  <button
+                    onClick={() => handleRemove(m.id)}
+                    disabled={busyUserId !== null}
+                    title={`Remove ${m.name} from ${department.name}`}
+                    className="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover/member:opacity-100 focus:opacity-100 transition-all disabled:opacity-40"
+                  >
+                    {busyUserId === m.id ? <Loader2 size={14} className="animate-spin" /> : <X size={14} />}
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </motion.div>
   );

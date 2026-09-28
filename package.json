@@ -1,6 +1,6 @@
 {
   "name": "worktrack-desktop",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "WorkTrack Desktop Agent — Employee productivity and time tracking companion",
   "main": "dist/main/index.js",
   "homepage": ".",
@@ -39,6 +39,7 @@
     "@radix-ui/react-toast": "^1.2.4",
     "@radix-ui/react-tooltip": "^1.1.6",
     "axios": "^1.7.9",
+    "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -62,6 +63,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^22.10.2",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",

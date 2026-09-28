@@ -4,6 +4,7 @@ import {
   FileText, UserRound, Users, Flag, CalendarClock, Briefcase, Mail, CheckCircle2,
 } from 'lucide-react';
 import { TeamMember, ProjectPriority } from '@shared/types';
+import { celebrate } from '../utils/celebrate';
 import { clsx } from 'clsx';
 
 interface Props {
@@ -78,6 +79,10 @@ export function CreateProjectWizard({ onClose, onCreated }: Props) {
     });
     setIsCreating(false);
     if (res.success) {
+      celebrate(
+        `Project "${name.trim()}" created successfully`,
+        clientEmail.trim() ? `An invitation is being emailed to ${clientEmail.trim()}` : undefined
+      );
       onCreated();
     } else {
       setError(res.error ?? 'Failed to create project.');

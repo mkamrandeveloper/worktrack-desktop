@@ -8,6 +8,7 @@ import { UserRole } from '@shared/types';
 import { Sidebar } from './components/Sidebar';
 import { StatusBar } from './components/StatusBar';
 import { NotificationContainer } from './components/NotificationToast';
+import { SnackbarContainer } from './components/Snackbar';
 
 // Pages
 import { LoginPage } from './pages/LoginPage';
@@ -104,6 +105,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <NotificationContainer />
+      <SnackbarContainer />
     </div>
   );
 }

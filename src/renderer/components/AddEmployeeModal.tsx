@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, AlertCircle, UserPlus, Copy, CheckCircle2, Building2, Briefcase, ShieldCheck, Shield, User } from 'lucide-react';
 import { Department, UserRole } from '@shared/types';
+import { celebrate } from '../utils/celebrate';
 
 interface AddEmployeeResult {
   employee: { id: string; name: string; email: string; role: string };
@@ -71,7 +72,10 @@ export function AddEmployeeModal({ onClose, onSuccess, callerRole }: Props) {
     const res = await window.worktrack.manager.addEmployee(payload);
     setIsLoading(false);
     if (res.success && res.data) {
-      setResult(res.data as AddEmployeeResult);
+      const added = res.data as AddEmployeeResult;
+      setResult(added);
+      const role = (added.employee.role || 'member').toLowerCase();
+      celebrate(`${added.employee.name} added successfully`, `Joined the team as ${role}`);
     } else {
       setError(res.error ?? 'Failed to add member.');
     }

@@ -24,6 +24,7 @@ export interface TeamMember {
   status: MemberStatus;
   driveFolderUrl?: string;
   departmentId?: string;
+  departmentName?: string;
   position?: string;
 }
 
@@ -106,12 +107,20 @@ export interface LoginResponse {
 
 // ─── Departments ──────────────────────────────────────────────────────────────
 
+export interface DepartmentMember {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+}
+
 export interface Department {
   id: string;
   organizationId: string;
   name: string;
   description?: string;
   memberCount?: number;
+  members?: DepartmentMember[];
   createdAt: string;
 }
 

@@ -133,6 +133,8 @@ export const IPC = {
     CREATE: 'departments:create',
     UPDATE: 'departments:update',
     DELETE: 'departments:delete',
+    ADD_MEMBER: 'departments:add-member',
+    REMOVE_MEMBER: 'departments:remove-member',
   },
 
   // ── Time Logs ────────────────────────────────────────────────────────────────

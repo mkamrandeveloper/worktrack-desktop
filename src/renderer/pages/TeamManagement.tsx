@@ -3,10 +3,11 @@ import { createPortal } from 'react-dom';
 import {
   Users, CheckCircle2, Clock, Loader2, AlertCircle, Plus,
   ExternalLink, UserCheck, XCircle, FolderOpen, RefreshCw,
-  ShieldCheck, Shield, User, ChevronDown, Trash2, AlertTriangle,
+  ShieldCheck, Shield, User, ChevronDown, Trash2, AlertTriangle, Building2,
 } from 'lucide-react';
 import { TeamMember, UserRole } from '@shared/types';
 import { AddEmployeeModal } from '../components/AddEmployeeModal';
+import { celebrate } from '../utils/celebrate';
 import { useAuthStore } from '../store/authStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, Button } from '../components/ui/primitives';
@@ -66,9 +67,13 @@ function ConfirmRemoveDialog({
           <div>
             <h3 className="font-semibold text-foreground">Remove member?</h3>
             <p className="text-sm text-muted-foreground mt-0.5">
-              <span className="font-semibold text-foreground">{member.name}</span> will be deactivated and can no longer log in.
+              <span className="font-semibold text-foreground">{member.name}</span>'s account will be permanently deleted.
             </p>
           </div>
+        </div>
+        <div className="text-xs text-muted-foreground bg-destructive/5 border border-destructive/20 rounded-xl p-3 space-y-1">
+          <p>This also deletes their time logs, attendance, screenshots (including their Google Drive folder) and activity history. This can't be undone.</p>
+          <p>Tasks they worked on stay in their projects, unassigned. You can add {member.email} again later.</p>
         </div>
         <div className="flex gap-3">
           <Button variant="outline" className="flex-1" onClick={onCancel}>Cancel</Button>
@@ -159,9 +164,12 @@ export function TeamManagement() {
 
   const handleApprove = async (userId: string) => {
     setActionPending(userId);
-    await window.worktrack.manager.approveRequest(userId);
+    const res = await window.worktrack.manager.approveRequest(userId);
     setActionPending(null);
-    loadTeam();
+    const person = requests.find((r) => r.id === userId);
+    await loadTeam(); // clears any old error, so report this one after it
+    if (res.success) celebrate(`${person?.name ?? 'Member'} added successfully`, 'Join request approved');
+    else setError(res.error ?? 'Could not approve the request.');
   };
 
   const handleReject = async (userId: string) => {
@@ -340,6 +348,11 @@ export function TeamManagement() {
                           {member.name} {isSelf && <span className="text-xs text-muted-foreground font-normal">(you)</span>}
                         </p>
                         <p className="text-sm text-muted-foreground truncate">{member.email}</p>
+                        {member.departmentName && (
+                          <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 border border-primary/20 rounded-md px-2 py-0.5">
+                            <Building2 size={11} /> {member.departmentName}
+                          </p>
+                        )}
                       </div>
                     </div>
 

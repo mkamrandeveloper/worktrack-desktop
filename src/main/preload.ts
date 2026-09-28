@@ -209,6 +209,8 @@ const api = {
     create: (payload: { name: string; description?: string }) => invoke<Department>(IPC.DEPARTMENTS.CREATE, payload),
     update: (id: string, payload: { name?: string; description?: string }) => invoke<Department>(IPC.DEPARTMENTS.UPDATE, { id, payload }),
     delete: (id: string) => invoke(IPC.DEPARTMENTS.DELETE, id),
+    addMember: (id: string, userId: string) => invoke<Department>(IPC.DEPARTMENTS.ADD_MEMBER, { id, userId }),
+    removeMember: (id: string, userId: string) => invoke<Department>(IPC.DEPARTMENTS.REMOVE_MEMBER, { id, userId }),
   },
 
   // ── Time Logs ────────────────────────────────────────────────────────────────

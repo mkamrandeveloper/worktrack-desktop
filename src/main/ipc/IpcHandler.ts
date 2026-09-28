@@ -678,6 +678,14 @@ export class IpcHandler {
       try { this._validateSender(event); return this._ok(await api().delete(`/api/departments/${id}`)); }
       catch (err) { return this._err(err); }
     });
+    ipcMain.handle(IPC.DEPARTMENTS.ADD_MEMBER, async (event, { id, userId }: { id: string; userId: string }) => {
+      try { this._validateSender(event); return this._ok(await api().post(`/api/departments/${id}/members`, { userId })); }
+      catch (err) { return this._err(err); }
+    });
+    ipcMain.handle(IPC.DEPARTMENTS.REMOVE_MEMBER, async (event, { id, userId }: { id: string; userId: string }) => {
+      try { this._validateSender(event); return this._ok(await api().delete(`/api/departments/${id}/members/${userId}`)); }
+      catch (err) { return this._err(err); }
+    });
 
     // ── Enterprise: Time Logs ───────────────────────────────────────────────
     ipcMain.handle(IPC.TIMELOGS.CLOCK_IN, async (event) => {
