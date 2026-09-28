@@ -97,6 +97,7 @@ const trayManager = new TrayManager({
 const updaterService = new UpdaterService(notificationService);
 const taskService = new TaskService(ENCRYPTION_KEY);
 const heartbeatService = new HeartbeatService(activityMonitor, timerEngine, offlineQueue);
+heartbeatService.onSessionClosedRemotely = () => stopTimerClosedByServer();
 const pluginManager = new PluginManager();
 const managerService = new ManagerService();
 const driveService = new DriveService();
@@ -158,6 +159,24 @@ async function handleTimerStart(taskId: string): Promise<void> {
     taskId,
     sessionId: timerState.sessionId,
   });
+}
+
+/**
+ * The server closed this app's timer session (it saw no activity from this
+ * computer for a while, e.g. after sleep or a long disconnect). Stop the local
+ * timer too so the app and every dashboard agree, and tell the user.
+ */
+function stopTimerClosedByServer(): void {
+  const status = timerEngine.getState().status;
+  if (status !== 'running' && status !== 'paused' && status !== 'on_break') return;
+  handleTimerStop()
+    .then(() => notificationService.show({
+      id: `timer-closed-${Date.now()}`,
+      type: 'warning',
+      title: 'Timer stopped',
+      message: 'Your timer was stopped because this computer stopped reporting activity for a while. Start it again to keep tracking.',
+    }))
+    .catch((err) => log.error('Server-initiated stop failed', { error: err.message }));
 }
 
 async function handleTimerStop(): Promise<void> {
@@ -432,9 +451,7 @@ app.on('ready', async () => {
     onNotification: (notification) => {
       notificationService.show(notification);
     },
-    onForceTimerStop: () => {
-      handleTimerStop().catch((err) => log.error('Force stop failed', { error: err.message }));
-    },
+    onForceTimerStop: () => stopTimerClosedByServer(),
   });
 
   // Register IPC handlers
@@ -496,14 +513,25 @@ app.on('window-all-closed', () => {
   }
 });
 
-app.on('before-quit', async () => {
+let quitCleanupDone = false;
+app.on('before-quit', async (event) => {
   isQuitting = true;
+  if (quitCleanupDone) return;
+  // Electron doesn't wait for async listeners — without this the app exits
+  // before the "stop session" request completes, leaving the session open on
+  // the server where it "runs" forever on the team dashboard.
+  event.preventDefault();
+  quitCleanupDone = true;
   log.info('Application quitting...');
 
-  // Stop timer if running
+  // Stop timer if running (bounded, so a dead network can't block quitting;
+  // the server closes sessions that stop reporting anyway).
   const timerState = timerEngine.getState();
   if (timerState.status === 'running' || timerState.status === 'on_break' || timerState.status === 'paused') {
-    await handleTimerStop().catch(() => {});
+    await Promise.race([
+      handleTimerStop().catch(() => {}),
+      new Promise((resolve) => setTimeout(resolve, 5000)),
+    ]);
   }
 
   heartbeatService.stop();
@@ -515,4 +543,5 @@ app.on('before-quit', async () => {
 
   await pluginManager.disposeAll();
   log.info('Cleanup complete — bye!');
+  app.quit();
 });

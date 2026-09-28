@@ -151,6 +151,12 @@ export class IpcHandler {
     ipcMain.handle(IPC.AUTH.LOGOUT, async (event) => {
       try {
         this._validateSender(event);
+        // Close the timer session first — otherwise it stays open on the
+        // server and keeps "running" on the team dashboard.
+        const timerStatus = this.services.timer.getState().status;
+        if (timerStatus === 'running' || timerStatus === 'paused' || timerStatus === 'on_break') {
+          await this.services.onStopTimer().catch(() => {});
+        }
         await this.services.auth.logout();
         return this._ok();
       } catch (err) {

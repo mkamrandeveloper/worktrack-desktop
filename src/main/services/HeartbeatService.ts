@@ -50,6 +50,9 @@ export class HeartbeatService {
     log.info(`Heartbeat service started — interval: ${this.intervalSeconds}s`);
   }
 
+  /** Called when the server says the session this app is timing is already closed. */
+  onSessionClosedRemotely: (() => void) | null = null;
+
   stop(): void {
     this._stopTimer();
     this.userId = null;
@@ -75,8 +78,10 @@ export class HeartbeatService {
 
     try {
       const api = getApiService();
-      await api.post(API_ENDPOINTS.ACTIVITY.HEARTBEAT, payload);
+      const res = await api.post<{ sessionOpen?: boolean | null }>(API_ENDPOINTS.ACTIVITY.HEARTBEAT, payload);
       log.debug(`Heartbeat sent — status: ${activityStatus}`);
+      const timerActive = ['running', 'paused', 'on_break'].includes(timerState.status);
+      if (timerActive && res?.sessionOpen === false) this.onSessionClosedRemotely?.();
     } catch {
       // Queue for replay when online
       this.offlineQueue.enqueue({
