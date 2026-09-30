@@ -149,6 +149,7 @@ export interface Project {
   managerName?: string;
   memberCount?: number;
   taskCount?: number;
+  completedTaskCount?: number;
   notes?: string;
   clientInviteToken?: string;
   clientInviteAccepted?: boolean;

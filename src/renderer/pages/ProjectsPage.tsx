@@ -5,7 +5,6 @@ import { useAuthStore } from '../store/authStore';
 import { Badge, Button } from '../components/ui/primitives';
 import { CreateProjectWizard } from '../components/CreateProjectWizard';
 import { motion, AnimatePresence } from 'framer-motion';
-import { clsx } from 'clsx';
 import {
   Plus, Search, ListFilter, Briefcase, Calendar, CheckCircle2,
   Users, LayoutDashboard, Trash2, AlertTriangle, Loader2,
@@ -216,9 +215,11 @@ const ProjectCard = ({
   onDelete: () => void;
   canDelete: boolean;
 }) => {
-  const progressPercent = project.taskCount! > 0
-    ? Math.round((project.actualHours / (project.estimatedHours || 1)) * 100)
-    : 0;
+  // Same measure as the project page: share of tasks completed.
+  const totalTasks = project.taskCount ?? 0;
+  const doneTasks = project.completedTaskCount ?? 0;
+  const progressPercent = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+  const fmtHours = (h?: number) => `${Math.round((h ?? 0) * 10) / 10}h`;
 
   const statusColor =
     project.status === 'ACTIVE' ? 'success' :
@@ -272,32 +273,38 @@ const ProjectCard = ({
           <div className="bg-muted/30 p-3.5 rounded-xl border border-border/50">
             <div className="flex justify-between items-center mb-2.5">
               <span className="text-[11px] font-display font-bold uppercase tracking-widest text-muted-foreground">Progress</span>
-              <span className={clsx('text-sm font-bold font-mono', progressPercent > 100 ? 'text-destructive' : 'text-primary')}>
+              <span className="text-sm font-bold font-mono text-primary">
                 {progressPercent}%
               </span>
             </div>
             <div className="h-2 w-full bg-muted rounded-full overflow-hidden shadow-inner border border-border/40">
               <div
-                className={clsx('h-full rounded-full transition-all duration-1000 shadow-sm', progressPercent > 100 ? 'bg-destructive' : 'bg-primary')}
-                style={{ width: `${Math.min(progressPercent, 100)}%` }}
+                className="h-full rounded-full transition-all duration-1000 shadow-sm bg-primary"
+                style={{ width: `${progressPercent}%` }}
               />
             </div>
             <div className="flex justify-between items-center mt-2">
-              <span className="text-xs font-medium text-muted-foreground">{project.actualHours}h logged</span>
-              <span className="text-xs font-medium text-muted-foreground">{project.estimatedHours || 0}h est.</span>
+              <span className="text-xs font-medium text-muted-foreground">
+                {totalTasks > 0 ? `${doneTasks} of ${totalTasks} tasks done` : 'No tasks yet'}
+              </span>
+              <span className="text-xs font-medium text-muted-foreground" title="Hours logged / estimated">
+                {fmtHours(project.actualHours)} logged{project.estimatedHours ? ` / ${fmtHours(project.estimatedHours)} est.` : ''}
+              </span>
             </div>
           </div>
 
           {/* Footer stats */}
           <div className="flex items-center justify-between pt-1 text-sm font-medium text-muted-foreground">
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1.5" title="Tasks">
+              <div className="flex items-center gap-1.5" title={`${doneTasks} of ${totalTasks} tasks completed`}>
                 <CheckCircle2 size={16} className="text-emerald-500/70" />
-                <span className="font-semibold text-foreground">{project.taskCount || 0}</span>
+                <span className="font-semibold text-foreground">{doneTasks}/{totalTasks}</span>
+                <span className="text-xs">tasks</span>
               </div>
-              <div className="flex items-center gap-1.5" title="Team Members">
+              <div className="flex items-center gap-1.5" title="Team members">
                 <Users size={16} className="text-blue-500/70" />
-                <span className="font-semibold text-foreground">{project.memberCount || 0}</span>
+                <span className="font-semibold text-foreground">{project.memberCount ?? 0}</span>
+                <span className="text-xs">{project.memberCount === 1 ? 'member' : 'members'}</span>
               </div>
             </div>
             <div className="flex items-center gap-1.5 bg-muted px-2.5 py-1 rounded-md" title="Deadline">

@@ -581,7 +581,8 @@ export function DashboardPage() {
           ) : (
             <div className="flex flex-col gap-3">
               {activeProjects.map((p, i) => {
-                const progressPct = (p.taskCount ?? 0) > 0 ? Math.round((p.actualHours / (p.estimatedHours || 1)) * 100) : 0;
+                // Share of tasks completed — same measure as the Projects page.
+                const progressPct = (p.taskCount ?? 0) > 0 ? Math.round(((p.completedTaskCount ?? 0) / (p.taskCount ?? 1)) * 100) : 0;
                 const color = ICON_COLORS[i % ICON_COLORS.length];
                 return (
                   <motion.div
