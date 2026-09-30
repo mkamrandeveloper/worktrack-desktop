@@ -6,6 +6,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 import { FileSpreadsheet, Users, CheckCircle2, TrendingUp, Monitor, Loader2, CheckCircle, Download } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
+import { formatHours } from '../utils/formatTime';
 
 type Period = 'daily' | 'weekly' | 'monthly';
 
@@ -140,7 +141,7 @@ export function ReportsPage() {
                 </span>
               </div>
               <div>
-                <div className="text-3xl font-display font-bold text-foreground tracking-tight">{loading ? '—' : `${overview?.attendance.totalWorkHours || 0}h`}</div>
+                <div className="text-3xl font-display font-bold text-foreground tracking-tight">{loading ? '—' : formatHours(overview?.attendance.totalWorkHours)}</div>
                 <div className="text-sm font-medium text-muted-foreground mt-1">Per employee</div>
               </div>
             </Card>
@@ -168,8 +169,8 @@ export function ReportsPage() {
                     <LineChart data={productivityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                       <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} dy={10} />
-                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} dx={-10} />
-                      <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', boxShadow: 'var(--tw-shadow-lg)' }} />
+                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} dx={-10} tickFormatter={(v) => formatHours(Number(v))} />
+                      <Tooltip formatter={(v) => formatHours(Number(v))} contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', boxShadow: 'var(--tw-shadow-lg)' }} />
                       <Line type="monotone" dataKey="hours" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 4, fill: 'hsl(var(--primary))', strokeWidth: 2, stroke: 'hsl(var(--card))' }} activeDot={{ r: 6 }} name="Working Hours" />
                     </LineChart>
                   </ResponsiveContainer>
@@ -192,10 +193,10 @@ export function ReportsPage() {
                     }))} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                       <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} dy={10} />
-                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} dx={-10} />
-                      <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', boxShadow: 'var(--tw-shadow-lg)' }} cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }} />
-                      <Bar dataKey="breakHours" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Break (hrs)" />
-                      <Bar dataKey="overtimeHours" fill="#ef4444" radius={[4, 4, 0, 0]} name="Overtime (hrs)" />
+                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} dx={-10} tickFormatter={(v) => formatHours(Number(v))} />
+                      <Tooltip formatter={(v) => formatHours(Number(v))} contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', boxShadow: 'var(--tw-shadow-lg)' }} cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }} />
+                      <Bar dataKey="breakHours" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Break" />
+                      <Bar dataKey="overtimeHours" fill="#ef4444" radius={[4, 4, 0, 0]} name="Overtime" />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -234,10 +235,10 @@ export function ReportsPage() {
             {report && (
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-6 border-b border-border bg-card">
                 {[
-                  ['Work Hours', `${report.summary.workHours}h`],
-                  ['Break Hours', `${report.summary.breakHours}h`],
-                  ['Overtime', `${report.summary.overtimeHours}h`],
-                  ['Idle', `${report.summary.idleHours}h`],
+                  ['Work Hours', formatHours(report.summary.workHours)],
+                  ['Break Hours', formatHours(report.summary.breakHours)],
+                  ['Overtime', formatHours(report.summary.overtimeHours)],
+                  ['Idle', formatHours(report.summary.idleHours)],
                   ['Avg Productivity', `${report.summary.avgProductivity}%`],
                 ].map(([k, v]) => (
                   <div key={k} className="bg-muted/30 p-4 rounded-xl border border-border/50">
@@ -290,10 +291,10 @@ export function ReportsPage() {
                       <TableCell className="text-muted-foreground">{r.date}</TableCell>
                       <TableCell className="text-muted-foreground font-mono">{r.clockIn}</TableCell>
                       <TableCell className="text-muted-foreground font-mono">{r.clockOut}</TableCell>
-                      <TableCell className="text-right font-mono font-medium">{r.workHours}h</TableCell>
-                      <TableCell className="text-right font-mono text-muted-foreground">{r.breakHours}h</TableCell>
-                      <TableCell className="text-right font-mono text-muted-foreground">{r.overtimeHours}h</TableCell>
-                      <TableCell className="text-right font-mono text-muted-foreground">{r.idleHours}h</TableCell>
+                      <TableCell className="text-right font-mono font-medium">{formatHours(r.workHours)}</TableCell>
+                      <TableCell className="text-right font-mono text-muted-foreground">{formatHours(r.breakHours)}</TableCell>
+                      <TableCell className="text-right font-mono text-muted-foreground">{formatHours(r.overtimeHours)}</TableCell>
+                      <TableCell className="text-right font-mono text-muted-foreground">{formatHours(r.idleHours)}</TableCell>
                       <TableCell className="text-right">
                         <Badge variant={r.productivity >= 70 ? 'success' : r.productivity >= 40 ? 'warning' : 'danger'} className="font-mono py-0.5">
                           {r.productivity}%

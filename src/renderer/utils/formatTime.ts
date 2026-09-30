@@ -9,15 +9,21 @@ export function formatDuration(seconds: number): string {
 }
 
 /**
- * Formats seconds into a human-readable string like "2h 34m"
+ * The app's one way to show an amount of time: hours and minutes, never
+ * decimal hours. Under an hour it's minutes only.
+ *   1.94 → "1h 56m"   2 → "2h"   0.75 → "45m"   0 → "0m"
  */
+export function formatHours(hours: number | null | undefined): string {
+  const totalMinutes = Math.round(Math.max(0, Number(hours) || 0) * 60);
+  if (totalMinutes < 60) return `${totalMinutes}m`;
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+}
+
+/** Same as formatHours, for a number of seconds. */
 export function formatDurationHuman(seconds: number): string {
-  if (seconds < 60) return `${seconds}s`;
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  if (h === 0) return `${m}m`;
-  if (m === 0) return `${h}h`;
-  return `${h}h ${m}m`;
+  return formatHours((Number(seconds) || 0) / 3600);
 }
 
 /**

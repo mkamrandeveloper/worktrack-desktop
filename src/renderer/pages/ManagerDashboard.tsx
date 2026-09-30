@@ -7,7 +7,7 @@ import { TeamMember, Task, DashboardAnalytics, LiveStatus, OrgPresenceEvent, Org
 import { Badge, Card, Button } from '../components/ui/primitives';
 import { TimerRing } from '../components/ui/TimerRing';
 import { ScreenshotIntervalControl, DEFAULT_SCREENSHOT_INTERVAL } from '../components/ScreenshotIntervalControl';
-import { formatDuration, calcProgress, hoursToSeconds, formatDeadlineCountdown } from '../utils/formatTime';
+import { formatDuration, calcProgress, hoursToSeconds, formatDeadlineCountdown, formatHours } from '../utils/formatTime';
 import { clsx } from 'clsx';
 import { motion } from 'framer-motion';
 import {
@@ -285,7 +285,7 @@ export function ManagerDashboard() {
                 <span className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shadow-inner"><Clock size={20} /></span>
               </div>
               <div>
-                <div className="text-3xl font-display font-bold text-foreground">{analytics.totalWorkingHours}h</div>
+                <div className="text-3xl font-display font-bold text-foreground">{formatHours(analytics.totalWorkingHours)}</div>
                 <div className="text-xs font-semibold text-primary flex items-center gap-1.5 mt-2"><TrendingUp size={14} /><span>this {{ daily: 'day', weekly: 'week', monthly: 'month' }[period]}</span></div>
               </div>
             </Card>
@@ -295,7 +295,7 @@ export function ManagerDashboard() {
                 <span className="font-display text-[11px] uppercase tracking-widest font-bold text-muted-foreground">Break Time</span>
                 <span className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 shadow-inner"><Coffee size={20} /></span>
               </div>
-              <div className="text-3xl font-display font-bold text-foreground">{analytics.totalBreakHours}h</div>
+              <div className="text-3xl font-display font-bold text-foreground">{formatHours(analytics.totalBreakHours)}</div>
             </Card>
 
             <Card className="p-6 flex flex-col justify-between min-h-[140px]">
@@ -303,7 +303,7 @@ export function ManagerDashboard() {
                 <span className="font-display text-[11px] uppercase tracking-widest font-bold text-muted-foreground">Overtime</span>
                 <span className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center text-destructive shadow-inner"><AlertTriangle size={20} /></span>
               </div>
-              <div className="text-3xl font-display font-bold text-foreground">{analytics.totalOvertimeHours}h</div>
+              <div className="text-3xl font-display font-bold text-foreground">{formatHours(analytics.totalOvertimeHours)}</div>
             </Card>
 
             <Card className="p-6 flex flex-col justify-between min-h-[140px]">
@@ -338,7 +338,7 @@ export function ManagerDashboard() {
                         transition={{ duration: 0.5, delay: i * 0.05 }}
                         className={clsx('w-full rounded-t-lg transition-colors relative', isPeak ? 'bg-primary shadow-[0_0_20px_rgba(var(--primary),0.3)]' : 'bg-primary/20 group-hover:bg-primary/40')}
                       >
-                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-card border border-border text-foreground font-mono font-bold text-[11px] px-2.5 py-1.5 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">{d.workHours}h</div>
+                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-card border border-border text-foreground font-mono font-bold text-[11px] px-2.5 py-1.5 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">{formatHours(d.workHours)}</div>
                       </motion.div>
                       <span className={clsx('font-mono text-[11px] font-bold uppercase tracking-wider', isPeak ? 'text-primary' : 'text-muted-foreground')}>{new Date(d.date).toLocaleDateString(undefined, { weekday: 'narrow' })}</span>
                     </div>
@@ -785,8 +785,8 @@ export function ManagerDashboard() {
                               <div className="w-32 text-right">
                                 <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider mb-1.5">
                                   <span className="text-muted-foreground">Rem:</span>
-                                  <span className="text-foreground">
-                                    {task.remainingHours !== undefined ? `${task.remainingHours}h` : `${task.estimatedHours}h`}
+                                  <span className="text-foreground normal-case">
+                                    {formatHours(task.remainingHours ?? task.estimatedHours)}
                                   </span>
                                 </div>
                                 <div className="h-2 w-full bg-muted rounded-full overflow-hidden shadow-inner border border-border/50">

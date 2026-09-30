@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/authStore';
 import { useTimerStore } from '../store/timerStore';
 import { ScreenshotImage } from '../components/ScreenshotImage';
 import { Badge, Button, Card } from '../components/ui/primitives';
-import { formatDuration } from '../utils/formatTime';
+import { formatDuration, formatHours } from '../utils/formatTime';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -220,7 +220,7 @@ export function ProjectDetail() {
           <h3 className="font-display text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Time Tracking</h3>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-2xl font-display font-bold text-foreground">{project.actualHours}h</p>
+              <p className="text-2xl font-display font-bold text-foreground">{formatHours(project.actualHours)}</p>
               <p className="text-xs font-medium text-muted-foreground">Logged total</p>
             </div>
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shadow-inner text-primary">

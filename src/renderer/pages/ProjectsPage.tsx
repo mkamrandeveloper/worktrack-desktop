@@ -9,6 +9,7 @@ import {
   Plus, Search, ListFilter, Briefcase, Calendar, CheckCircle2,
   Users, LayoutDashboard, Trash2, AlertTriangle, Loader2,
 } from 'lucide-react';
+import { formatHours } from '../utils/formatTime';
 
 // ── Confirm delete dialog ─────────────────────────────────────────────────────
 function ConfirmDeleteDialog({
@@ -219,7 +220,7 @@ const ProjectCard = ({
   const totalTasks = project.taskCount ?? 0;
   const doneTasks = project.completedTaskCount ?? 0;
   const progressPercent = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
-  const fmtHours = (h?: number) => `${Math.round((h ?? 0) * 10) / 10}h`;
+  const fmtHours = formatHours;
 
   const statusColor =
     project.status === 'ACTIVE' ? 'success' :

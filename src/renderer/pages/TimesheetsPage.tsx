@@ -15,18 +15,13 @@ import { Card, Button, Badge } from '../components/ui/primitives';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useAuthStore } from '../store/authStore';
+import { formatHours } from '../utils/formatTime';
 
 type View = 'daily' | 'weekly' | 'monthly';
 
 const CHART_COLORS = { work: '#10b981', breakC: '#f59e0b', overtime: '#ef4444', idle: '#64748b' };
 
-const fmtHours = (v: number) => {
-  const totalMins = Math.round(v * 60);
-  const h = Math.floor(totalMins / 60);
-  const m = totalMins % 60;
-  if (h === 0) return m > 0 ? `${m}m` : '0h';
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
-};
+const fmtHours = formatHours;
 const fmtClock = (iso?: string | null) => (iso ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—');
 const productivityOf = (work: number, idle: number) => (work > 0 ? Math.max(0, Math.min(100, Math.round(((work - idle) / work) * 100))) : 0);
 
@@ -381,7 +376,7 @@ function DailyView({ date, data, loading, onPrev, onNext, onJumpToday }: {
                   <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={4} cornerRadius={4} stroke="none">
                     {pieData.map((d) => <Cell key={d.name} fill={d.color} />)}
                   </Pie>
-                  <Tooltip formatter={(v) => `${Number(v).toFixed(1)}h`} contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', boxShadow: 'var(--tw-shadow-lg)' }} />
+                  <Tooltip formatter={(v) => formatHours(Number(v))} contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', boxShadow: 'var(--tw-shadow-lg)' }} />
                   <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', fontWeight: 500 }} />
                 </PieChart>
               </ResponsiveContainer>
@@ -500,10 +495,10 @@ function WeeklyView({ weekStart, data, loading, onPrev, onNext, onSelectDay }: {
       <DateNav label={`${weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} — ${weekEnd.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`} onPrev={onPrev} onNext={onNext} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-        <StatCard title="Total Work" value={data ? fmtHours(data.totals.totalWorkHours) : '0h'} icon={<Monitor size={18} />} color="primary" loading={loading} />
-        <StatCard title="Total Break" value={data ? fmtHours(data.totals.totalBreakHours) : '0h'} icon={<Coffee size={18} />} color="warning" loading={loading} />
-        <StatCard title="Idle Time" value={data ? fmtHours(data.totals.totalIdleHours) : '0h'} icon={<Clock size={18} />} color="default" loading={loading} />
-        <StatCard title="Overtime" value={data ? fmtHours(data.totals.totalOvertimeHours) : '0h'} icon={<TrendingUp size={18} />} color="danger" loading={loading} />
+        <StatCard title="Total Work" value={data ? fmtHours(data.totals.totalWorkHours) : '0m'} icon={<Monitor size={18} />} color="primary" loading={loading} />
+        <StatCard title="Total Break" value={data ? fmtHours(data.totals.totalBreakHours) : '0m'} icon={<Coffee size={18} />} color="warning" loading={loading} />
+        <StatCard title="Idle Time" value={data ? fmtHours(data.totals.totalIdleHours) : '0m'} icon={<Clock size={18} />} color="default" loading={loading} />
+        <StatCard title="Overtime" value={data ? fmtHours(data.totals.totalOvertimeHours) : '0m'} icon={<TrendingUp size={18} />} color="danger" loading={loading} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -514,8 +509,8 @@ function WeeklyView({ weekStart, data, loading, onPrev, onNext, onSelectDay }: {
               <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                 <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} dy={10} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} dx={-10} />
-                <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', boxShadow: 'var(--tw-shadow-lg)' }} cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} dx={-10} tickFormatter={(v) => formatHours(Number(v))} />
+                <Tooltip formatter={(v) => formatHours(Number(v))} contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', boxShadow: 'var(--tw-shadow-lg)' }} cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 500, paddingTop: '20px' }} />
                 <Bar dataKey="Working" stackId="a" fill={CHART_COLORS.work} radius={[0, 0, 0, 0]} />
                 <Bar dataKey="Break" stackId="a" fill={CHART_COLORS.breakC} />
@@ -615,10 +610,10 @@ function MonthlyView({ cursor, data, loading, onPrev, onNext, onSelectDay }: {
       <DateNav label={monthLabel} onPrev={onPrev} onNext={onNext} />
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-5">
-        <StatCard title="Total Work" value={data ? fmtHours(data.totals.totalWorkHours) : '0h'} icon={<Monitor size={18} />} color="primary" loading={loading} />
-        <StatCard title="Total Break" value={data ? fmtHours(data.totals.totalBreakHours) : '0h'} icon={<Coffee size={18} />} color="warning" loading={loading} />
-        <StatCard title="Overtime" value={data ? fmtHours(data.totals.totalOvertimeHours) : '0h'} icon={<TrendingUp size={18} />} color="danger" loading={loading} />
-        <StatCard title="Idle Time" value={data ? fmtHours(data.totals.totalIdleHours) : '0h'} icon={<Clock size={18} />} color="default" loading={loading} />
+        <StatCard title="Total Work" value={data ? fmtHours(data.totals.totalWorkHours) : '0m'} icon={<Monitor size={18} />} color="primary" loading={loading} />
+        <StatCard title="Total Break" value={data ? fmtHours(data.totals.totalBreakHours) : '0m'} icon={<Coffee size={18} />} color="warning" loading={loading} />
+        <StatCard title="Overtime" value={data ? fmtHours(data.totals.totalOvertimeHours) : '0m'} icon={<TrendingUp size={18} />} color="danger" loading={loading} />
+        <StatCard title="Idle Time" value={data ? fmtHours(data.totals.totalIdleHours) : '0m'} icon={<Clock size={18} />} color="default" loading={loading} />
         <StatCard title="Avg Productivity" value={data ? `${data.totals.avgProductivity}%` : '0%'} icon={<Award size={18} />} color="success" loading={loading} />
       </div>
 
@@ -630,8 +625,8 @@ function MonthlyView({ cursor, data, loading, onPrev, onNext, onSelectDay }: {
               <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                 <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={10} tickLine={false} axisLine={false} interval={2} dy={10} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} dx={-10} />
-                <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', boxShadow: 'var(--tw-shadow-lg)' }} cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} dx={-10} tickFormatter={(v) => formatHours(Number(v))} />
+                <Tooltip formatter={(v) => formatHours(Number(v))} contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', boxShadow: 'var(--tw-shadow-lg)' }} cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }} />
                 <Bar dataKey="Working" fill={CHART_COLORS.work} radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -691,7 +686,7 @@ function MonthlyView({ cursor, data, loading, onPrev, onNext, onSelectDay }: {
                 className={clsx('aspect-square rounded-xl border p-2 flex flex-col items-center justify-center transition-colors shadow-sm', statusColor[d.status] ?? statusColor.absent)}
               >
                 <span className="text-sm font-bold">{new Date(d.date).getDate()}</span>
-                {d.workHours > 0 && <span className="text-[10px] mt-1 font-medium bg-background/50 px-1.5 py-0.5 rounded">{d.workHours.toFixed(1)}h</span>}
+                {d.workHours > 0 && <span className="text-[10px] mt-1 font-medium bg-background/50 px-1.5 py-0.5 rounded">{formatHours(d.workHours)}</span>}
               </motion.button>
             ))}
           </div>

@@ -4,7 +4,7 @@ import { useTimer } from '../hooks/useTimer';
 import { useAuthStore } from '../store/authStore';
 import { useTaskStore } from '../store/taskStore';
 import { DashboardAnalytics, Project, TimelineEvent } from '@shared/types';
-import { formatDuration, formatDeadlineCountdown } from '../utils/formatTime';
+import { formatDuration, formatDeadlineCountdown, formatHours } from '../utils/formatTime';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -22,14 +22,6 @@ const ICON_COLORS: { bg: string; text: string }[] = [
   { bg: 'bg-amber-500/10', text: 'text-amber-500' },
 ];
 
-function formatHoursMinutes(hours: number): string {
-  const totalMinutes = Math.round(hours * 60);
-  const h = Math.floor(totalMinutes / 60);
-  const m = totalMinutes % 60;
-  if (h === 0) return `${m}m`;
-  if (m === 0) return `${h}h`;
-  return `${h}h ${m}m`;
-}
 
 function fmtDeadline(d: string): string {
   const date = new Date(d);
@@ -190,7 +182,7 @@ export function DashboardPage() {
   const maxWorkHours = Math.max(1, ...chartData.map((d) => d.workHours));
   const periodTitle = period === 'daily' ? "Today's Activity" : period === 'monthly' ? 'Monthly Trend' : 'Weekly Trend';
 
-  const idleLabel = analytics ? formatHoursMinutes(analytics.totalIdleHours) : '—';
+  const idleLabel = analytics ? formatHours(analytics.totalIdleHours) : '—';
 
   return (
     <div className="flex-1 overflow-y-auto p-6 md:p-8 lg:p-10 space-y-8 animate-fade-in pb-24">
@@ -250,7 +242,7 @@ export function DashboardPage() {
             </span>
           </div>
           <div>
-            <div className="text-3xl font-display font-bold text-foreground tracking-tight">{loading || analyticsPeriodLoaded.current !== period ? '—' : `${analytics?.totalWorkingHours ?? 0}h`}</div>
+            <div className="text-3xl font-display font-bold text-foreground tracking-tight">{loading || analyticsPeriodLoaded.current !== period ? '—' : formatHours(analytics?.totalWorkingHours)}</div>
             <div className="text-sm text-primary font-medium flex items-center gap-1.5 mt-2">
               <TrendingUp size={14} />
               <span>this {{ daily: 'day', weekly: 'week', monthly: 'month' }[period]}</span>
@@ -429,7 +421,7 @@ export function DashboardPage() {
                     )}
                   >
                     <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-popover border border-border text-foreground font-mono text-[11px] px-2.5 py-1 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
-                      {d.workHours}h
+                      {formatHours(d.workHours)}
                     </div>
                   </motion.div>
                   <span className={clsx('font-display text-[11px] font-bold uppercase tracking-wider', isPeak ? 'text-primary' : 'text-muted-foreground')}>
@@ -442,7 +434,7 @@ export function DashboardPage() {
           <div className="mt-auto border-t border-border/50 pt-5 flex items-center justify-between">
             <div>
               <div className="font-display text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Total this {{ daily: 'day', weekly: 'week', monthly: 'month' }[period]}</div>
-              <div className="font-display font-bold text-xl text-foreground">{analytics?.totalWorkingHours ?? 0} hrs</div>
+              <div className="font-display font-bold text-xl text-foreground">{formatHours(analytics?.totalWorkingHours)}</div>
             </div>
             <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary border border-secondary/20 shadow-inner">
               <LineChart size={24} />
@@ -603,7 +595,7 @@ export function DashboardPage() {
                       </div>
                     </div>
                     <div className="text-right shrink-0 ml-4">
-                      <div className="text-sm font-bold text-foreground mb-1.5">{p.actualHours}h / {p.estimatedHours}h</div>
+                      <div className="text-sm font-bold text-foreground mb-1.5">{formatHours(p.actualHours)}{p.estimatedHours ? ` / ${formatHours(p.estimatedHours)}` : ''}</div>
                       <div className="w-24 bg-muted/60 rounded-full h-1.5 overflow-hidden inline-block">
                         <motion.div 
                           initial={{ width: 0 }}

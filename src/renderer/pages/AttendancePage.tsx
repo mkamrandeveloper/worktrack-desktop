@@ -4,6 +4,7 @@ import { Search, Filter, Activity, Clock, Coffee, MonitorOff, UserCheck } from '
 import { Button } from '../components/ui/primitives';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
+import { formatHours } from '../utils/formatTime';
 
 export function AttendancePage() {
   const [employees, setEmployees] = useState<LiveEmployee[]>([]);
@@ -198,7 +199,7 @@ function EmployeeLiveCard({ employee }: { employee: LiveEmployee }) {
       <div className="flex items-center justify-between text-xs pt-1">
         <div className="flex flex-col">
           <span className="font-display font-bold uppercase tracking-widest text-[10px] text-muted-foreground mb-1">Work Today</span>
-          <span className="font-mono font-bold text-sm text-foreground">{employee.workHours.toFixed(1)}h</span>
+          <span className="font-mono font-bold text-sm text-foreground">{formatHours(employee.workHours)}</span>
         </div>
         <div className="flex flex-col text-right">
           <span className="font-display font-bold uppercase tracking-widest text-[10px] text-muted-foreground mb-1">Clock In</span>
