@@ -5,6 +5,9 @@ import { Button } from '../components/ui/primitives';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatHours } from '../utils/formatTime';
+import { useAuthStore } from '../store/authStore';
+
+const ROLE_LABEL: Record<string, string> = { OWNER: 'Owner', ADMIN: 'Admin', MANAGER: 'Manager', EMPLOYEE: 'Employee' };
 
 export function AttendancePage() {
   const [employees, setEmployees] = useState<LiveEmployee[]>([]);
@@ -142,6 +145,7 @@ function StatCard({ icon, label, value, subvalue, bg }: { icon: React.ReactNode,
 }
 
 function EmployeeLiveCard({ employee }: { employee: LiveEmployee }) {
+  const isMe = useAuthStore((st) => st.user?.id === employee.id);
   const isWorking = ['active', 'working', 'overtime', 'idle'].includes(employee.displayStatus);
   const isBreak = employee.displayStatus === 'on_break';
 
@@ -168,7 +172,12 @@ function EmployeeLiveCard({ employee }: { employee: LiveEmployee }) {
             {isWorking && <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-card rounded-full animate-pulse" />}
           </div>
           <div>
-            <h3 className="font-display font-bold text-base text-foreground line-clamp-1">{employee.name}</h3>
+            <div className="flex items-center gap-2 min-w-0">
+              <h3 className="font-display font-bold text-base text-foreground line-clamp-1">{employee.name}{isMe && <span className="text-muted-foreground font-medium"> (You)</span>}</h3>
+              {ROLE_LABEL[employee.role] && (
+                <span className="shrink-0 px-2 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">{ROLE_LABEL[employee.role]}</span>
+              )}
+            </div>
             <p className="text-xs font-medium text-muted-foreground line-clamp-1">{employee.email}</p>
           </div>
         </div>

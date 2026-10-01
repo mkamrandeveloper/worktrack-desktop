@@ -211,6 +211,7 @@ export interface Task {
   assigneeId?: string;
   assigneeName?: string;
   assignedAt: string;
+  completedAt?: string | null;
   organizationId: string;
   comments?: string;
   activityLog?: string;
@@ -495,7 +496,7 @@ export interface OrgOverviewReport {
   period: { from: string; to: string };
   employees: { total: number };
   tasks: { total: number; completed: number; inProgress: number; completionRate: number };
-  attendance: { totalWorkHours: number; uniquePresent: number; avgWorkSeconds: number };
+  attendance: { totalWorkHours: number; uniquePresent: number; avgWorkSeconds: number; avgWorkHoursPerDay?: number };
   projects: { total: number; active: number; completed: number };
 }
 

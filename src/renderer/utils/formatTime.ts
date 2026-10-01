@@ -33,28 +33,45 @@ export function formatShortDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+function formatSpan(ms: number): string {
+  const days = Math.floor(ms / 86400000);
+  const hours = Math.floor((ms % 86400000) / 3600000);
+  const minutes = Math.floor((ms % 3600000) / 60000);
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m`;
+  return 'a moment';
+}
+
 /**
  * Live countdown to a task deadline, down to the minute once it's close.
+ * Once the task is done the badge freezes at the moment it was completed
+ * ("Completed 1m late") instead of counting on.
  */
-export function formatDeadlineCountdown(iso: string): { label: string; isOverdue: boolean; isUrgent: boolean } {
-  const diffMs = new Date(iso).getTime() - Date.now();
+export function formatDeadlineCountdown(
+  iso: string,
+  done?: { completedAt?: string | null }
+): { label: string; isOverdue: boolean; isUrgent: boolean; isDone: boolean } {
+  const deadline = new Date(iso).getTime();
+  if (done) {
+    const at = done.completedAt ? new Date(done.completedAt).getTime() : NaN;
+    const lateMs = at - deadline;
+    const label = Number.isNaN(lateMs)
+      ? 'Completed'
+      : lateMs >= 60000
+      ? `Completed ${formatSpan(lateMs)} late`
+      : 'Completed on time';
+    return { label, isOverdue: false, isUrgent: false, isDone: true };
+  }
+
+  const diffMs = deadline - Date.now();
   const overdue = diffMs < 0;
-  const abs = Math.abs(diffMs);
-
-  const days = Math.floor(abs / 86400000);
-  const hours = Math.floor((abs % 86400000) / 3600000);
-  const minutes = Math.floor((abs % 3600000) / 60000);
-
-  let span: string;
-  if (days > 0) span = `${days}d ${hours}h`;
-  else if (hours > 0) span = `${hours}h ${minutes}m`;
-  else if (minutes > 0) span = `${minutes}m`;
-  else span = 'a moment';
-
+  const span = formatSpan(Math.abs(diffMs));
   return {
     label: overdue ? `Overdue by ${span}` : `${span} left`,
     isOverdue: overdue,
     isUrgent: !overdue && diffMs <= 86400000,
+    isDone: false,
   };
 }
 

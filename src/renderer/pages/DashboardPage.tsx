@@ -174,7 +174,10 @@ export function DashboardPage() {
   const timerOnBreak = timer.status === 'on_break';
   const timerPaused = timer.status === 'paused';
   const timerActive = timerRunning || timerOnBreak || timerPaused;
-  const deadlineCountdown = selectedTask?.deadline ? formatDeadlineCountdown(selectedTask.deadline) : null;
+  const selectedDone = selectedTask?.status === 'DONE' || selectedTask?.status === 'completed';
+  const deadlineCountdown = selectedTask?.deadline
+    ? formatDeadlineCountdown(selectedTask.deadline, selectedDone ? { completedAt: selectedTask.completedAt } : undefined)
+    : null;
 
   const chartData = analytics?.chartData ?? [];
   const maxWorkHours = Math.max(1, ...chartData.map((d) => d.workHours));
@@ -329,14 +332,16 @@ export function DashboardPage() {
               <div
                 className={clsx(
                   'inline-flex items-center gap-2 px-3 py-1.5 rounded-md font-display text-[11px] font-bold uppercase tracking-wider mb-6',
-                  deadlineCountdown.isOverdue
+                  deadlineCountdown.isDone
+                  ? 'bg-secondary/10 text-secondary'
+                  : deadlineCountdown.isOverdue
                     ? 'bg-destructive/10 text-destructive'
                     : deadlineCountdown.isUrgent
                     ? 'bg-amber-500/10 text-amber-600'
                     : 'bg-muted/50 text-muted-foreground'
                 )}
               >
-                {deadlineCountdown.isOverdue ? <AlertCircle size={14} /> : <Timer size={14} />}
+                {deadlineCountdown.isDone ? <CheckCircle2 size={14} /> : deadlineCountdown.isOverdue ? <AlertCircle size={14} /> : <Timer size={14} />}
                 {deadlineCountdown.label}
               </div>
             )}

@@ -234,7 +234,10 @@ export function ManagerDashboard() {
   const ringProgress = calcProgress(timer.elapsedSeconds, ringTarget);
   const circumference = 283;
   const ringOffset = circumference - (ringProgress / 100) * circumference;
-  const deadlineCountdown = selectedTask?.deadline ? formatDeadlineCountdown(selectedTask.deadline) : null;
+  const selectedDone = selectedTask?.status === 'DONE' || selectedTask?.status === 'completed';
+  const deadlineCountdown = selectedTask?.deadline
+    ? formatDeadlineCountdown(selectedTask.deadline, selectedDone ? { completedAt: selectedTask.completedAt } : undefined)
+    : null;
   const timerRunning = timer.status === 'running';
   const timerOnBreak = timer.status === 'on_break';
   const timerPaused = timer.status === 'paused';
@@ -441,14 +444,16 @@ export function ManagerDashboard() {
               <div
                 className={clsx(
                   'inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md font-mono text-[11px] font-bold uppercase tracking-wider mb-6 border shadow-sm',
-                  deadlineCountdown.isOverdue
+                  deadlineCountdown.isDone
+                  ? 'bg-secondary/10 text-secondary border-secondary/20'
+                  : deadlineCountdown.isOverdue
                     ? 'bg-destructive/10 text-destructive border-destructive/20'
                     : deadlineCountdown.isUrgent
                     ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
                     : 'bg-muted/50 text-muted-foreground border-border/50'
                 )}
               >
-                {deadlineCountdown.isOverdue ? <AlertCircle size={14} /> : <Timer size={14} />}
+                {deadlineCountdown.isDone ? <CheckCircle2 size={14} /> : deadlineCountdown.isOverdue ? <AlertCircle size={14} /> : <Timer size={14} />}
                 {deadlineCountdown.label}
               </div>
             )}

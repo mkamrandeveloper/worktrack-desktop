@@ -141,8 +141,8 @@ export function ReportsPage() {
                 </span>
               </div>
               <div>
-                <div className="text-3xl font-display font-bold text-foreground tracking-tight">{loading ? '—' : formatHours(overview?.attendance.totalWorkHours)}</div>
-                <div className="text-sm font-medium text-muted-foreground mt-1">Per employee</div>
+                <div className="text-3xl font-display font-bold text-foreground tracking-tight">{loading ? '—' : formatHours((overview?.attendance.avgWorkSeconds ?? 0) / 3600)}</div>
+                <div className="text-sm font-medium text-muted-foreground mt-1">Per employee per day · last 30 days</div>
               </div>
             </Card>
 
