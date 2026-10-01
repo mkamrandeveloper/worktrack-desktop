@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { ScreenshotRecord, TeamMember, ScreenshotBreakInterval } from '@shared/types';
-import { formatDuration } from '../utils/formatTime';
+import { formatDuration, localISODate } from '../utils/formatTime';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ImageOff, Image as ImageIcon, Coffee, User, Briefcase, Calendar,
@@ -31,8 +31,9 @@ function fmtDayHeading(dateKey: string): string {
   return d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 }
 
+// Group by the local (PKT) day — the timestamp itself is in UTC.
 function dayKey(iso: string): string {
-  return iso.slice(0, 10);
+  return localISODate(new Date(iso));
 }
 
 function initials(name: string): string {
@@ -130,7 +131,7 @@ export function ScreenshotsPage() {
   const [projectOptions, setProjectOptions] = useState<{ id: string; name: string }[]>([]);
   const [employeeId, setEmployeeId] = useState('');
   const [projectId, setProjectId] = useState(initialProjectId);
-  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(() => localISODate());
   const [allDates, setAllDates] = useState(!!initialProjectId);
   const [records, setRecords] = useState<ScreenshotRecord[]>([]);
   const [breaks, setBreaks] = useState<ScreenshotBreakInterval[]>([]);

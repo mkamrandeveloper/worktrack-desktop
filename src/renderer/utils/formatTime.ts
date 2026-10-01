@@ -72,3 +72,15 @@ export function calcProgress(elapsed: number, estimated: number): number {
   if (estimated <= 0) return 0;
   return Math.min(Math.round((elapsed / estimated) * 100), 100);
 }
+
+/**
+ * 'YYYY-MM-DD' of a date on this computer's calendar (Pakistan time for the
+ * team). Never use toISOString() for this: it converts to UTC, so between
+ * midnight and 5 AM PKT it would give yesterday's date.
+ */
+export function localISODate(d: Date = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}

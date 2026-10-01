@@ -15,7 +15,7 @@ import { Card, Button, Badge } from '../components/ui/primitives';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useAuthStore } from '../store/authStore';
-import { formatHours } from '../utils/formatTime';
+import { formatHours, localISODate } from '../utils/formatTime';
 import { canSeeMember } from '@shared/constants/roles';
 
 type View = 'daily' | 'weekly' | 'monthly';
@@ -32,7 +32,7 @@ function startOfWeek(d: Date) {
   copy.setHours(0, 0, 0, 0);
   return copy;
 }
-const toISODate = (d: Date) => d.toISOString().split('T')[0];
+const toISODate = (d: Date) => localISODate(d); // local calendar, not UTC
 
 // ── Employee Picker Dropdown ─────────────────────────────────────────────────
 interface EmployeePickerProps {

@@ -4,7 +4,7 @@ import { useTimer } from '../hooks/useTimer';
 import { useAuthStore } from '../store/authStore';
 import { useTaskStore } from '../store/taskStore';
 import { DashboardAnalytics, Project, TimelineEvent } from '@shared/types';
-import { formatDuration, formatDeadlineCountdown, formatHours } from '../utils/formatTime';
+import { formatDuration, formatDeadlineCountdown, formatHours, localISODate } from '../utils/formatTime';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -99,7 +99,7 @@ export function DashboardPage() {
   }, [period, refreshTick]);
 
   useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = localISODate();
     window.worktrack.timesheets.daily({ date: today }).then((res) => {
       if (res.success && res.data?.timeline) setTodayTimeline(res.data.timeline);
     });
