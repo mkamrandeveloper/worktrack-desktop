@@ -1,5 +1,6 @@
 import { BrowserWindow } from 'electron';
 import {
+  AuthTokens,
   AuthState,
   LoginCredentials,
   LoginResponse,
@@ -14,6 +15,7 @@ import { getApiService } from '../services/ApiService';
 import { API_ENDPOINTS } from '../../shared/constants/events';
 import { IPC } from '../../shared/constants/ipcChannels';
 import { createLogger } from '../logger/Logger';
+import { SecurityManager } from '../security/SecurityManager';
 import Store from 'electron-store';
 
 const log = createLogger('AuthService');
@@ -53,9 +55,10 @@ export class AuthService {
     api.setRefreshHandler(() => this.tokenManager.refresh());
 
     // Handle token expiry — force re-login
-    this.tokenManager.setTokenExpiredHandler(() => {
-      log.warn('Session expired — forcing re-authentication');
-      this.state = { user: null, organization: null, tokens: null, isAuthenticated: false };
+    this.tokenManager.setTokenExpiredHandler((reason) => {
+      log.warn(`Session ended — forcing re-authentication${reason ? `: ${reason}` : ''}`);
+      this.state = { user: null, organization: null, tokens: null, isAuthenticated: false, signOutReason: reason ?? null };
+      this.onForcedSignOut?.();
       this._broadcastState();
     });
   }
@@ -101,7 +104,7 @@ export class AuthService {
 
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
     const api = getApiService();
-    const response = await api.post<LoginResponse>(API_ENDPOINTS.AUTH.LOGIN, credentials);
+    const response = await api.post<LoginResponse>(API_ENDPOINTS.AUTH.LOGIN, { ...credentials, deviceId: SecurityManager.getOrCreateDeviceId() });
 
     this.tokenManager.setTokens(response.tokens);
     this.cache.set('user', response.user);
@@ -121,7 +124,7 @@ export class AuthService {
 
   async signupCreateOrg(payload: SignupCreateOrgPayload): Promise<LoginResponse> {
     const api = getApiService();
-    const response = await api.post<LoginResponse>(API_ENDPOINTS.AUTH.SIGNUP_CREATE_ORG, payload);
+    const response = await api.post<LoginResponse>(API_ENDPOINTS.AUTH.SIGNUP_CREATE_ORG, { ...payload, deviceId: SecurityManager.getOrCreateDeviceId() });
 
     this.tokenManager.setTokens(response.tokens);
     this.cache.set('user', response.user);
@@ -141,7 +144,7 @@ export class AuthService {
 
   async acceptClientInvite(payload: ClientAcceptPayload): Promise<LoginResponse> {
     const api = getApiService();
-    const response = await api.post<LoginResponse>('/api/clients/accept', payload);
+    const response = await api.post<LoginResponse>('/api/clients/accept', { ...payload, deviceId: SecurityManager.getOrCreateDeviceId() });
 
     this.tokenManager.setTokens(response.tokens);
     this.cache.set('user', response.user);
@@ -178,6 +181,37 @@ export class AuthService {
     log.info('User logged out');
     this._broadcastState();
   }
+
+  /**
+   * Changes the signed-in user's password. The server signs out other
+   * devices and returns a fresh access token for this one (older tokens stop
+   * working), which is stored so this session stays signed in.
+   */
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    const api = getApiService();
+    const keepRefreshToken = this.tokenManager.getTokens()?.refreshToken;
+    const res = await api.post<{ tokens: AuthTokens | null }>(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, {
+      currentPassword, newPassword, keepRefreshToken,
+    });
+    if (res.tokens) {
+      this.tokenManager.setTokens(res.tokens);
+      this.state.tokens = res.tokens;
+    }
+    log.info('Password changed');
+  }
+
+  /** Emails a 6-digit reset code (the server never reveals whether the email exists). */
+  async forgotPassword(email: string): Promise<void> {
+    await getApiService().post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, { email });
+  }
+
+  /** Sets a new password using the emailed code; the user then signs in normally. */
+  async resetPassword(email: string, code: string, newPassword: string): Promise<void> {
+    await getApiService().post(API_ENDPOINTS.AUTH.RESET_PASSWORD, { email, code, newPassword });
+  }
+
+  /** Set by the app shell: stop timers/background work when the session is ended for us. */
+  onForcedSignOut: (() => void) | null = null;
 
   getState(): AuthState {
     return this.state;

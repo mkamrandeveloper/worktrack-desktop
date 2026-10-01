@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Card, Button, Badge } from '../components/ui/primitives';
 import { TimerRing } from '../components/ui/TimerRing';
+import { completeOwnTask } from '../utils/completeTask';
 
 const ICON_COLORS: { bg: string; text: string }[] = [
   { bg: 'bg-indigo-500/10', text: 'text-indigo-500' },
@@ -115,7 +116,7 @@ export function DashboardPage() {
   };
 
   // ── Undo task completion ─────────────────────────────────────────────────
-  const [undoTask, setUndoTask] = useState<{ id: string; title: string; projectId?: string } | null>(null);
+  const [undoTask, setUndoTask] = useState<{ id: string; title: string; projectId?: string; wasTracking: boolean } | null>(null);
   const undoProgress = useRef(100);
   const undoInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const [, setUndoTick] = useState(0);
@@ -128,22 +129,19 @@ export function DashboardPage() {
 
   const [completeError, setCompleteError] = useState<string | null>(null);
 
-  const handleComplete = async () => {
+  // Completes one of my tasks — the given one, or else the one being timed.
+  const handleComplete = async (task?: (typeof tasks)[number]) => {
     setCompleteError(null);
-    // Complete the task the timer is tracking (fall back to the selected one).
-    const target = tasks.find((t) => t.id === timer.taskId) ?? selectedTask;
-    const taskSnapshot = target ? { id: target.id, title: target.title, projectId: target.projectId } : null;
-    // Stop first so the session's hours are logged against the task.
-    await timer.stopTimer();
-    if (taskSnapshot?.projectId) {
-      const res = await window.worktrack.projects.updateTask(taskSnapshot.projectId, taskSnapshot.id, { status: 'DONE' });
-      if (!res.success) {
-        setCompleteError(res.error ?? 'Timer stopped, but the task could not be marked complete.');
-        fetchTasks();
-        return;
-      }
-    }
+    const target = task ?? tasks.find((t) => t.id === timer.taskId) ?? selectedTask;
+    if (!target) return;
+    const wasTracking = timer.taskId === target.id && ['running', 'paused', 'on_break'].includes(timer.status);
+    const taskSnapshot = { id: target.id, title: target.title, projectId: target.projectId, wasTracking };
+    const result = await completeOwnTask(target, timer);
     fetchTasks();
+    if (!result.ok) {
+      setCompleteError(result.error ?? 'The task could not be marked complete.');
+      return;
+    }
     if (taskSnapshot) {
       clearUndo();
       undoProgress.current = 100;
@@ -160,11 +158,11 @@ export function DashboardPage() {
   const handleUndo = async () => {
     if (!undoTask) return;
     clearUndo();
-    // Revert to IN_PROGRESS and restart timer so the session continues
+    // Revert to IN_PROGRESS; if it was being timed, restart the timer too.
     if (undoTask.projectId) {
       await window.worktrack.projects.updateTask(undoTask.projectId, undoTask.id, { status: 'IN_PROGRESS' });
     }
-    await handleStartTask(undoTask.id);
+    if (undoTask.wasTracking) await handleStartTask(undoTask.id);
     fetchTasks();
   };
 
@@ -379,7 +377,7 @@ export function DashboardPage() {
                     size="lg" 
                     variant="danger" 
                     className="flex-1 rounded-full shadow-md"
-                    onClick={handleComplete}
+                    onClick={() => handleComplete()}
                   >
                     <StopCircle size={18} /> Complete
                   </Button>
@@ -506,20 +504,30 @@ export function DashboardPage() {
                       >
                         {timerOnBreak ? <PlayCircle size={18} /> : <Coffee size={18} />}
                       </button>
-                      <button onClick={handleComplete} className="w-10 h-10 rounded-full bg-card hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 border border-border flex items-center justify-center transition-colors" title="Complete task">
+                      <button onClick={() => handleComplete()} className="w-10 h-10 rounded-full bg-card hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 border border-border flex items-center justify-center transition-colors" title="Complete task">
                         <StopCircle size={18} />
                       </button>
                     </div>
                   ) : (
-                    <Button
-                      variant="secondary"
-                      onClick={() => handleStartTask(t.id)}
-                      disabled={timerActive}
-                      title={timerActive ? 'Stop the current timer first' : 'Start working'}
-                      className="shrink-0 rounded-full px-5 h-10 shadow-sm"
-                    >
-                      <Play size={16} /> Start
-                    </Button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        variant="secondary"
+                        onClick={() => handleStartTask(t.id)}
+                        disabled={timerActive}
+                        title={timerActive ? 'Stop the current timer first' : 'Start working'}
+                        className="rounded-full px-5 h-10 shadow-sm"
+                      >
+                        <Play size={16} /> Start
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => handleComplete(t)}
+                        title="Mark this task complete"
+                        className="rounded-full px-4 h-10 shadow-sm hover:border-emerald-500/50 hover:text-emerald-600"
+                      >
+                        <CheckCircle2 size={16} /> Complete
+                      </Button>
+                    </div>
                   )}
                 </div>
               );

@@ -1,7 +1,7 @@
 import Store from 'electron-store';
 import { AuthTokens } from '../../shared/types';
 import { createLogger } from '../logger/Logger';
-import { getApiService } from '../services/ApiService';
+import { getApiService, isTransientError } from '../services/ApiService';
 import { API_ENDPOINTS } from '../../shared/constants/events';
 
 const log = createLogger('TokenManager');
@@ -24,7 +24,7 @@ interface TokenStore {
 export class TokenManager {
   private store: Store<TokenStore>;
   private refreshTimer: NodeJS.Timeout | null = null;
-  private onTokenExpired?: () => void;
+  private onTokenExpired?: (reason?: string) => void;
 
   constructor(encryptionKey: string) {
     this.store = new Store<TokenStore>({
@@ -77,7 +77,7 @@ export class TokenManager {
   }
 
   /** Sets a callback fired when refresh fails and user must re-authenticate */
-  setTokenExpiredHandler(handler: () => void): void {
+  setTokenExpiredHandler(handler: (reason?: string) => void): void {
     this.onTokenExpired = handler;
   }
 
@@ -104,8 +104,12 @@ export class TokenManager {
       return response.tokens.accessToken;
     } catch (err) {
       log.error('Silent token refresh failed', { error: (err as Error).message });
+      // A dropped request (offline, hosting hiccup) isn't a rejected session —
+      // keep the tokens and try again later instead of signing the user out.
+      if (isTransientError(err)) return null;
+      const body = (err as { response?: { data?: { code?: string; error?: string } } }).response?.data;
       this.clearTokens();
-      this.onTokenExpired?.();
+      this.onTokenExpired?.(body?.code === 'SIGNED_IN_ELSEWHERE' ? body.error : undefined);
       return null;
     }
   }

@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Activity, Loader2, AlertCircle, ArrowRight } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Eye, EyeOff, Activity, Loader2, AlertCircle, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuthStore();
+  const { login, signOutReason } = useAuthStore();
 
-  const [email, setEmail] = useState('');
+  const location = useLocation();
+  const fromReset = location.state as { email?: string; passwordReset?: boolean } | null;
+  const [email, setEmail] = useState(fromReset?.email ?? '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -100,6 +102,19 @@ export function LoginPage() {
             </p>
           </div>
 
+          {fromReset?.passwordReset && !error && (
+            <div className="flex items-start gap-3 p-4 mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-sm font-medium">
+              <CheckCircle2 size={18} className="shrink-0 mt-0.5" />
+              Your password has been reset. Sign in with your new password.
+            </div>
+          )}
+          {signOutReason && !error && !fromReset?.passwordReset && (
+            <div className="flex items-start gap-3 p-4 mb-6 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-sm font-medium">
+              <AlertCircle size={18} className="shrink-0 mt-0.5" />
+              {signOutReason}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             
             <div className="space-y-2 relative group">
@@ -125,7 +140,14 @@ export function LoginPage() {
             <div className="space-y-2 relative group">
               <label htmlFor="password" className="text-[11px] font-display font-bold uppercase tracking-widest text-muted-foreground flex justify-between">
                 Password
-                <a href="#" className="text-primary hover:underline normal-case tracking-normal font-semibold">Forgot?</a>
+                <button
+                  id="btn-forgot-password"
+                  type="button"
+                  onClick={() => navigate('/forgot-password', { state: { email: email.trim() } })}
+                  className="text-primary hover:underline normal-case tracking-normal font-semibold"
+                >
+                  Forgot password?
+                </button>
               </label>
               <div className="relative">
                 <input

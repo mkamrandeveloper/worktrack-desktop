@@ -56,6 +56,11 @@ const api = {
     signupJoinOrg: (payload: SignupJoinOrgPayload) =>
       invoke(IPC.AUTH.SIGNUP_JOIN_ORG, payload),
     logout: () => invoke(IPC.AUTH.LOGOUT),
+    changePassword: (payload: { currentPassword: string; newPassword: string }) =>
+      invoke(IPC.AUTH.CHANGE_PASSWORD, payload),
+    forgotPassword: (payload: { email: string }) => invoke(IPC.AUTH.FORGOT_PASSWORD, payload),
+    resetPassword: (payload: { email: string; code: string; newPassword: string }) =>
+      invoke(IPC.AUTH.RESET_PASSWORD, payload),
     getState: () => invoke<AuthState>(IPC.AUTH.GET_STATE),
     onStateChanged: (cb: EventCallback<AuthState>) =>
       on<AuthState>(IPC.AUTH.STATE_CHANGED, cb),

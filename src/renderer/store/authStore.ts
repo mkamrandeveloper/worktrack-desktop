@@ -29,7 +29,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   tokens: null,
   isAuthenticated: false,
 
-  setAuthState: (state: AuthState) => set(state),
+  setAuthState: (state: AuthState) => set({ ...state, signOutReason: state.signOutReason ?? null }),
 
   isOwner: () => get().user?.role === 'OWNER',
   isAdmin: () => get().user?.role === 'ADMIN',

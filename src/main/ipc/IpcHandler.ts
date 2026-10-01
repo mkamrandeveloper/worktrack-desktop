@@ -148,6 +148,39 @@ export class IpcHandler {
       }
     });
 
+    ipcMain.handle(IPC.AUTH.CHANGE_PASSWORD, async (event, payload: { currentPassword: string; newPassword: string }) => {
+      try {
+        this._validateSender(event);
+        SecurityManager.validatePayload(payload);
+        await this.services.auth.changePassword(String(payload.currentPassword ?? ''), String(payload.newPassword ?? ''));
+        return this._ok();
+      } catch (err) {
+        return this._err(err);
+      }
+    });
+
+    ipcMain.handle(IPC.AUTH.FORGOT_PASSWORD, async (event, payload: { email: string }) => {
+      try {
+        this._validateSender(event);
+        SecurityManager.validatePayload(payload);
+        await this.services.auth.forgotPassword(String(payload.email ?? '').trim());
+        return this._ok();
+      } catch (err) {
+        return this._err(err);
+      }
+    });
+
+    ipcMain.handle(IPC.AUTH.RESET_PASSWORD, async (event, payload: { email: string; code: string; newPassword: string }) => {
+      try {
+        this._validateSender(event);
+        SecurityManager.validatePayload(payload);
+        await this.services.auth.resetPassword(String(payload.email ?? '').trim(), String(payload.code ?? '').trim(), String(payload.newPassword ?? ''));
+        return this._ok();
+      } catch (err) {
+        return this._err(err);
+      }
+    });
+
     ipcMain.handle(IPC.AUTH.LOGOUT, async (event) => {
       try {
         this._validateSender(event);

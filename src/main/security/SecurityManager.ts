@@ -111,6 +111,29 @@ export class SecurityManager {
   }
 
   /**
+   * A permanent id for this install, sent at sign-in so the server can keep
+   * each account signed in on one machine at a time. Generated once and kept
+   * in userData (survives restarts and updates).
+   */
+  static getOrCreateDeviceId(): string {
+    const file = path.join(app.getPath('userData'), '.device-id');
+    try {
+      const existing = fs.readFileSync(file, 'utf8').trim();
+      if (/^[A-Za-z0-9-]{8,64}$/.test(existing)) return existing;
+    } catch {
+      // Not created yet — generate below.
+    }
+    const id = crypto.randomUUID();
+    try {
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, id, { mode: 0o600 });
+    } catch (err) {
+      log.error('Failed to persist device id', { error: (err as Error).message });
+    }
+    return id;
+  }
+
+  /**
    * Validates that an IPC payload is a plain object (not null, not array).
    * Throws if invalid — callers should catch and respond with an error.
    */

@@ -27,6 +27,7 @@ import { NotificationsPage } from './pages/NotificationsPage';
 import { ScreenshotsPage } from './pages/ScreenshotsPage';
 import { ClientPortal } from './pages/ClientPortal';
 import { AcceptInvitePage } from './pages/AcceptInvitePage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 
 const MANAGER_ABOVE_ROLES: UserRole[] = ['OWNER', 'ADMIN', 'MANAGER'];
 const STAFF_ROLES: UserRole[] = ['OWNER', 'ADMIN', 'MANAGER', 'EMPLOYEE'];
@@ -171,6 +172,7 @@ export function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/accept-invite" element={<AcceptInvitePage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
         {/* Protected routes */}
         <Route

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Moon, Sun, Monitor, Bell, RefreshCw, Power, Globe, 
-  Shield, Building2, Camera, Info, CheckCircle2
+  Shield, Building2, Camera, Info, CheckCircle2, KeyRound, Eye, EyeOff, AlertCircle
 } from 'lucide-react';
 import { useSettingsStore } from '../store/settingsStore';
 import { useAuthStore } from '../store/authStore';
@@ -10,6 +10,7 @@ import { clsx } from 'clsx';
 import { Card, Button } from '../components/ui/primitives';
 import { ScreenshotIntervalControl, DEFAULT_SCREENSHOT_INTERVAL } from '../components/ScreenshotIntervalControl';
 import { motion } from 'framer-motion';
+import { useSnackbarStore } from '../store/snackbarStore';
 
 // ── Small Components ──────────────────────────────────────────────────────────
 
@@ -89,6 +90,86 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+// ── Change password ───────────────────────────────────────────────────────────
+
+function PasswordField({ id, label, value, onChange, show, autoComplete }: {
+  id: string; label: string; value: string; onChange: (v: string) => void; show: boolean; autoComplete: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label htmlFor={id} className="text-[11px] font-display font-bold uppercase tracking-widest text-muted-foreground">{label}</label>
+      <input
+        id={id}
+        type={show ? 'text' : 'password'}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        autoComplete={autoComplete}
+        className="w-full h-11 bg-card border border-border rounded-xl px-4 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition shadow-sm"
+      />
+    </div>
+  );
+}
+
+/** Lets any signed-in user change their own password at any time. */
+function ChangePasswordForm() {
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [show, setShow] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!current || !next || !confirm) return setError('Fill in all three fields.');
+    if (next.length < 8) return setError('New password must be at least 8 characters.');
+    if (next !== confirm) return setError('The new passwords don\'t match.');
+    if (next === current) return setError('New password must be different from the current one.');
+    setSaving(true);
+    const res = await window.worktrack.auth.changePassword({ currentPassword: current, newPassword: next });
+    setSaving(false);
+    if (!res.success) return setError(res.error ?? 'Could not change the password.');
+    setCurrent(''); setNext(''); setConfirm('');
+    useSnackbarStore.getState().show('Password changed successfully', 'Other devices have been signed out');
+  };
+
+  return (
+    <form onSubmit={submit} className="py-5 space-y-4">
+      <div className="flex items-start gap-4">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20 shadow-inner">
+          <KeyRound size={20} />
+        </div>
+        <div>
+          <div className="text-base font-semibold text-foreground">Change Password</div>
+          <div className="text-sm font-medium text-muted-foreground mt-0.5 max-w-[460px]">
+            Use at least 8 characters. Changing it signs you out on your other devices; you stay signed in here.
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:pl-14">
+        <PasswordField id="pw-current" label="Current password" value={current} onChange={setCurrent} show={show} autoComplete="current-password" />
+        <PasswordField id="pw-new" label="New password" value={next} onChange={setNext} show={show} autoComplete="new-password" />
+        <PasswordField id="pw-confirm" label="Confirm new password" value={confirm} onChange={setConfirm} show={show} autoComplete="new-password" />
+      </div>
+      {error && (
+        <p className="sm:pl-14 flex items-center gap-2 text-sm font-medium text-destructive">
+          <AlertCircle size={14} className="shrink-0" /> {error}
+        </p>
+      )}
+      <div className="sm:pl-14 flex items-center gap-3">
+        <Button type="submit" disabled={saving} className="rounded-full">
+          {saving ? <RefreshCw size={16} className="animate-spin mr-2" /> : <KeyRound size={16} className="mr-2" />}
+          Update Password
+        </Button>
+        <button type="button" onClick={() => setShow((v) => !v)} className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
+          {show ? <EyeOff size={16} /> : <Eye size={16} />} {show ? 'Hide' : 'Show'} passwords
+        </button>
+      </div>
+    </form>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export function SettingsPage() {
@@ -156,6 +237,10 @@ export function SettingsPage() {
         </div>
 
         {/* Appearance */}
+        <Section title="Security">
+          <ChangePasswordForm />
+        </Section>
+
         <Section title="Appearance">
           <SettingRow
             icon={<Sun size={20} />}

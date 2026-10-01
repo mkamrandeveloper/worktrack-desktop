@@ -45,6 +45,9 @@ interface WorktrackAPI {
     signupCreateOrg: (payload: SignupCreateOrgPayload) => Promise<IpcResponse<AuthState>>;
     signupJoinOrg: (payload: SignupJoinOrgPayload) => Promise<IpcResponse>;
     logout: () => Promise<IpcResponse>;
+    changePassword: (payload: { currentPassword: string; newPassword: string }) => Promise<IpcResponse>;
+    forgotPassword: (payload: { email: string }) => Promise<IpcResponse>;
+    resetPassword: (payload: { email: string; code: string; newPassword: string }) => Promise<IpcResponse>;
     getState: () => Promise<IpcResponse<AuthState>>;
     onStateChanged: (cb: EventCallback<AuthState>) => EventUnsubscribe;
   };

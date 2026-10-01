@@ -43,6 +43,9 @@ export const API_ENDPOINTS = {
     ME: '/api/auth/me',
     SIGNUP_CREATE_ORG: '/api/auth/signup/create-org',
     SIGNUP_JOIN_ORG: '/api/auth/signup/join-org',
+    CHANGE_PASSWORD: '/api/auth/change-password',
+    FORGOT_PASSWORD: '/api/auth/forgot-password',
+    RESET_PASSWORD: '/api/auth/reset-password',
   },
   TASKS: {
     LIST: '/api/tasks/assigned',

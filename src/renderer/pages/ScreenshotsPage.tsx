@@ -9,6 +9,7 @@ import {
   Loader2, Camera, X, ChevronLeft, ChevronRight, ExternalLink, CheckCircle
 } from 'lucide-react';
 import { Card } from '../components/ui/primitives';
+import { canSeeMember } from '@shared/constants/roles';
 
 const PAGE_SIZE = 36;
 
@@ -141,8 +142,10 @@ export function ScreenshotsPage() {
 
   useEffect(() => {
     if (isManager) {
-      window.worktrack.manager.getTeam().then((r) => {
-        if (r.success && r.data) setMembers(r.data.members);
+      window.worktrack.manager.getMembers().then((r) => {
+        // Everyone this viewer may see (Owner → all, Admin → all but the
+        // Owner, Manager → employees + self) — not just employees.
+        if (r.success && r.data) setMembers(r.data.filter((m) => m.status === 'ACTIVE' && canSeeMember(user, m)));
       });
       window.worktrack.projects.list().then((r) => {
         if (r.success && r.data) setProjectOptions(r.data.map((p) => ({ id: p.id, name: p.name })));
@@ -152,7 +155,7 @@ export function ScreenshotsPage() {
         if (r.success && r.data) setProjectOptions(r.data.map((p) => ({ id: p.id, name: p.name })));
       });
     }
-  }, [isManager, isClient]);
+  }, [isManager, isClient, user]);
 
   const load = useCallback(
     async (offset: number, append: boolean) => {
@@ -244,9 +247,9 @@ export function ScreenshotsPage() {
               onChange={(e) => setEmployeeId(e.target.value)}
               className="bg-card border border-border rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm"
             >
-              <option value="">All employees</option>
+              <option value="">Everyone</option>
               {members.map((m) => (
-                <option key={m.id} value={m.id}>{m.name}</option>
+                <option key={m.id} value={m.id}>{m.id === user?.id ? `${m.name} (me)` : `${m.name} · ${m.role.charAt(0) + m.role.slice(1).toLowerCase()}`}</option>
               ))}
             </select>
           </div>

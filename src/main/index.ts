@@ -98,6 +98,15 @@ const updaterService = new UpdaterService(notificationService);
 const taskService = new TaskService(ENCRYPTION_KEY);
 const heartbeatService = new HeartbeatService(activityMonitor, timerEngine, offlineQueue);
 heartbeatService.onSessionClosedRemotely = () => stopTimerClosedByServer();
+// Signed out by the server (another machine took the account, or the session
+// expired): stop tracking locally — the session can't be reported any more.
+authService.onForcedSignOut = () => {
+  timerEngine.stop();
+  activityMonitor.onTimerStatusChanged('stopped');
+  screenshotService.onTimerStateChanged(timerEngine.getState(), '');
+  heartbeatService.stop();
+  syncService.disconnect();
+};
 const pluginManager = new PluginManager();
 const managerService = new ManagerService();
 const driveService = new DriveService();

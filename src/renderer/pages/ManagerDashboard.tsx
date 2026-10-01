@@ -6,6 +6,8 @@ import { useTimer } from '../hooks/useTimer';
 import { TeamMember, Task, DashboardAnalytics, LiveStatus, OrgPresenceEvent, OrgTimerActivityEvent, LiveTimer } from '@shared/types';
 import { Badge, Card, Button } from '../components/ui/primitives';
 import { TimerRing } from '../components/ui/TimerRing';
+import { completeOwnTask } from '../utils/completeTask';
+import { useSnackbarStore } from '../store/snackbarStore';
 import { ScreenshotIntervalControl, DEFAULT_SCREENSHOT_INTERVAL } from '../components/ScreenshotIntervalControl';
 import { formatDuration, calcProgress, hoursToSeconds, formatDeadlineCountdown, formatHours } from '../utils/formatTime';
 import { clsx } from 'clsx';
@@ -77,6 +79,18 @@ export function ManagerDashboard() {
   };
 
   const myOpenTasks = allTasks.filter((t) => t.status !== 'DONE' && t.status !== 'completed');
+
+  // Completes one of my own tasks (the given one, or the one being timed).
+  const [completeError, setCompleteError] = useState<string | null>(null);
+  const handleComplete = async (task?: (typeof allTasks)[number]) => {
+    setCompleteError(null);
+    const target = task ?? allTasks.find((t) => t.id === timer.taskId) ?? selectedTask;
+    if (!target) return;
+    const result = await completeOwnTask(target, timer);
+    fetchTasks();
+    if (result.ok) useSnackbarStore.getState().show(`"${target.title}" completed`, 'Marked as done');
+    else setCompleteError(result.error ?? 'The task could not be marked complete.');
+  };
 
   // ── Live Pulse (real-time) ──────────────────────────────────────────────────
   const [activeProjectsCount, setActiveProjectsCount] = useState(0);
@@ -456,7 +470,7 @@ export function ManagerDashboard() {
                   <Button variant="outline" size="icon" onClick={() => (timerOnBreak ? timer.endBreak() : timer.startBreak())} disabled={timerPaused} className={clsx('w-14 h-14 rounded-full shadow-sm transition-colors', timerOnBreak ? 'bg-amber-500/20 border-amber-500/40 text-amber-600 hover:bg-amber-500/30' : 'hover:border-amber-500/50 hover:text-amber-500')}>
                     {timerOnBreak ? <PlayCircle size={24} /> : <Coffee size={24} />}
                   </Button>
-                  <Button onClick={() => timer.stopTimer()} className="flex-1 h-14 rounded-full shadow-premium text-base bg-emerald-500 hover:bg-emerald-600 border-transparent text-white">
+                  <Button onClick={() => handleComplete()} className="flex-1 h-14 rounded-full shadow-premium text-base bg-emerald-500 hover:bg-emerald-600 border-transparent text-white">
                     <StopCircle size={20} className="mr-2" /> Complete Task
                   </Button>
                 </>
@@ -496,6 +510,11 @@ export function ManagerDashboard() {
               {myOpenTasks.length} open
             </Badge>
           </div>
+          {completeError && (
+            <p className="flex items-center gap-2 text-sm font-medium text-destructive mb-4">
+              <AlertCircle size={14} className="shrink-0" /> {completeError}
+            </p>
+          )}
           <div className="space-y-3">
             {myOpenTasks.map((t) => {
               const tracking = timerActive && timer.taskId === t.id;
@@ -540,16 +559,27 @@ export function ManagerDashboard() {
                       </button>
                     </div>
                   ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleStartTask(t.id)}
-                      disabled={timerActive}
-                      title={timerActive ? 'Stop the current timer first' : 'Start working'}
-                      className="shrink-0 rounded-full"
-                    >
-                      <Play size={16} className="mr-1.5" /> Start
-                    </Button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleStartTask(t.id)}
+                        disabled={timerActive}
+                        title={timerActive ? 'Stop the current timer first' : 'Start working'}
+                        className="rounded-full"
+                      >
+                        <Play size={16} className="mr-1.5" /> Start
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleComplete(t)}
+                        title="Mark this task complete"
+                        className="rounded-full hover:border-emerald-500/50 hover:text-emerald-600"
+                      >
+                        <CheckCircle2 size={16} className="mr-1.5" /> Complete
+                      </Button>
+                    </div>
                   )}
                 </div>
               );
@@ -636,14 +666,22 @@ export function ManagerDashboard() {
               <span className="text-sm font-bold text-foreground">{driveConnected ? 'Connected' : 'Not available'}</span>
             </div>
           </div>
-          <Button
-            variant="outline"
-            id="btn-open-drive"
-            onClick={() => window.worktrack.drive.openFolder(organization?.driveFolderUrl ?? 'https://drive.google.com')}
-            className="w-full py-6 text-base rounded-xl"
-          >
-            <FolderOpen size={18} className="mr-2" /> Open Drive
-          </Button>
+          {organization?.driveFolderUrl ? (
+            <Button
+              variant="outline"
+              id="btn-open-drive"
+              onClick={() => window.worktrack.drive.openFolder(organization.driveFolderUrl!)}
+              className="w-full py-6 text-base rounded-xl"
+            >
+              <FolderOpen size={18} className="mr-2" /> Open Drive
+            </Button>
+          ) : (
+            // The organization folder holds everyone's screenshots (the Owner's
+            // too), so only the Owner opens it; others use per-member folders.
+            <p className="text-sm font-medium text-muted-foreground text-center">
+              Open a team member's folder from their row in Team Overview below.
+            </p>
+          )}
         </Card>
       </div>
 
@@ -751,15 +789,17 @@ export function ManagerDashboard() {
                       taskTitle={memberTimer?.taskTitle}
                     />
 
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => window.worktrack.drive.openFolder(member.driveFolderUrl ?? 'https://drive.google.com')}
-                      className="ml-2 hover:bg-muted"
-                      title="Open Drive folder"
-                    >
-                      <FolderOpen size={18} className="text-muted-foreground" />
-                    </Button>
+                    {member.driveFolderUrl && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => window.worktrack.drive.openFolder(member.driveFolderUrl!)}
+                        className="ml-2 hover:bg-muted"
+                        title="Open Drive folder"
+                      >
+                        <FolderOpen size={18} className="text-muted-foreground" />
+                      </Button>
+                    )}
                   </div>
 
                   {memberTasks.length > 0 && (

@@ -205,8 +205,10 @@ export function TeamManagement() {
     }
   };
 
-  const openDrive = async (url?: string) => {
-    await window.worktrack.drive.openFolder(url ?? organization?.driveFolderUrl ?? 'https://drive.google.com');
+  // Drive links arrive only for folders this viewer may open (the server
+  // follows the visibility hierarchy) — never fall back to another folder.
+  const openDrive = async (url?: string | null) => {
+    if (url) await window.worktrack.drive.openFolder(url);
   };
 
   const canAssign = CAN_ASSIGN[callerRole] ?? [];
@@ -307,11 +309,13 @@ export function TeamManagement() {
                 Active Members ({members.length})
               </span>
             </div>
-            <Button variant="outline" size="sm" id="btn-open-drive-root" onClick={() => openDrive()}
-              className="bg-background shadow-sm hover:shadow">
-              <FolderOpen size={16} className="mr-1.5 text-muted-foreground" />
-              <span className="text-muted-foreground">Org Drive</span>
-            </Button>
+            {organization?.driveFolderUrl && (
+              <Button variant="outline" size="sm" id="btn-open-drive-root" onClick={() => openDrive(organization.driveFolderUrl)}
+                className="bg-background shadow-sm hover:shadow">
+                <FolderOpen size={16} className="mr-1.5 text-muted-foreground" />
+                <span className="text-muted-foreground">Org Drive</span>
+              </Button>
+            )}
           </div>
 
           {loading ? (
@@ -429,12 +433,16 @@ export function TeamManagement() {
                         Active
                       </span>
 
-                      {/* Drive button */}
+                      {/* Drive button — only for folders this viewer may open */}
+
+                      {member.driveFolderUrl && (
                       <Button variant="ghost" size="sm" id={`btn-open-drive-${member.id}`}
                         onClick={() => openDrive(member.driveFolderUrl)}
                         className="text-muted-foreground hover:text-foreground hover:bg-muted border border-border/50 rounded-lg h-8 px-3 text-xs font-medium">
                         <ExternalLink size={13} className="mr-1.5" /> Drive
                       </Button>
+
+                      )}
 
                       {/* Remove button — always visible when allowed */}
                       {canRemoveThis && (

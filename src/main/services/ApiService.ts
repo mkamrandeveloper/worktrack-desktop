@@ -18,6 +18,8 @@ const NO_REFRESH_RETRY_URLS = [
   '/api/auth/signup/create-org',
   '/api/auth/signup/join-org',
   '/api/clients/accept',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
 ];
 
 /**

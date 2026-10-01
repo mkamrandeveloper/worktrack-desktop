@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, X, ChevronLeft, Plus, Pause, Play, Coffee, StopCircle, CheckCircle2, Circle, Calendar, Users, Edit3, Image as ImageIcon, Briefcase, Activity, Clock, RotateCcw, AlertCircle } from 'lucide-react';
 import { Project, Task, TeamMember, ProjectMember, ScreenshotRecord } from '@shared/types';
 import { useAuthStore } from '../store/authStore';
+import { canAssignTaskTo } from '@shared/constants/roles';
 import { useTimerStore } from '../store/timerStore';
 import { ScreenshotImage } from '../components/ScreenshotImage';
 import { Badge, Button, Card } from '../components/ui/primitives';
@@ -320,21 +321,13 @@ export function ProjectDetail() {
                       <div className={clsx('absolute left-0 top-0 bottom-0 w-1.5 transition-colors', done_ ? 'bg-secondary/50' : tracking ? 'bg-primary' : 'bg-transparent group-hover:bg-primary/20')} />
                       
                       <div className="flex items-start gap-4">
-                        <button
-                          onClick={() => {
-                            if (!mineOrManager) return;
-                            if (done_) {
-                              // Toggle back to IN_PROGRESS
-                              setTaskStatus(t.id, 'IN_PROGRESS');
-                            } else {
-                              setTaskStatus(t.id, 'DONE', t.status);
-                            }
-                          }}
-                          className={clsx('mt-1 transition-all', done_ ? 'text-secondary hover:text-amber-500' : 'text-muted-foreground hover:text-primary')}
-                          title={done_ ? 'Undo completion — reopen task' : 'Mark as done'}
+                        {/* Status only — tasks are completed by their assignee from the Dashboard. */}
+                        <span
+                          className={clsx('mt-1', done_ ? 'text-secondary' : 'text-muted-foreground/40')}
+                          title={done_ ? 'Completed' : 'Completed by the assignee from their Dashboard'}
                         >
                           {done_ ? <CheckCircle2 size={22} className="fill-current text-white" /> : <Circle size={22} />}
-                        </button>
+                        </span>
                         
                         <div>
                           <h4 className={clsx('text-base font-semibold text-foreground mb-1.5 transition-colors', done_ && 'line-through text-muted-foreground')}>{t.title}</h4>
@@ -376,7 +369,6 @@ export function ProjectDetail() {
                             <option value="TODO">To Do</option>
                             <option value="IN_PROGRESS">In Progress</option>
                             <option value="REVIEW">Review</option>
-                            <option value="DONE">Done</option>
                           </select>
                         ) : (
                           <Badge variant="outline" className="px-3 py-1 font-bold uppercase tracking-wider text-[10px]">{String(t.status).replace('_', ' ')}</Badge>
@@ -569,14 +561,23 @@ function AddTaskModal({ projectId, members, onClose, onCreated }: {
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuthStore();
 
   useEffect(() => {
-    window.worktrack.manager.getTeam().then((res) => {
-      if (res.success && res.data) setTeam(res.data.members ?? []);
+    // Every active staff member (all roles) — then narrowed to who this user may assign.
+    window.worktrack.manager.getMembers().then((res) => {
+      if (res.success && res.data) setTeam(res.data.filter((m) => m.status === 'ACTIVE'));
     });
   }, []);
 
-  const options = team.length ? team : members.map((m) => ({ id: m.id, name: m.name } as TeamMember));
+  const ROLE_ORDER: Record<string, number> = { OWNER: 0, ADMIN: 1, MANAGER: 2, EMPLOYEE: 3 };
+  const pool: TeamMember[] = team.length ? team : members.map((m) => ({ id: m.id, name: m.name, email: m.email, role: m.role } as TeamMember));
+  const options = pool
+    .filter((m) => m.role !== 'CLIENT' && canAssignTaskTo(user, m))
+    // Yourself first, then by role, then by name.
+    .sort((a, b) => (a.id === user?.id ? -1 : b.id === user?.id ? 1 : 0)
+      || (ROLE_ORDER[a.role] ?? 9) - (ROLE_ORDER[b.role] ?? 9) || a.name.localeCompare(b.name));
+  const roleLabel = (r: string) => r.charAt(0) + r.slice(1).toLowerCase();
 
   const submit = async () => {
     if (!title.trim()) { setError('Task title is required.'); return; }
@@ -619,7 +620,11 @@ function AddTaskModal({ projectId, members, onClose, onCreated }: {
               <label className="text-[11px] font-display font-bold uppercase tracking-widest text-muted-foreground">Assignee</label>
               <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)} className="w-full h-12 bg-input border border-border/80 rounded-xl px-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm appearance-none">
                 <option value="">Unassigned</option>
-                {options.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                {options.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.id === user?.id ? `Myself (${m.name})` : `${m.name} · ${roleLabel(m.role)}`}
+                  </option>
+                ))}
               </select>
             </div>
             

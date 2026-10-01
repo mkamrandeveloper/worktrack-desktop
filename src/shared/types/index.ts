@@ -92,6 +92,8 @@ export interface AuthState {
   organization: Organization | null;
   tokens: AuthTokens | null;
   isAuthenticated: boolean;
+  /** Why the user was signed out (e.g. signed in on another machine), shown on the login screen. */
+  signOutReason?: string | null;
 }
 
 export interface LoginCredentials {

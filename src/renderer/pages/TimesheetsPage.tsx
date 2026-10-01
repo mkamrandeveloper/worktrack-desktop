@@ -16,6 +16,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useAuthStore } from '../store/authStore';
 import { formatHours } from '../utils/formatTime';
+import { canSeeMember } from '@shared/constants/roles';
 
 type View = 'daily' | 'weekly' | 'monthly';
 
@@ -175,9 +176,11 @@ export function TimesheetsPage() {
   useEffect(() => {
     if (!isManager) return;
     window.worktrack.manager.getMembers().then((res) => {
-      if (res.success && res.data) setMembers(res.data);
+      // Only people this viewer may see (Owner → all, Admin → all but the
+      // Owner, Manager → employees + self).
+      if (res.success && res.data) setMembers(res.data.filter((m) => m.status === 'ACTIVE' && canSeeMember(user, m)));
     });
-  }, [isManager]);
+  }, [isManager, user]);
 
   const load = useCallback(async () => {
     setLoading(true);
